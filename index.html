@@ -1139,13 +1139,13 @@ const AI_CONFIG_KEY = 'alyaf-ai-config';
 const AI_PROVIDERS = {
   openai:     { label: 'OpenAI (GPT)',       models: ['gpt-4o-mini', 'gpt-4.1-mini', 'gpt-5-mini'],                                                   hint: 'مفتاح يبدأ بـ sk-' },
   anthropic:  { label: 'Anthropic (Claude)', models: ['claude-haiku-4-5', 'claude-sonnet-4-5'],                                                        hint: 'مفتاح يبدأ بـ sk-ant-' },
-  gemini:     { label: 'Google Gemini',      models: ['gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash-lite', 'gemini-2.5-flash'], hint: 'مفتاح يبدأ بـ AIza أو AQ.' },
+  gemini:     { label: 'Google Gemini',      models: ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'], fast: ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-2.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash'], hint: 'مفتاح يبدأ بـ AIza أو AQ.' },
   groq:       { label: 'Groq (مجاني)',       models: ['meta-llama/llama-4-scout-17b-16e-instruct', 'meta-llama/llama-4-maverick-17b-128e-instruct'], hint: 'مفتاح يبدأ بـ gsk_' },
   openrouter: { label: 'OpenRouter',         models: ['google/gemini-2.5-flash', 'openai/gpt-4o-mini'],                                              hint: 'مفتاح يبدأ بـ sk-or-' }
 };
 Object.values(AI_PROVIDERS).forEach(v => { v.model = v.models[0]; });
-let ai = { provider: 'openai', key: '', model: '' };
-function loadAi() { try { const o = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || 'null'); if (o && AI_PROVIDERS[o.provider]) ai = { provider: o.provider, key: o.key || '', model: o.model || '' }; } catch (e) {} }
+let ai = { provider: 'openai', key: '', model: '', speed: 'fast' };
+function loadAi() { try { const o = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || 'null'); if (o && AI_PROVIDERS[o.provider]) ai = { provider: o.provider, key: o.key || '', model: o.model || '', speed: o.speed === 'accurate' ? 'accurate' : 'fast' }; } catch (e) {} }
 const aiReady = () => !!(ai.key && AI_PROVIDERS[ai.provider]);
 const LABEL_PROMPT = 'You read nutrition facts labels (Arabic and/or English; digits may be Arabic-Indic ٠١٢٣٤٥٦٧٨٩). Extract the values and return ONLY one JSON object, no prose, no markdown.\n'
   + 'Schema: {"basis":"100"|"serving","unit":"g"|"ml","serving_size":number|null,"servings_per_package":number|null,"package_size":number|null,"name":string|null,"brand":string|null,'
@@ -1163,6 +1163,7 @@ async function aiRequest(model, dataUrl) {
   if (p === 'gemini') {
     url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent';
     body = { contents: [{ parts: [{ inline_data: { mime_type: 'image/jpeg', data: b64 } }, { text: LABEL_PROMPT }] }], generationConfig: { temperature: 0, responseMimeType: 'application/json' } };
+    if (ai.speed === 'fast') body.generationConfig.thinkingConfig = /gemini-2/.test(model) ? { thinkingBudget: 0 } : { thinkingLevel: 'low' };
     pick = j => j.candidates[0].content.parts.map(x => x.text || '').join('');
   } else if (p === 'anthropic') {
     url = 'https://api.anthropic.com/v1/messages';
@@ -1179,7 +1180,12 @@ async function aiRequest(model, dataUrl) {
   }
   let r;
   if (p === 'gemini') {
-    r = await fetch(url + '?key=' + encodeURIComponent(ai.key), { method: 'POST', headers: Object.assign({ 'x-goog-api-key': ai.key }, headers), body: JSON.stringify(body) });
+    const send = b => fetch(url + '?key=' + encodeURIComponent(ai.key), { method: 'POST', headers: Object.assign({ 'x-goog-api-key': ai.key }, headers), body: JSON.stringify(b) });
+    r = await send(body);
+    if (r.status === 400 && body.generationConfig.thinkingConfig) {
+      const t = await r.clone().text();
+      if (/thinking/i.test(t)) { delete body.generationConfig.thinkingConfig; r = await send(body); }
+    }
     if (r.status === 401 || r.status === 403) {
       const r2 = await fetch(url, { method: 'POST', headers: Object.assign({ Authorization: 'Bearer ' + ai.key }, headers), body: JSON.stringify(body) });
       if (r2.ok || r2.status !== 401) r = r2;
@@ -1200,7 +1206,7 @@ async function aiRequest(model, dataUrl) {
   return { data: JSON.parse(out.slice(a, b + 1)), model };
 }
 async function aiReadLabel(dataUrl) {
-  const models = ai.model ? [ai.model] : AI_PROVIDERS[ai.provider].models;
+  const pr = AI_PROVIDERS[ai.provider]; const models = ai.model ? [ai.model] : ((ai.speed === 'fast' && pr.fast) ? pr.fast : pr.models);
   let last = null;
   for (const m of models) {
     try { return await aiRequest(m, dataUrl); }
@@ -1230,15 +1236,17 @@ function renderAi() {
     + '<label class="field"><span>المزوّد</span><select id="aiProvider">' + opts + '</select></label>'
     + '<label class="field"><span>المفتاح</span><input id="aiKey" type="password" autocomplete="off" placeholder="' + AI_PROVIDERS[ai.provider].hint + '"></label>'
     + '<label class="field"><span>الموديل (اتركه فاضي للافتراضي)</span><input id="aiModel" autocomplete="off" placeholder="' + AI_PROVIDERS[ai.provider].model + '"></label>'
+    + '<div class="basis" style="margin-top:12px"><span>السرعة</span><div class="seg" id="aiSpeed"><button data-s="fast" class="' + (ai.speed !== 'accurate' ? 'on' : '') + '">سريع</button><button data-s="accurate" class="' + (ai.speed === 'accurate' ? 'on' : '') + '">أدق</button></div></div>'
     + '<div class="rowbtns"><button class="btn primary" id="aiSaveBtn">حفظ</button>' + (aiReady() ? '<button class="btn ghost" id="aiClearBtn">إزالة</button>' : '') + '</div>';
   $('#aiKey').value = ai.key || ''; $('#aiModel').value = ai.model || '';
   $('#aiProvider').onchange = e => { const k = e.target.value; $('#aiKey').placeholder = AI_PROVIDERS[k].hint; $('#aiModel').placeholder = AI_PROVIDERS[k].model; };
   $('#aiSaveBtn').onclick = () => {
     const key = $('#aiKey').value.trim(); if (key.length < 10) { toast('الصق المفتاح كامل'); return; }
-    ai = { provider: $('#aiProvider').value, key, model: $('#aiModel').value.trim() };
+    const spd = ui.aiBody.querySelector('#aiSpeed button.on'); ai = { provider: $('#aiProvider').value, key, model: $('#aiModel').value.trim(), speed: spd && spd.dataset.s === 'accurate' ? 'accurate' : 'fast' };
     localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(ai)); toast('تم حفظ إعدادات الذكاء الاصطناعي'); renderAi();
   };
-  const c = $('#aiClearBtn'); if (c) c.onclick = () => { ai = { provider: ai.provider, key: '', model: '' }; localStorage.removeItem(AI_CONFIG_KEY); renderAi(); };
+  $('#aiSpeed').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; ui.aiBody.querySelectorAll('#aiSpeed button').forEach(x => x.classList.toggle('on', x === b)); });
+  const c = $('#aiClearBtn'); if (c) c.onclick = () => { ai = { provider: ai.provider, key: '', model: '', speed: ai.speed }; localStorage.removeItem(AI_CONFIG_KEY); renderAi(); };
 }
 
 /* ---------- navigation ---------- */
@@ -1284,9 +1292,9 @@ function wire() {
     ui.btnAiLabel.disabled = true; ui.aiBtnTitle.textContent = 'جاري قراءة الملصق…';
     aiStatus('busy', 'جاري إرسال الصورة إلى ' + esc(AI_PROVIDERS[ai.provider].label) + '…');
     try {
-      const img = await compressImage(f, 1400, 0.85);
-      const res = await aiReadLabel(img); const n = applyLabel(res.data);
-      if (n) { aiStatus('ok', '✓ تمت قراءة ' + n + ' قيمة من الصورة (الموديل: ' + esc(res.model) + '). الخانات المظللة بالأخضر جاية من الصورة — راجعها ثم احفظ.'); try { ui.coreGrid.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (x) {} }
+      const t0 = Date.now(); const img = await compressImage(f, 1200, 0.8);
+      const res = await aiReadLabel(img); const n = applyLabel(res.data); const secs = Math.round((Date.now() - t0) / 100) / 10;
+      if (n) { aiStatus('ok', '✓ تمت قراءة ' + n + ' قيمة خلال ' + secs + ' ث (الموديل: ' + esc(res.model) + '). الخانات المظللة بالأخضر جاية من الصورة — راجعها ثم احفظ.'); try { ui.coreGrid.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (x) {} }
       else aiStatus('err', 'ما لقيت قيم واضحة بالصورة — قرّب الكاميرا حتى يملأ الملصق الصورة، وتأكد من الإضاءة، وجرّب مرة ثانية.');
     } catch (err) {
       aiStatus('err', 'تعذرت القراءة: ' + esc(err.message || err) + '<br>جرّب صورة أوضح، أو غيّر المزوّد أو الموديل من تبويب "المنتجات".');
