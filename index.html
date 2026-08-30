@@ -73,6 +73,15 @@ select{background:var(--card-2);border:1px solid var(--line-2);border-radius:var
 .ai-status.ok{background:var(--green-tint);color:var(--green)}
 .ai-status.err{background:var(--red-tint);color:var(--red)}
 .ai-status.busy{background:var(--card-2);color:var(--muted)}
+.ai-status.warn{background:var(--amber-tint);color:var(--amber)}
+.label-prev{display:flex;align-items:center;gap:12px;margin-top:8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px}
+.label-prev img{width:72px;height:72px;object-fit:cover;border-radius:12px;background:var(--card-2);flex:none}
+.label-prev .tx{flex:1;min-width:0;font-size:13px;color:var(--muted);line-height:1.5}
+.label-prev .link{padding:2px 0;display:block}
+#photoPreview,.label-prev img,.thumb,.res-photo,.res-img{cursor:zoom-in}
+.lightbox{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:16px}
+.lightbox img{max-width:100%;max-height:100%;border-radius:12px;object-fit:contain}
+.lightbox .x{position:absolute;top:calc(14px + var(--sat));left:14px;background:rgba(255,255,255,.14);color:#fff;border-radius:999px;padding:8px 14px;font-weight:700}
 .unit-row{margin-bottom:10px}
 .unit-row .seg{display:flex;width:100%}
 .unit-row .seg button{flex:1;padding:8px 0}
@@ -264,14 +273,21 @@ input::placeholder{color:var(--faint)}
         <h2>المنتجات المحفوظة <span id="listCount" class="muted"></span></h2>
         <input id="search" type="search" placeholder="ابحث بالاسم أو العلامة أو الباركود" autocomplete="off">
       </div>
-      <div class="export">
+      <div id="list" class="list"></div>
+      <div id="listEmpty" class="empty" hidden>ما عندك منتجات محفوظة بعد.<br>امسح أول باركود وابدأ تبني قاعدتك.</div>
+    </section>
+
+    <!-- ================= الإعدادات ================= -->
+    <section id="view-settings" class="view">
+      <div class="list-head"><h2>الإعدادات</h2></div>
+      <div class="card"><div class="card-title">النسخ الاحتياطي والتصدير</div><div class="export">
         <button class="btn primary" id="btnExport">تصدير قاعدة البيانات (JSON)</button>
         <button class="btn ghost" id="btnExportLite">JSON بدون صور</button>
         <button class="btn ghost" id="btnExportCsv">CSV</button>
         <button class="btn ghost" id="btnShare" hidden>مشاركة الملف</button>
         <button class="btn ghost" id="btnImport">استيراد ملف</button>
         <input type="file" id="fileImport" accept=".json,application/json" hidden>
-      </div>
+      </div></div>
       <div class="card sync" id="syncCard">
         <div class="card-title">الربط بالتطبيق <span class="pill" id="syncState">غير مربوط</span></div>
         <div id="syncBody"></div>
@@ -280,14 +296,13 @@ input::placeholder{color:var(--faint)}
         <div class="card-title">قراءة الملصق بالذكاء الاصطناعي <span class="pill" id="aiState">غير مفعّل</span></div>
         <div id="aiBody"></div>
       </div>
-      <div id="list" class="list"></div>
-      <div id="listEmpty" class="empty" hidden>ما عندك منتجات محفوظة بعد.<br>امسح أول باركود وابدأ تبني قاعدتك.</div>
     </section>
   </main>
 
   <nav class="tabs">
     <button class="tab active" data-go="scan">مسح</button>
     <button class="tab" data-go="list">المنتجات</button>
+    <button class="tab" data-go="settings">الإعدادات</button>
   </nav>
 </div>
 
@@ -307,6 +322,8 @@ input::placeholder{color:var(--faint)}
     </div>
     <button class="ai-btn" id="btnAiLabel" type="button"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span><span class="tx"><b id="aiBtnTitle">صوّر الملصق الغذائي</b><small>وتتعبّى القيم تلقائيًا — راجعها بعدين واحفظ</small></span></button>
     <div id="aiStatus" class="ai-status" hidden></div>
+    <div id="sanityBox" class="ai-status warn" hidden></div>
+    <div id="labelPrev" class="label-prev" hidden><img id="labelPrevImg" alt=""><div class="tx"><span id="labelPrevTx"></span></div></div>
     <input type="file" id="fileLabel" accept="image/*" capture="environment" hidden>
 
     <div class="card">
@@ -349,6 +366,7 @@ input::placeholder{color:var(--faint)}
 </div>
 
 <div id="toast" class="toast" hidden></div>
+<div id="lightbox" class="lightbox" hidden><button class="x" id="lightboxClose">إغلاق ✕</button><img id="lightboxImg" alt=""></div>
 
 <script>
 (() => {
@@ -474,12 +492,12 @@ const LS = {
 const DB = { get: b => (useLS ? LS : IDB).get(b), all: () => (useLS ? LS : IDB).all(), put: p => (useLS ? LS : IDB).put(p), del: b => (useLS ? LS : IDB).del(b), count: () => (useLS ? LS : IDB).count() };
 
 /* ---------- UI refs ---------- */
-const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','filePhoto','fName','fBrand','fBarcode','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody','aiCard','aiState','aiBody','btnAiLabel','aiBtnTitle','aiStatus','fileLabel'];
+const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','filePhoto','fName','fBrand','fBarcode','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody','aiCard','aiState','aiBody','btnAiLabel','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelPrev','labelPrevImg','labelPrevTx','lightbox','lightboxImg','lightboxClose'];
 const ui = {}; ids.forEach(id => { ui[id] = document.getElementById(id); });
-ui.viewScan = $('#view-scan'); ui.viewList = $('#view-list'); ui.tabs = [...document.querySelectorAll('.tab')];
+ui.viewScan = $('#view-scan'); ui.viewList = $('#view-list'); ui.viewSettings = $('#view-settings'); ui.tabs = [...document.querySelectorAll('.tab')];
 
 /* ---------- state ---------- */
-const state = { unit: 'g', pkgUnit: 'g', basis: '100', photo: null, photoUrl: null };
+const state = { unit: 'g', pkgUnit: 'g', basis: '100', photo: null, photoUrl: null, labelPhoto: null };
 let scanning = false, starting = false, decoding = false, busy = false, formCtx = null, currentCode = null, currentView = 'scan', wasScanning = false;
 let lastCode = '', lastAt = 0, torchOn = false, curStream = null, loopTimer = null, engine = null, enginePromise = null;
 let session = null, refreshing = null, syncing = false;
@@ -884,7 +902,7 @@ function openForm(p, ctx) {
   NUTRIENTS.forEach(n => { const el = $('#n_' + n.key); el.value = fmtIn(src[n.key]); el.closest('.field').classList.toggle('missing', !!formCtx.fromOFF && src[n.key] == null); });
   state.photo = p.photo || null; state.photoUrl = p.photo_url || null; renderPhoto();
   ui.sizeRows.innerHTML = ''; (p.sizes || []).filter(Boolean).forEach(addSizeRow);
-  ui.form.querySelectorAll('.field.ai').forEach(f => f.classList.remove('ai')); ui.aiStatus.hidden = true;
+  ui.form.querySelectorAll('.field.ai').forEach(f => f.classList.remove('ai')); ui.aiStatus.hidden = true; ui.sanityBox.hidden = true; state.labelPhoto = null; ui.labelPrev.hidden = true;
   ui.btnDelete.hidden = !formCtx.editing;
   ui.form.hidden = false; ui.formBody.scrollTop = 0;
   if (formCtx.newSize) {
@@ -902,6 +920,8 @@ async function saveForm() {
   const vals = readNutrients(); if (vals.kcal == null) { toast('السعرات مطلوبة'); $('#n_kcal').focus(); return; }
   NUTRIENTS.forEach(n => { if (vals[n.key] == null) vals[n.key] = 0; });
   const serving = num(ui.fServ.value), pkg = pkgBase(), servN = num(ui.fServN.value);
+  const warns = sanityCheck(vals, state.basis === '100' ? 100 : serving);
+  if (warns.length && !confirm('⚠️ فيه قيم تبدو غير منطقية:\n• ' + warns.join('\n• ') + '\n\nتبي تحفظ على كل حال؟')) { showSanity(); return; }
   let per_100 = null, per_serving = null;
   if (state.basis === '100') { per_100 = vals; if (serving > 0) per_serving = scale(vals, serving / 100); }
   else { per_serving = vals; if (serving > 0) per_100 = scale(vals, 100 / serving); }
@@ -1140,7 +1160,7 @@ const AI_PROVIDERS = {
   openai:     { label: 'OpenAI (GPT)',       models: ['gpt-4o-mini', 'gpt-4.1-mini', 'gpt-5-mini'],                                                   hint: 'مفتاح يبدأ بـ sk-' },
   anthropic:  { label: 'Anthropic (Claude)', models: ['claude-haiku-4-5', 'claude-sonnet-4-5'],                                                        hint: 'مفتاح يبدأ بـ sk-ant-' },
   gemini:     { label: 'Google Gemini',      models: ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'], fast: ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-2.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash'], hint: 'مفتاح يبدأ بـ AIza أو AQ.' },
-  groq:       { label: 'Groq (مجاني)',       models: ['meta-llama/llama-4-scout-17b-16e-instruct', 'meta-llama/llama-4-maverick-17b-128e-instruct'], hint: 'مفتاح يبدأ بـ gsk_' },
+  groq:       { label: 'Groq (مجاني)',       models: ['qwen/qwen3.6-27b', 'qwen/qwen3.8-27b', 'meta-llama/llama-4-scout-17b-16e-instruct'], hint: 'مفتاح يبدأ بـ gsk_' },
   openrouter: { label: 'OpenRouter',         models: ['google/gemini-2.5-flash', 'openai/gpt-4o-mini'],                                              hint: 'مفتاح يبدأ بـ sk-or-' }
 };
 Object.values(AI_PROVIDERS).forEach(v => { v.model = v.models[0]; });
@@ -1155,7 +1175,7 @@ const LABEL_PROMPT = 'You read nutrition facts labels (Arabic and/or English; di
   + '- Energy: if only kJ is printed, kcal = kJ / 4.184.\n- Sodium in mg. If only salt is printed: sodium_mg = salt_g * 400.\n'
   + '- Cholesterol, potassium, iron, caffeine in mg (convert g to mg by x1000). Vitamin D and B12 in mcg; if vitamin D is in IU, mcg = IU / 40.\n'
   + '- Keep decimals exactly as printed (0.03 is not 0.3). Any value not printed must be null; never guess. Ignore trans fat and saturated fat.\n'
-  + '- name and brand only if clearly printed, else null.';
+  + '- name: the product name in ARABIC. If the label shows an Arabic name use it as printed; if only a non-Arabic name is visible, write a short natural Arabic version of it. null if no product name is visible in the photo.\n- brand: the brand/company name in ENGLISH (Latin letters) as printed; if only Arabic is visible, transliterate it to English. null if not visible. Do not spend extra effort searching; only use what is visible.';
 class AiError extends Error { constructor(msg, status, retryable) { super(msg); this.status = status; this.retryable = !!retryable; } }
 async function aiRequest(model, dataUrl) {
   const b64 = dataUrl.split(',')[1]; const p = ai.provider;
@@ -1174,8 +1194,8 @@ async function aiRequest(model, dataUrl) {
     url = p === 'groq' ? 'https://api.groq.com/openai/v1/chat/completions' : (p === 'openrouter' ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions');
     headers.Authorization = 'Bearer ' + ai.key;
     const image = p === 'groq' ? { url: dataUrl } : { url: dataUrl, detail: 'high' };
-    body = { model, temperature: 0, max_tokens: 1024, messages: [{ role: 'user', content: [{ type: 'text', text: LABEL_PROMPT }, { type: 'image_url', image_url: image }] }] };
-    if (p !== 'groq') body.response_format = { type: 'json_object' };
+    body = { model, temperature: 0, max_tokens: 1024, messages: [{ role: 'user', content: [{ type: 'text', text: LABEL_PROMPT }, { type: 'image_url', image_url: image }] }], response_format: { type: 'json_object' } };
+    if (p === 'groq') body.reasoning_effort = 'none';
     pick = j => j.choices[0].message.content;
   }
   let r;
@@ -1190,7 +1210,15 @@ async function aiRequest(model, dataUrl) {
       const r2 = await fetch(url, { method: 'POST', headers: Object.assign({ Authorization: 'Bearer ' + ai.key }, headers), body: JSON.stringify(body) });
       if (r2.ok || r2.status !== 401) r = r2;
     }
-  } else r = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+  } else {
+    const send = b => fetch(url, { method: 'POST', headers, body: JSON.stringify(b) });
+    r = await send(body);
+    if (r.status === 400) {
+      const t = await r.clone().text();
+      if (/reasoning_effort/i.test(t) && body.reasoning_effort) { delete body.reasoning_effort; r = await send(body); }
+      else if (/response_format|json_object|json mode/i.test(t) && body.response_format) { delete body.response_format; r = await send(body); }
+    }
+  }
   const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (e) {}
   if (!r.ok) {
     const msg = (j && ((j.error && (j.error.message || j.error.type)) || j.message)) || txt.slice(0, 300);
@@ -1218,16 +1246,48 @@ function applyLabel(r) {
   const val = v => (typeof v === 'string') ? num(v) : ((typeof v === 'number' && isFinite(v)) ? v : null);
   const mark = el => { const f = el.closest('.field'); if (f) { f.classList.add('ai'); f.classList.remove('missing'); } };
   let count = 0;
+  NUTRIENTS.forEach(x => { const el = $('#n_' + x.key); el.value = ''; const fd = el.closest('.field'); if (fd) fd.classList.remove('ai', 'missing'); });
   if (r.unit === 'ml' && state.unit !== 'ml') setUnit('ml'); else if (r.unit === 'g' && state.unit !== 'g') setUnit('g');
-  const serv = val(r.serving_size), n = val(r.servings_per_package), pkg = val(r.package_size);
+  let serv = val(r.serving_size), n = val(r.servings_per_package), pkg = val(r.package_size);
+  if (serv > 0 && n > 0) pkg = r2(serv * n);
+  else if (pkg > 0 && serv > 0) n = r2(pkg / serv);
+  else if (pkg > 0 && n > 0) serv = r2(pkg / n);
   if (serv > 0) { ui.fServ.value = fmtIn(r2(serv)); mark(ui.fServ); }
   if (n > 0) { ui.fServN.value = fmtIn(r2(n)); mark(ui.fServN); }
-  if (pkg > 0) { setPkgBase(pkg); mark(ui.fPkg); } else if (serv > 0 && n > 0) { setPkgBase(r2(serv * n)); mark(ui.fPkg); }
+  if (pkg > 0) { setPkgBase(pkg); mark(ui.fPkg); }
   setBasis(r.basis === 'serving' ? 'serving' : '100', false);
   NUTRIENTS.forEach(x => { const v = val(r.nutrients ? r.nutrients[x.key] : null); if (v != null && v >= 0) { const el = $('#n_' + x.key); el.value = fmtIn(r2(v)); mark(el); count++; } });
-  if (r.name && !ui.fName.value.trim()) ui.fName.value = String(r.name).trim();
-  if (r.brand && !ui.fBrand.value.trim()) ui.fBrand.value = String(r.brand).trim();
+  if (r.name && String(r.name).trim()) { ui.fName.value = String(r.name).trim(); mark(ui.fName); }
+  if (r.brand && String(r.brand).trim()) { ui.fBrand.value = String(r.brand).trim(); mark(ui.fBrand); }
   return count;
+}
+function sanityCheck(vals, basisAmt) {
+  const w = [];
+  const g = k => vals[k] == null ? 0 : vals[k];
+  const P = g('protein_g'), C = g('carbs_g'), F = g('fat_g'), K = vals.kcal;
+  const u = unitLabel(state.unit);
+  if (basisAmt > 0) {
+    if (P > basisAmt * 1.02) w.push('البروتين (' + fmt(P) + ' غ) أكبر من كمية الأساس (' + fmt(basisAmt) + ' ' + u + ')');
+    if (C > basisAmt * 1.02) w.push('الكربوهيدرات (' + fmt(C) + ' غ) أكبر من كمية الأساس');
+    if (F > basisAmt * 1.02) w.push('الدهون (' + fmt(F) + ' غ) أكبر من كمية الأساس');
+    if (P + C + F > basisAmt * 1.05) w.push('مجموع الماكروز (' + fmt(r2(P + C + F)) + ' غ) أكبر من كمية الأساس (' + fmt(basisAmt) + ')');
+    if (K != null && K > basisAmt * 9.5) w.push('السعرات (' + fmt(K) + ') أعلى من الممكن لهذه الكمية');
+  }
+  const exp = 4 * P + 4 * C + 9 * F;
+  if (K != null) {
+    if (exp > 0 && Math.abs(K - exp) > Math.max(30, exp * 0.35)) w.push('السعرات (' + fmt(K) + ') بعيدة عن المتوقع من الماكروز (تقريبًا ' + Math.round(exp) + ')');
+    else if (K > 25 && P + C + F === 0) w.push('فيه سعرات (' + fmt(K) + ') بدون أي ماكروز');
+  }
+  if (vals.sugar_g != null && vals.carbs_g != null && vals.sugar_g > vals.carbs_g + 0.6) w.push('السكر أكبر من الكربوهيدرات الكلية');
+  if (vals.added_sugar_g != null && vals.sugar_g != null && vals.added_sugar_g > vals.sugar_g + 0.6) w.push('السكر المضاف أكبر من السكر الكلي');
+  if (vals.fiber_g != null && vals.carbs_g != null && vals.fiber_g > vals.carbs_g + 0.6) w.push('الألياف أكبر من الكربوهيدرات');
+  return w;
+}
+function showSanity() {
+  const warns = sanityCheck(readNutrients(), state.basis === '100' ? 100 : num(ui.fServ.value));
+  if (warns.length) { ui.sanityBox.innerHTML = '⚠️ راجع هذي القيم، تبدو غير منطقية:<br>• ' + warns.map(esc).join('<br>• '); ui.sanityBox.hidden = false; }
+  else ui.sanityBox.hidden = true;
+  return warns;
 }
 function renderAi() {
   const opts = Object.keys(AI_PROVIDERS).map(k => '<option value="' + k + '"' + (k === ai.provider ? ' selected' : '') + '>' + AI_PROVIDERS[k].label + '</option>').join('');
@@ -1252,12 +1312,14 @@ function renderAi() {
 /* ---------- navigation ---------- */
 async function go(v) {
   if (v === currentView) return;
-  if (v === 'list') { wasScanning = scanning; if (scanning) await stopScanner(); }
+  if (v !== 'scan' && currentView === 'scan') { wasScanning = scanning; if (scanning) await stopScanner(); }
   currentView = v;
   ui.tabs.forEach(t => t.classList.toggle('active', t.dataset.go === v));
-  ui.viewScan.classList.toggle('active', v === 'scan'); ui.viewList.classList.toggle('active', v === 'list');
+  ui.viewScan.classList.toggle('active', v === 'scan'); ui.viewList.classList.toggle('active', v === 'list'); ui.viewSettings.classList.toggle('active', v === 'settings');
   window.scrollTo(0, 0);
-  if (v === 'list') { renderList(); renderSync(); } else if (wasScanning) { wasScanning = false; startScanner(); }
+  if (v === 'list') renderList();
+  else if (v === 'settings') { renderSync(); renderAi(); }
+  else if (wasScanning) { wasScanning = false; startScanner(); }
 }
 
 /* ---------- wiring ---------- */
@@ -1285,7 +1347,12 @@ function wire() {
   ui.btnPhoto.onclick = () => ui.filePhoto.click();
   ui.filePhoto.onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { state.photo = await compressImage(f); renderPhoto(); } catch (err) { toast('تعذر قراءة الصورة'); } };
   ui.btnPhotoRemove.onclick = () => { state.photo = null; renderPhoto(); };
-  ui.btnAiLabel.onclick = () => { if (!aiReady()) { toast('فعّل قراءة الملصق أولًا من تبويب المنتجات (المزوّد والمفتاح)'); return; } ui.fileLabel.click(); };
+  const openLightbox = src => { if (!src) return; ui.lightboxImg.src = src; ui.lightbox.hidden = false; };
+  ui.lightbox.onclick = () => { ui.lightbox.hidden = true; ui.lightboxImg.src = ''; };
+  ui.photoPreview.onclick = () => openLightbox(ui.photoPreview.src);
+  ui.labelPrevImg.onclick = () => openLightbox(state.labelPhoto);
+  ui.result.addEventListener('click', e => { const im = e.target.closest('img.res-photo, img.res-img'); if (im) openLightbox(im.src); });
+  ui.btnAiLabel.onclick = () => { if (!aiReady()) { toast('فعّل قراءة الملصق أولًا من تبويب الإعدادات (المزوّد والمفتاح)'); return; } ui.fileLabel.click(); };
   const aiStatus = (cls, html) => { ui.aiStatus.className = 'ai-status ' + cls; ui.aiStatus.innerHTML = html; ui.aiStatus.hidden = false; };
   ui.fileLabel.onchange = async e => {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
@@ -1293,16 +1360,20 @@ function wire() {
     aiStatus('busy', 'جاري إرسال الصورة إلى ' + esc(AI_PROVIDERS[ai.provider].label) + '…');
     try {
       const t0 = Date.now(); const img = await compressImage(f, 1200, 0.8);
+      state.labelPhoto = img; ui.labelPrevImg.src = img; ui.labelPrev.hidden = false;
+      try { state.photo = await compressImage(f, 720, 0.7); renderPhoto(); } catch (x) {}
+      ui.labelPrevTx.textContent = 'انحفظت كصورة للمنتج تلقائيًا — اضغط عليها للتكبير';
       const res = await aiReadLabel(img); const n = applyLabel(res.data); const secs = Math.round((Date.now() - t0) / 100) / 10;
-      if (n) { aiStatus('ok', '✓ تمت قراءة ' + n + ' قيمة خلال ' + secs + ' ث (الموديل: ' + esc(res.model) + '). الخانات المظللة بالأخضر جاية من الصورة — راجعها ثم احفظ.'); try { ui.coreGrid.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (x) {} }
+      if (n) { aiStatus('ok', '✓ تمت قراءة ' + n + ' قيمة خلال ' + secs + ' ث (الموديل: ' + esc(res.model) + '). الخانات المظللة بالأخضر جاية من الصورة — راجعها ثم احفظ.'); showSanity(); try { ui.coreGrid.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (x) {} }
       else aiStatus('err', 'ما لقيت قيم واضحة بالصورة — قرّب الكاميرا حتى يملأ الملصق الصورة، وتأكد من الإضاءة، وجرّب مرة ثانية.');
     } catch (err) {
-      aiStatus('err', 'تعذرت القراءة: ' + esc(err.message || err) + '<br>جرّب صورة أوضح، أو غيّر المزوّد أو الموديل من تبويب "المنتجات".');
+      aiStatus('err', 'تعذرت القراءة: ' + esc(err.message || err) + '<br>جرّب صورة أوضح، أو غيّر المزوّد أو الموديل من تبويب "الإعدادات".');
     } finally { ui.btnAiLabel.disabled = false; ui.aiBtnTitle.textContent = 'صوّر الملصق الغذائي'; }
   };
   ui.unitSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setUnit(b.dataset.u); });
   ui.basisSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setBasis(b.dataset.b, true); });
   ui.fPkg.addEventListener('input', () => linkFields('pkg')); ui.fServ.addEventListener('input', () => linkFields('serving')); ui.fServN.addEventListener('input', () => linkFields('servings'));
+  [ui.fName, ui.fBrand, ui.fPkg, ui.fServ, ui.fServN].forEach(el => el.addEventListener('input', () => { const fd = el.closest('.field'); if (fd) fd.classList.remove('ai', 'missing'); }));
   ui.btnAddSize.onclick = () => { const row = addSizeRow(); row.querySelector('.s-name').focus(); };
   ui.sizeChips.addEventListener('click', e => { const c = e.target.closest('.chip'); if (!c) return; const row = addSizeRow({ name: c.dataset.name }); row.querySelector('.s-amt').focus(); });
   ui.form.addEventListener('keydown', e => {
