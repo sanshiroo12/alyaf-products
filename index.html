@@ -1127,7 +1127,7 @@ const AI_BTN_TEXT = 'صوّر الملصق الغذائي وعبّي القيم 
 const AI_PROVIDERS = {
   openai:     { label: 'OpenAI (GPT)',       model: 'gpt-4o-mini',                                   hint: 'مفتاح يبدأ بـ sk-' },
   anthropic:  { label: 'Anthropic (Claude)', model: 'claude-haiku-4-5',                              hint: 'مفتاح يبدأ بـ sk-ant-' },
-  gemini:     { label: 'Google Gemini',      model: 'gemini-2.5-flash',                              hint: 'مفتاح يبدأ بـ AIza' },
+  gemini:     { label: 'Google Gemini',      model: 'gemini-2.5-flash',                              hint: 'مفتاح يبدأ بـ AIza أو AQ.' },
   groq:       { label: 'Groq (مجاني)',       model: 'meta-llama/llama-4-scout-17b-16e-instruct',    hint: 'مفتاح يبدأ بـ gsk_' },
   openrouter: { label: 'OpenRouter',         model: 'google/gemini-2.5-flash',                       hint: 'مفتاح يبدأ بـ sk-or-' }
 };
@@ -1164,8 +1164,18 @@ async function aiReadLabel(dataUrl) {
     if (p !== 'groq') body.response_format = { type: 'json_object' };
     pick = j => j.choices[0].message.content;
   }
-  const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
-  const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (e) {}
+  let r, txt, j = null;
+  if (p === 'gemini') {
+    const base = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent';
+    r = await fetch(base + '?key=' + encodeURIComponent(ai.key), { method: 'POST', headers: Object.assign({ 'x-goog-api-key': ai.key }, headers), body: JSON.stringify(body) });
+    if (r.status === 400 || r.status === 401 || r.status === 403) {
+      const r2 = await fetch(base, { method: 'POST', headers: Object.assign({ Authorization: 'Bearer ' + ai.key }, headers), body: JSON.stringify(body) });
+      if (r2.ok || r2.status !== 401) r = r2;
+    }
+  } else {
+    r = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+  }
+  txt = await r.text(); try { j = JSON.parse(txt); } catch (e) {}
   if (!r.ok) {
     const msg = (j && ((j.error && (j.error.message || j.error.type)) || j.message)) || txt.slice(0, 200);
     if (r.status === 401 || r.status === 403) throw new Error('المفتاح غير صحيح أو غير مفعّل');
