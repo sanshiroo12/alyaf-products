@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0C1117">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ألياف · المنتجات">
+<title>ألياف · قاعدة بيانات المنتجات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0C1117; --surface:#141B23; --card:#1A222C; --card-2:#212B36;
+  --line:rgba(255,255,255,.07); --line-2:rgba(255,255,255,.13);
+  --text:#F3F6F8; --muted:#8C98A6; --faint:#5C6773;
+  --green:#30D158; --green-tint:rgba(48,209,88,.14); --green-ink:#07200F;
+  --amber:#FFB340; --amber-tint:rgba(255,179,64,.14);
+  --red:#FF453A; --red-tint:rgba(255,69,58,.14);
+  --r-card:22px; --r-btn:14px; --r-in:12px;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Tajawal,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+body{min-height:100vh;min-height:100dvh;overscroll-behavior-y:none}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0;transition:transform .08s ease,opacity .15s}
+button:active{transform:scale(.97)}
+.app{max-width:520px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;padding-bottom:calc(84px + var(--sab))}
+.top{display:flex;align-items:center;justify-content:space-between;padding:calc(14px + var(--sat)) 18px 8px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:19px}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px var(--green-tint)}
+.brand .sub{font-weight:500;color:var(--muted);font-size:15px}
+.count-pill{background:var(--green-tint);color:var(--green);border-radius:999px;padding:6px 12px;font-weight:700;font-size:14px}
+main{padding:0 16px}
+.view{display:none}.view.active{display:block}
+
+/* ---------- scanner ---------- */
+.reader-wrap{position:relative;background:#000;border-radius:var(--r-card);overflow:hidden;height:min(58vh,520px);min-height:260px;border:1px solid var(--line)}
+#video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;background:#000}
+.guide{position:absolute;inset:0;pointer-events:none}
+.band{position:absolute;left:6%;right:6%;top:50%;height:36%;transform:translateY(-50%);border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.38)}
+.band i{position:absolute;width:24px;height:24px;border:3px solid #fff}
+.band .tl{top:-3px;left:-3px;border-right:0;border-bottom:0;border-radius:10px 0 0 0}
+.band .tr{top:-3px;right:-3px;border-left:0;border-bottom:0;border-radius:0 10px 0 0}
+.band .bl{bottom:-3px;left:-3px;border-right:0;border-top:0;border-radius:0 0 0 10px}
+.band .br{bottom:-3px;right:-3px;border-left:0;border-top:0;border-radius:0 0 10px 0}
+.laser{position:absolute;left:8%;right:8%;top:50%;height:2px;background:var(--green);box-shadow:0 0 12px var(--green);animation:laser 1.8s ease-in-out infinite}
+@keyframes laser{0%,100%{transform:translateY(-34px);opacity:.45}50%{transform:translateY(34px);opacity:1}}
+.engine{color:var(--faint);font-size:12px;margin:8px 4px 0;text-align:center}
+.reader-idle{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;background:linear-gradient(180deg,#131A22,#0E141B)}
+.reader-idle .hint{margin:0;color:var(--faint);font-size:13px;text-align:center;line-height:1.5}
+.scan-tools{display:flex;gap:8px;align-items:center;margin-top:10px}
+.tool{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-weight:700;font-size:14px;white-space:nowrap}
+.tool.on{background:var(--green-tint);color:var(--green);border-color:transparent}
+.zoom{flex:1;display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;min-width:0}
+.zoom input{flex:1;accent-color:var(--green);min-width:0;padding:0;background:none;border:0}
+.manual{display:flex;gap:8px;margin-top:12px}
+.manual input{flex:1;min-width:0}
+input:not([type=range]){background:var(--card-2);border:1px solid var(--line-2);border-radius:var(--r-in);padding:12px 14px;width:100%;font-size:17px;outline:none;color:var(--text);transition:border-color .15s;-webkit-appearance:none;appearance:none}
+input:focus{border-color:var(--green)}
+input::placeholder{color:var(--faint)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:var(--r-btn);padding:12px 18px;font-weight:700;font-size:16px;white-space:nowrap}
+.btn.primary{background:var(--green);color:var(--green-ink)}
+.btn.ghost{background:var(--card);border:1px solid var(--line-2);color:var(--text)}
+.btn.big{padding:16px 22px;font-size:17px;border-radius:16px}
+.btn.wide{width:100%;margin-top:10px}
+.btn.danger{color:var(--red);background:var(--red-tint)}
+.btn:disabled{opacity:.5}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:16px;margin-top:14px}
+.card-title{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:14px;color:var(--muted);margin-bottom:10px}
+
+/* ---------- result ---------- */
+.res-head{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+.res-name{font-weight:800;font-size:19px;line-height:1.3}
+.res-sub{color:var(--muted);font-size:14px;margin-top:2px}
+.res-img{width:64px;height:64px;border-radius:14px;object-fit:cover;background:var(--card-2);flex:none}
+.status{margin-top:12px;padding:10px 12px;border-radius:12px;font-weight:700;font-size:14px;line-height:1.5}
+.status.ok{background:var(--green-tint);color:var(--green)}
+.status.warn{background:var(--amber-tint);color:var(--amber)}
+.status.bad{background:var(--red-tint);color:var(--red)}
+.status.info{background:var(--card-2);color:var(--muted)}
+.status small{display:block;font-weight:500;color:var(--muted);font-size:13px;margin-top:2px}
+.strip{display:flex;gap:3px;margin-top:12px}
+.strip i{flex:1;height:7px;border-radius:3px;border:1px solid rgba(255,179,64,.55);background:transparent}
+.strip i.on{background:var(--green);border-color:var(--green)}
+.strip-cap{display:flex;justify-content:space-between;color:var(--faint);font-size:12px;margin-top:6px}
+.macros{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.macro{background:var(--card-2);border-radius:14px;padding:10px 4px;text-align:center}
+.macro b{display:block;font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+.macro span{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+.macros-cap{color:var(--faint);font-size:12px;margin-top:6px;text-align:center}
+.actions{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.actions .btn{width:100%}
+.actions .row{display:flex;gap:8px}
+.actions .row .btn{flex:1;width:auto}
+.busy{display:flex;align-items:center;gap:12px;color:var(--muted);font-weight:700}
+.spinner{width:22px;height:22px;border:3px solid var(--line-2);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.res-photo{width:100%;max-height:210px;object-fit:cover;border-radius:16px;margin-bottom:12px;background:var(--card-2);display:block}
+.nt{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+.nt th{color:var(--faint);font-weight:700;font-size:12px;text-align:right;padding:4px 6px;border-bottom:1px solid var(--line)}
+.nt th:not(:first-child),.nt td:not(:first-child){text-align:left;font-variant-numeric:tabular-nums;white-space:nowrap}
+.nt td{padding:7px 6px;border-bottom:1px solid var(--line)}
+.nt td:first-child{color:var(--muted)}
+.nt td b{font-weight:800}
+.nt small{color:var(--faint);font-size:11px;margin-right:3px}
+.nt tr:last-child td{border-bottom:0}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.meta span{background:var(--card-2);border-radius:999px;padding:5px 11px;font-size:13px;color:var(--muted)}
+.meta span b{color:var(--text);font-weight:700}
+.sizes{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.sizes-title{color:var(--faint);font-size:12px;font-weight:700;margin-top:14px}
+.size{display:flex;align-items:center;gap:8px;background:var(--card-2);border:1px solid transparent;border-radius:12px;padding:9px 12px;font-size:14px}
+.size b{font-weight:800}
+.size .amt{color:var(--muted)}
+.size .kc{margin-inline-start:auto;font-weight:700;font-variant-numeric:tabular-nums}
+.size .code{color:var(--faint);font-size:11px}
+.size.hit{border-color:var(--green);background:var(--green-tint)}
+.size.hit b{color:var(--green)}
+.picker{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.pick{display:flex;align-items:center;gap:10px;background:var(--card-2);border-radius:14px;padding:10px 12px;text-align:right;width:100%}
+.pick .thumb{width:40px;height:40px;border-radius:10px}
+.sizes-head{display:flex;align-items:center;justify-content:space-between;margin-top:18px;font-weight:800;font-size:14px;color:var(--muted)}
+.size-row{display:grid;grid-template-columns:1fr 108px 38px;gap:8px;margin-top:10px;align-items:center}
+.size-row .field{margin-top:0}
+.size-row .s-code{grid-column:1/-1;font-size:15px;padding:10px 12px}
+.size-row .s-del{width:38px;height:48px;border-radius:12px;background:var(--red-tint);color:var(--red);font-size:22px;font-weight:700;line-height:1}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.chip{background:var(--card-2);border:1px solid var(--line-2);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;color:var(--muted)}
+.chip:active{color:var(--green);border-color:var(--green)}
+
+/* ---------- form ---------- */
+.form{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;max-width:520px;margin:0 auto}
+.form-top{display:flex;align-items:center;justify-content:space-between;padding:calc(10px + var(--sat)) 12px 10px;border-bottom:1px solid var(--line);background:var(--surface)}
+.form-title{font-weight:800;font-size:17px}
+.icon-btn{padding:8px 12px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-weight:700;font-size:14px}
+.save-mini{color:var(--green);font-weight:800;padding:8px 12px;font-size:15px}
+.form-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:12px 16px 24px}
+.form-foot{padding:12px 16px calc(12px + var(--sab));border-top:1px solid var(--line);background:var(--surface)}
+.form-foot .btn{width:100%}
+.photo-block{display:flex;flex-direction:column;align-items:center;gap:8px}
+#photoPreview{width:100%;max-height:220px;object-fit:cover;border-radius:var(--r-card);border:1px solid var(--line)}
+.photo-btn{width:100%;padding:18px;border:1.5px dashed var(--line-2);border-radius:var(--r-card);color:var(--muted);font-weight:700;background:var(--surface)}
+.photo-btn.has{padding:12px}
+.field{display:block;margin-top:10px}
+.field:first-child{margin-top:0}
+.field>span{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:700}
+.field.num{position:relative}
+.field.num input{padding-left:46px;font-weight:700;font-variant-numeric:tabular-nums}
+.field.num .unit{position:absolute;left:12px;bottom:13px;color:var(--faint);font-style:normal;font-size:13px;pointer-events:none}
+.field.missing input{border-color:rgba(255,179,64,.75);background:rgba(255,179,64,.06)}
+.field.missing>span::after{content:" · ناقص";color:var(--amber)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid2 .field{margin-top:0}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.grid3 .field{margin-top:0}
+.grid3 .field.num input{padding-left:34px;padding-right:10px}
+.seg{display:inline-flex;background:var(--card-2);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{padding:8px 14px;border-radius:999px;font-weight:700;font-size:14px;color:var(--muted)}
+.seg button.on{background:var(--green);color:var(--green-ink)}
+.seg.small button{padding:4px 10px;font-size:13px}
+.seg i{font-style:normal}
+.basis{display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding:0 4px;font-weight:700;color:var(--muted);font-size:14px}
+.link{color:var(--green);font-weight:700;font-size:14px;padding:4px 6px}
+.link.danger{color:var(--red)}
+.link.wide{width:100%;margin-top:18px;padding:12px}
+.mono{font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.note{color:var(--faint);font-size:12px;margin:8px 4px 0;line-height:1.5}
+
+/* ---------- list ---------- */
+.pill{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--card-2);color:var(--muted);font-weight:700}
+.pill.ok{background:var(--green-tint);color:var(--green)}
+.pill.warn{background:var(--amber-tint);color:var(--amber)}
+.sync .btn.wide{margin-top:10px}
+.sync input{margin-top:8px}
+.sync .rowbtns{display:flex;gap:8px;margin-top:12px}
+.sync .rowbtns .btn:first-child{flex:1}
+.list-head h2{margin:8px 0 10px;font-size:20px;font-weight:800}
+.export{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.export .btn{padding:11px 8px;font-size:14px}
+.export .btn.primary{grid-column:1/-1}
+.list{margin-top:14px;display:flex;flex-direction:column;gap:10px}
+.row-item{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px;text-align:right;width:100%}
+.thumb{width:54px;height:54px;border-radius:12px;object-fit:cover;background:var(--card-2);flex:none;display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:11px;text-align:center;line-height:1.2}
+.row-main{flex:1;min-width:0}
+.row-name{font-weight:800;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-sub{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-main .strip{margin-top:8px}
+.row-kcal{text-align:center;flex:none;min-width:52px}
+.row-kcal b{display:block;font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+.row-kcal span{font-size:11px;color:var(--faint);display:block;line-height:1.2}
+.empty{text-align:center;color:var(--muted);padding:40px 16px;line-height:1.7}
+
+/* ---------- nav & toast ---------- */
+.tabs{position:fixed;bottom:0;left:0;right:0;display:flex;gap:6px;max-width:520px;margin:0 auto;background:rgba(20,27,35,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:8px 8px calc(8px + var(--sab));z-index:20}
+.tab{flex:1;padding:12px;border-radius:14px;font-weight:800;color:var(--muted);font-size:15px}
+.tab.active{color:var(--green);background:var(--green-tint)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + var(--sab));background:#E9EEF3;color:#0C1117;padding:10px 16px;border-radius:999px;font-weight:700;font-size:14px;z-index:100;max-width:90%;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><span class="dot"></span><span>ألياف</span><span class="sub">قاعدة المنتجات</span></div>
+    <button class="count-pill" id="countPill"><b id="countNum">0</b> منتج</button>
+  </header>
+
+  <main>
+    <!-- ================= مسح ================= -->
+    <section id="view-scan" class="view active">
+      <div class="reader-wrap" id="readerWrap">
+        <video id="video" playsinline muted autoplay></video>
+        <div class="guide" id="guide" hidden><div class="band"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i><div class="laser"></div></div></div>
+        <div id="readerIdle" class="reader-idle">
+          <button class="btn primary big" id="btnStart">افتح الكاميرا وامسح الباركود</button>
+          <p class="hint" id="hint">قرّب الجوال حتى يملأ الباركود الإطار وثبّت يدك، وبيتم البحث في Open Food Facts تلقائيًا</p>
+        </div>
+      </div>
+      <div class="engine" id="engineStatus">جاري تحميل محرك قراءة الباركود…</div>
+
+      <div class="scan-tools" id="scanTools" hidden>
+        <button class="tool" id="btnTorch" hidden>الفلاش</button>
+        <label class="zoom" id="zoomWrap" hidden><span>تكبير</span><input type="range" id="zoom"></label>
+        <button class="tool" id="btnStop">إيقاف الكاميرا</button>
+      </div>
+
+      <div class="manual">
+        <input id="manualCode" inputmode="numeric" placeholder="أو اكتب الباركود يدويًا" enterkeyhint="search" autocomplete="off">
+        <button class="btn ghost" id="btnManual">بحث</button>
+      </div>
+      <button class="btn ghost wide" id="btnPhotoScan">صوّر الباركود بدل المسح المباشر</button>
+      <input type="file" id="fileBarcode" accept="image/*" capture="environment" hidden>
+
+      <div id="result"></div>
+    </section>
+
+    <!-- ================= المنتجات ================= -->
+    <section id="view-list" class="view">
+      <div class="list-head">
+        <h2>المنتجات المحفوظة <span id="listCount" class="muted"></span></h2>
+        <input id="search" type="search" placeholder="ابحث بالاسم أو العلامة أو الباركود" autocomplete="off">
+      </div>
+      <div class="export">
+        <button class="btn primary" id="btnExport">تصدير قاعدة البيانات (JSON)</button>
+        <button class="btn ghost" id="btnExportLite">JSON بدون صور</button>
+        <button class="btn ghost" id="btnExportCsv">CSV</button>
+        <button class="btn ghost" id="btnShare" hidden>مشاركة الملف</button>
+        <button class="btn ghost" id="btnImport">استيراد ملف</button>
+        <input type="file" id="fileImport" accept=".json,application/json" hidden>
+      </div>
+      <div class="card sync" id="syncCard">
+        <div class="card-title">الربط بالتطبيق <span class="pill" id="syncState">غير مربوط</span></div>
+        <div id="syncBody"></div>
+      </div>
+      <div id="list" class="list"></div>
+      <div id="listEmpty" class="empty" hidden>ما عندك منتجات محفوظة بعد.<br>امسح أول باركود وابدأ تبني قاعدتك.</div>
+    </section>
+  </main>
+
+  <nav class="tabs">
+    <button class="tab active" data-go="scan">مسح</button>
+    <button class="tab" data-go="list">المنتجات</button>
+  </nav>
+</div>
+
+<!-- ================= نموذج المنتج ================= -->
+<div id="form" class="form" hidden>
+  <div class="form-top">
+    <button class="icon-btn" id="formBack">→ رجوع</button>
+    <div class="form-title" id="formTitle">إضافة منتج</div>
+    <button class="save-mini" id="formSaveTop">حفظ</button>
+  </div>
+  <div class="form-body" id="formBody">
+    <div class="photo-block">
+      <img id="photoPreview" hidden alt="">
+      <button class="photo-btn" id="btnPhoto">صوّر المنتج</button>
+      <button class="link danger" id="btnPhotoRemove" hidden>حذف الصورة</button>
+      <input type="file" id="filePhoto" accept="image/*" capture="environment" hidden>
+    </div>
+
+    <div class="card">
+      <label class="field"><span>اسم المنتج</span><input id="fName" placeholder="مثال: حليب المراعي كامل الدسم" enterkeyhint="next" autocomplete="off"></label>
+      <label class="field"><span>العلامة التجارية</span><input id="fBrand" placeholder="اختياري" enterkeyhint="next" autocomplete="off"></label>
+      <label class="field"><span>الباركود</span><input id="fBarcode" class="mono" inputmode="numeric" enterkeyhint="next" autocomplete="off"></label>
+    </div>
+
+    <div class="card">
+      <div class="card-title">العبوة والحصص
+        <span class="seg small" id="unitSeg"><button data-u="g" class="on">غ</button><button data-u="ml">مل</button></span>
+      </div>
+      <div class="grid3">
+        <label class="field num"><span>وزن العبوة</span><input id="fPkg" inputmode="decimal" enterkeyhint="next"><em class="unit u-unit">غ</em></label>
+        <label class="field num"><span>حجم الحصة</span><input id="fServ" inputmode="decimal" enterkeyhint="next"><em class="unit u-unit">غ</em></label>
+        <label class="field num"><span>عدد الحصص</span><input id="fServN" inputmode="decimal" enterkeyhint="next"><em class="unit">حصة</em></label>
+      </div>
+      <div class="sizes-head"><span>أحجام وحصص بأسماء</span><button class="link" id="btnAddSize">+ أضف حجم</button></div>
+      <div id="sizeRows"></div>
+      <div class="chips" id="sizeChips">
+        <button class="chip" data-name="علبة كبيرة">علبة كبيرة</button><button class="chip" data-name="علبة صغيرة">علبة صغيرة</button><button class="chip" data-name="علبة">علبة</button><button class="chip" data-name="كوب">كوب</button><button class="chip" data-name="ملعقة كبيرة">ملعقة كبيرة</button><button class="chip" data-name="ملعقة صغيرة">ملعقة صغيرة</button><button class="chip" data-name="قطعة">قطعة</button><button class="chip" data-name="حبة">حبة</button><button class="chip" data-name="كيس">كيس</button><button class="chip" data-name="شريحة">شريحة</button>
+      </div>
+      <p class="note">مثال: علبة كبيرة 425 مل، علبة صغيرة 240 مل. القيم الغذائية لكل حجم تتحسب تلقائيًا. لو للحجم باركود خاص اكتبه، وعند مسحه بيعرض لك المنتج مباشرة.</p>
+    </div>
+
+    <div class="basis">
+      <span>القيم الغذائية لكل</span>
+      <div class="seg" id="basisSeg"><button data-b="100" class="on">100 <i class="u-unit">غ</i></button><button data-b="serving">حصة واحدة</button></div>
+    </div>
+    <p class="note">اكتب القيم زي ما هي على الملصق. لو اخترت "حصة واحدة" وكتبت حجم الحصة، بيتم حساب القيم لكل 100 تلقائيًا عند الحفظ.</p>
+
+    <div class="card"><div class="card-title">الأساسيات</div><div class="grid2" id="coreGrid"></div></div>
+    <div class="card">
+      <div class="card-title">التفاصيل <button class="link" id="btnZero">اعتبر الفارغ = 0</button></div>
+      <div class="grid2" id="moreGrid"></div>
+    </div>
+
+    <button class="link danger wide" id="btnDelete" hidden>حذف هذا المنتج</button>
+  </div>
+  <div class="form-foot"><button class="btn primary big" id="formSave">حفظ المنتج</button></div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const now = () => new Date().toISOString();
+
+const NUTRIENTS = [
+  { key:'kcal',          label:'السعرات',      unit:'kcal', core:true },
+  { key:'protein_g',     label:'البروتين',     unit:'غ',    core:true },
+  { key:'carbs_g',       label:'الكربوهيدرات', unit:'غ',    core:true },
+  { key:'fat_g',         label:'الدهون',       unit:'غ',    core:true },
+  { key:'sugar_g',       label:'السكر',        unit:'غ' },
+  { key:'fiber_g',       label:'الألياف',      unit:'غ' },
+  { key:'sodium_mg',     label:'الصوديوم',     unit:'ملغ' },
+  { key:'iron_mg',       label:'الحديد',       unit:'ملغ' },
+  { key:'caffeine_mg',   label:'الكافيين',     unit:'ملغ' },
+  { key:'vitamin_a_mcg', label:'فيتامين A',    unit:'مكغ' },
+  { key:'vitamin_c_mg',  label:'فيتامين C',    unit:'ملغ' },
+];
+const ZX_CDN = [
+  { js: 'https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.3/dist/iife/reader/index.js', wasm: 'https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.3/dist/reader/zxing_reader.wasm' },
+  { js: 'https://unpkg.com/zxing-wasm@3.1.3/dist/iife/reader/index.js', wasm: 'https://unpkg.com/zxing-wasm@3.1.3/dist/reader/zxing_reader.wasm' }
+];
+const READ_OPTS = { formats: ['EAN13', 'EAN8', 'UPCA', 'UPCE', 'Code128', 'ITF'], maxNumberOfSymbols: 1, tryHarder: true, tryRotate: true, tryInvert: true };
+const NATIVE_FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'itf'];
+/* ===== ربط Supabase (اختياري): حط رابط مشروعك والمفتاح العام anon هنا ===== */
+const SB = { url: 'https://YOUR-PROJECT.supabase.co', key: 'YOUR_ANON_KEY', bucket: 'product-photos' };
+const sbConfigured = () => /^https?:\/\//.test(SB.url) && !/YOUR-PROJECT/.test(SB.url) && !!SB.key && !/YOUR_ANON/.test(SB.key);
+const SESSION_KEY = 'alyaf-sb-session', PULL_KEY = 'alyaf-sb-lastpull', DELQ_KEY = 'alyaf-sb-deletes', LASTSYNC_KEY = 'alyaf-sb-lastsync';
+const OFF_FIELDS = 'code,product_name,product_name_ar,product_name_en,brands,quantity,serving_size,serving_quantity,nutriments,image_front_small_url,image_front_url,image_url';
+
+/* ---------- helpers ---------- */
+const AR = '٠١٢٣٤٥٦٧٨٩', FA = '۰۱۲۳۴۵۶۷۸۹';
+const latin = s => String(s ?? '').replace(/[٠-٩]/g, d => AR.indexOf(d)).replace(/[۰-۹]/g, d => FA.indexOf(d)).replace(/[،,٫]/g, '.');
+const num = v => { const s = latin(v).trim().replace(/[^\d.\-]/g, ''); if (!s || s === '.' || s === '-') return null; const n = parseFloat(s); return Number.isFinite(n) ? n : null; };
+const r1 = v => v == null ? null : Math.round(v * 10) / 10;
+const r2 = v => v == null ? null : Math.round(v * 100) / 100;
+const fmt = v => v == null ? '—' : (Number.isInteger(v) ? String(v) : String(parseFloat(v.toFixed(1))));
+const fmtIn = v => v == null ? '' : String(v);
+const scale = (o, f) => Object.fromEntries(NUTRIENTS.map(n => [n.key, o[n.key] == null ? null : r2(o[n.key] * f)]));
+const unitLabel = u => u === 'ml' ? 'مل' : 'غ';
+const normCode = raw => { const c = latin(raw).replace(/\D/g, ''); return (c.length >= 6 && c.length <= 14) ? c : null; };
+const missingOf = vals => NUTRIENTS.filter(n => !vals || vals[n.key] == null);
+
+function parseQty(s) {
+  if (!s) return null;
+  const t = latin(s).toLowerCase();
+  const m = t.match(/(\d+(?:\.\d+)?)\s*(kg|كجم|كغ|كيلو|mg|ml|مل|cl|ltr|lt|l|لتر|gr|gm|g|غرام|جرام|غ|جم|oz)/);
+  if (!m) { const m2 = t.match(/\d+(?:\.\d+)?/); return m2 ? { value: parseFloat(m2[0]), unit: 'g' } : null; }
+  let v = parseFloat(m[1]); const u = m[2]; let unit = 'g';
+  if (/^(kg|كجم|كغ|كيلو)$/.test(u)) v *= 1000;
+  else if (/^(l|lt|ltr|لتر)$/.test(u)) { v *= 1000; unit = 'ml'; }
+  else if (u === 'cl') { v *= 10; unit = 'ml'; }
+  else if (/^(ml|مل)$/.test(u)) unit = 'ml';
+  else if (u === 'oz') v *= 28.35;
+  else if (u === 'mg') v /= 1000;
+  return { value: r2(v), unit };
+}
+
+let toastT;
+function toast(msg) { ui.toast.textContent = msg; ui.toast.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { ui.toast.hidden = true; }, 2800); }
+
+let actx = null;
+function beep() {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime;
+    o.type = 'sine'; o.frequency.value = 1320;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + 0.13);
+  } catch (e) {}
+  try { if (navigator.vibrate) navigator.vibrate(40); } catch (e) {}
+}
+
+function compressImage(file, max = 720, q = 0.7) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file); const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', q));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('image')); };
+    img.src = url;
+  });
+}
+
+/* ---------- storage (IndexedDB, localStorage fallback) ---------- */
+let idb = null, useLS = false;
+const LSKEY = 'alyaf-products';
+function openDB() {
+  return new Promise((res, rej) => {
+    if (idb) return res(idb);
+    if (!window.indexedDB) return rej(new Error('no-idb'));
+    const r = indexedDB.open('alyaf-products', 1);
+    r.onupgradeneeded = e => { const d = e.target.result; if (!d.objectStoreNames.contains('products')) d.createObjectStore('products', { keyPath: 'barcode' }); };
+    r.onsuccess = e => { idb = e.target.result; res(idb); };
+    r.onerror = () => rej(r.error); r.onblocked = () => rej(new Error('blocked'));
+  });
+}
+async function op(mode, fn) {
+  const d = await openDB();
+  return new Promise((res, rej) => { const t = d.transaction('products', mode); const req = fn(t.objectStore('products')); req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error); });
+}
+const IDB = { get: b => op('readonly', s => s.get(b)), all: () => op('readonly', s => s.getAll()), put: p => op('readwrite', s => s.put(p)), del: b => op('readwrite', s => s.delete(b)), count: () => op('readonly', s => s.count()) };
+const LS = {
+  load() { try { return JSON.parse(localStorage.getItem(LSKEY) || '{}'); } catch (e) { return {}; } },
+  save(o) { localStorage.setItem(LSKEY, JSON.stringify(o)); },
+  async get(b) { return this.load()[b]; }, async all() { return Object.values(this.load()); },
+  async put(p) { const o = this.load(); o[p.barcode] = p; this.save(o); }, async del(b) { const o = this.load(); delete o[b]; this.save(o); },
+  async count() { return Object.keys(this.load()).length; }
+};
+const DB = { get: b => (useLS ? LS : IDB).get(b), all: () => (useLS ? LS : IDB).all(), put: p => (useLS ? LS : IDB).put(p), del: b => (useLS ? LS : IDB).del(b), count: () => (useLS ? LS : IDB).count() };
+
+/* ---------- UI refs ---------- */
+const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','filePhoto','fName','fBrand','fBarcode','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','btnZero','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody'];
+const ui = {}; ids.forEach(id => { ui[id] = document.getElementById(id); });
+ui.viewScan = $('#view-scan'); ui.viewList = $('#view-list'); ui.tabs = [...document.querySelectorAll('.tab')];
+
+/* ---------- state ---------- */
+const state = { unit: 'g', basis: '100', photo: null, photoUrl: null, servNTouched: false };
+let scanning = false, starting = false, decoding = false, busy = false, formCtx = null, currentCode = null, currentView = 'scan', wasScanning = false;
+let lastCode = '', lastAt = 0, torchOn = false, curStream = null, loopTimer = null, engine = null, enginePromise = null;
+let session = null, refreshing = null, syncing = false;
+
+/* ---------- barcode engine: native BarcodeDetector (Android) + zxing-wasm (everywhere) ---------- */
+function loadScript(src) {
+  return new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.async = true; el.onload = () => res(); el.onerror = () => { el.remove(); rej(new Error('script')); }; document.head.appendChild(el); });
+}
+async function loadEngine() {
+  if (engine) return engine;
+  if (enginePromise) return enginePromise;
+  enginePromise = (async () => {
+    let native = null;
+    if ('BarcodeDetector' in window) {
+      try {
+        const sup = await window.BarcodeDetector.getSupportedFormats();
+        const f = NATIVE_FORMATS.filter(x => sup.includes(x));
+        if (f.includes('ean_13')) native = new window.BarcodeDetector({ formats: f });
+      } catch (e) {}
+    }
+    let wasm = false;
+    for (const cdn of ZX_CDN) {
+      try {
+        if (!window.ZXingWASM) await loadScript(cdn.js);
+        await window.ZXingWASM.prepareZXingModule({ overrides: { locateFile: (p, prefix) => p.endsWith('.wasm') ? cdn.wasm : prefix + p }, fireImmediately: true });
+        wasm = true; break;
+      } catch (e) {}
+    }
+    if (!native && !wasm) throw new Error('no-engine');
+    engine = { native, wasm };
+    ui.engineStatus.textContent = 'محرك القراءة جاهز · ' + (wasm ? 'ZXing' : '') + (native ? (wasm ? ' + ' : '') + 'المدمج في المتصفح' : '');
+    return engine;
+  })();
+  enginePromise.catch(() => { enginePromise = null; ui.engineStatus.textContent = 'تعذر تحميل محرك القراءة — تأكد من الإنترنت ثم أعد فتح الكاميرا'; });
+  return enginePromise;
+}
+const work = document.createElement('canvas');
+const wctx = work.getContext('2d', { willReadFrequently: true });
+function pickNative(list) { const hit = list && list.find(x => x.rawValue); return hit ? hit.rawValue : null; }
+function pickWasm(list) { const hit = list && list.find(x => x.isValid && x.text); return hit ? hit.text : null; }
+async function decodeVideoFrame() {
+  const v = ui.video; const vw = v.videoWidth, vh = v.videoHeight; if (!vw || !vh) return null;
+  if (engine.native) { try { const code = pickNative(await engine.native.detect(v)); if (code) return code; } catch (e) {} }
+  if (engine.wasm) {
+    const bandH = Math.round(vh * 0.6), y0 = Math.round((vh - bandH) / 2);
+    const sc = Math.min(1, 1920 / vw);
+    work.width = Math.round(vw * sc); work.height = Math.round(bandH * sc);
+    wctx.drawImage(v, 0, y0, vw, bandH, 0, 0, work.width, work.height);
+    const img = wctx.getImageData(0, 0, work.width, work.height);
+    return pickWasm(await window.ZXingWASM.readBarcodes(img, READ_OPTS));
+  }
+  return null;
+}
+function loadImg(file) {
+  return new Promise((res, rej) => { const url = URL.createObjectURL(file); const img = new Image(); img.onload = () => { URL.revokeObjectURL(url); res(img); }; img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('img')); }; img.src = url; });
+}
+async function loadBitmap(file) { if (window.createImageBitmap) { try { return await createImageBitmap(file); } catch (e) {} } return loadImg(file); }
+async function decodeImageFile(file) {
+  await loadEngine();
+  const bmp = await loadBitmap(file);
+  const bw = bmp.naturalWidth || bmp.width, bh = bmp.naturalHeight || bmp.height;
+  const sc = Math.min(1, 2200 / Math.max(bw, bh));
+  work.width = Math.round(bw * sc); work.height = Math.round(bh * sc);
+  wctx.drawImage(bmp, 0, 0, work.width, work.height);
+  if (bmp.close) bmp.close();
+  if (engine.native) { try { const code = pickNative(await engine.native.detect(work)); if (code) return code; } catch (e) {} }
+  if (engine.wasm) { const img = wctx.getImageData(0, 0, work.width, work.height); return pickWasm(await window.ZXingWASM.readBarcodes(img, READ_OPTS)); }
+  return null;
+}
+
+/* ---------- camera ---------- */
+async function startScanner() {
+  ui.readerWrap.hidden = false;
+  if (scanning || starting) return;
+  starting = true; ui.readerIdle.hidden = true;
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('nomedia');
+    const eng = loadEngine();
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } } });
+    curStream = stream; const v = ui.video; v.srcObject = stream;
+    try { await v.play(); } catch (e) {}
+    scanning = true; ui.guide.hidden = false; ui.scanTools.hidden = false;
+    setupTrack(stream.getVideoTracks()[0]);
+    eng.catch(() => { toast('تعذر تحميل محرك قراءة الباركود — تأكد من الإنترنت'); });
+    loopTimer = setInterval(tick, 120);
+  } catch (err) {
+    await stopScanner();
+    const n = (err && err.name) || ''; const m = String((err && err.message) || '');
+    if (m === 'nomedia' || !window.isSecureContext) toast('الكاميرا تشتغل فقط عبر رابط https — افتح الأداة من رابط مرفوع على الإنترنت');
+    else if (/NotAllowed|Permission|denied/i.test(n + m)) toast('اسمح للمتصفح باستخدام الكاميرا ثم حاول مرة ثانية');
+    else if (/NotFound|Overconstrained/i.test(n)) toast('ما لقيت كاميرا خلفية على هذا الجهاز');
+    else if (/NotReadable|AbortError/i.test(n)) toast('الكاميرا مشغولة بتطبيق ثاني — أغلقه وحاول مرة ثانية');
+    else toast('تعذر فتح الكاميرا' + (m ? ': ' + m : ''));
+  } finally { starting = false; }
+}
+async function stopScanner() {
+  scanning = false;
+  if (loopTimer) { clearInterval(loopTimer); loopTimer = null; }
+  if (curStream) { curStream.getTracks().forEach(t => { try { t.stop(); } catch (e) {} }); curStream = null; }
+  try { ui.video.pause(); ui.video.srcObject = null; } catch (e) {}
+  torchOn = false; ui.btnTorch.classList.remove('on'); ui.btnTorch.hidden = true; ui.zoomWrap.hidden = true;
+  ui.guide.hidden = true; ui.scanTools.hidden = true; ui.readerIdle.hidden = false;
+}
+async function tick() {
+  if (!scanning || decoding || !engine) return;
+  if (ui.video.readyState < 2) return;
+  decoding = true;
+  try { const code = await decodeVideoFrame(); if (code && scanning) await onScan(code); }
+  catch (e) {}
+  finally { decoding = false; }
+}
+function setupTrack(track) {
+  if (!track) return;
+  let caps = {}; try { caps = track.getCapabilities ? track.getCapabilities() : {}; } catch (e) {}
+  if (caps.torch) {
+    ui.btnTorch.hidden = false;
+    ui.btnTorch.onclick = async () => { torchOn = !torchOn; try { await track.applyConstraints({ advanced: [{ torch: torchOn }] }); ui.btnTorch.classList.toggle('on', torchOn); } catch (e) { toast('الفلاش غير مدعوم هنا'); } };
+  }
+  if (caps.zoom && caps.zoom.max > caps.zoom.min) {
+    ui.zoomWrap.hidden = false;
+    ui.zoom.min = caps.zoom.min; ui.zoom.max = caps.zoom.max; ui.zoom.step = caps.zoom.step || 0.1;
+    let cur = caps.zoom.min; try { cur = track.getSettings().zoom || caps.zoom.min; } catch (e) {}
+    ui.zoom.value = cur;
+    ui.zoom.oninput = () => { track.applyConstraints({ advanced: [{ zoom: Number(ui.zoom.value) }] }).catch(() => {}); };
+  }
+  try { if (caps.focusMode && caps.focusMode.includes('continuous')) track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(() => {}); } catch (e) {}
+}
+async function onScan(text) {
+  if (busy) return;
+  const code = normCode(text); if (!code) return;
+  if (code === lastCode && Date.now() - lastAt < 3000) return;
+  lastCode = code; lastAt = Date.now(); busy = true; beep();
+  try { await stopScanner(); await handleCode(code); } finally { busy = false; }
+}
+async function manualLookup() {
+  const code = normCode(ui.manualCode.value);
+  if (!code) { toast('اكتب باركود صحيح (8 إلى 14 رقم)'); return; }
+  ui.manualCode.blur(); ui.manualCode.value = '';
+  if (busy) return; busy = true;
+  try { await stopScanner(); await handleCode(code); } finally { busy = false; }
+}
+async function scanFromPhoto(file) {
+  if (busy) return; busy = true;
+  try {
+    await stopScanner();
+    ui.readerWrap.hidden = true;
+    showBusy('جاري قراءة الباركود من الصورة…');
+    const code = normCode(await decodeImageFile(file));
+    if (!code) throw new Error('nocode');
+    beep(); await handleCode(code);
+  } catch (e) {
+    ui.result.innerHTML = ''; ui.readerWrap.hidden = false;
+    toast((e && e.message === 'no-engine') ? 'تعذر تحميل محرك القراءة — تأكد من الإنترنت' : 'ما قدرت أقرأ الباركود من الصورة — قرّب أكثر حتى يملأ الباركود الصورة وتأكد إنها واضحة');
+  } finally { busy = false; }
+}
+function nextScan() { ui.result.innerHTML = ''; currentCode = null; lastCode = ''; startScanner(); }
+
+/* ---------- Open Food Facts ---------- */
+async function fetchOFF(code) {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 12000);
+  try {
+    const r = await fetch('https://world.openfoodfacts.org/api/v2/product/' + code + '.json?fields=' + OFF_FIELDS, { signal: ctl.signal, headers: { 'Accept': 'application/json' } });
+    if (r.status === 404) return null;
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    return (j && j.status === 1 && j.product) ? j.product : null;
+  } finally { clearTimeout(t); }
+}
+async function lookupOFF(code) {
+  const variants = [code];
+  if (code.length === 12) variants.push('0' + code);
+  if ((code.length === 13 || code.length === 14) && code[0] === '0') variants.push(code.replace(/^0+/, ''));
+  for (const v of variants) { const p = await fetchOFF(v); if (p) return p; }
+  return null;
+}
+function mapOFF(p, code) {
+  const n = p.nutriments || {};
+  const g = k => { const v = n[k]; if (v === undefined || v === null || v === '') return null; const x = Number(v); return Number.isFinite(x) ? x : null; };
+  const mg = v => v == null ? null : r2(v * 1000);
+  const mcg = v => v == null ? null : Math.round(v * 1e6);
+  let kcal = g('energy-kcal_100g');
+  if (kcal == null) { const kj = g('energy-kj_100g') ?? g('energy_100g'); if (kj != null) kcal = kj / 4.184; }
+  let sod = g('sodium_100g'); if (sod == null) { const salt = g('salt_100g'); if (salt != null) sod = salt / 2.5; }
+  const per100 = {
+    kcal: r2(kcal), protein_g: r2(g('proteins_100g')), carbs_g: r2(g('carbohydrates_100g')), fat_g: r2(g('fat_100g')),
+    sugar_g: r2(g('sugars_100g')), fiber_g: r2(g('fiber_100g')), sodium_mg: mg(sod), iron_mg: mg(g('iron_100g')),
+    caffeine_mg: mg(g('caffeine_100g')), vitamin_a_mcg: mcg(g('vitamin-a_100g')), vitamin_c_mg: mg(g('vitamin-c_100g'))
+  };
+  const qty = parseQty(p.quantity); const sv = parseQty(p.serving_size);
+  const sq = num(p.serving_quantity) ?? (sv ? sv.value : null);
+  const unit = qty ? qty.unit : (sv ? sv.unit : 'g');
+  return {
+    barcode: code,
+    name: (p.product_name_ar || p.product_name || p.product_name_en || '').trim(),
+    brand: ((p.brands || '').split(',')[0] || '').trim() || null,
+    unit, package_size: qty ? qty.value : null, serving_size: sq,
+    servings_per_package: (qty && sq) ? r1(qty.value / sq) : null,
+    basis: '100', nutrients: per100,
+    photo_url: p.image_front_small_url || p.image_front_url || p.image_url || null
+  };
+}
+
+/* ---------- lookup flow ---------- */
+function whenSaved(iso) {
+  if (!iso) return ''; const d = new Date(iso); if (isNaN(d)) return '';
+  const days = Math.floor((Date.now() - d.getTime()) / 86400000);
+  if (days <= 0) return 'اليوم'; if (days === 1) return 'أمس'; if (days === 2) return 'قبل يومين'; if (days < 11) return 'قبل ' + days + ' أيام';
+  try { return d.toLocaleDateString('ar-SA-u-ca-gregory', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { return iso.slice(0, 10); }
+}
+const countSizes = n => n === 1 ? 'حجم واحد' : n === 2 ? 'حجمان' : n <= 10 ? n + ' أحجام' : n + ' حجم';
+async function findLocal(code) {
+  const p = await DB.get(code); if (p) return { product: p, size: null };
+  const all = await DB.all();
+  for (const q of all) { const sz = (q.sizes || []).find(x => x && x.barcode === code); if (sz) return { product: q, size: sz }; }
+  return null;
+}
+function showBusy(text) { ui.result.innerHTML = '<div class="card busy"><div class="spinner"></div><span>' + esc(text) + '</span></div>'; }
+async function handleCode(code) {
+  currentCode = code; ui.readerWrap.hidden = true; ui.scanTools.hidden = true;
+  showBusy('جاري البحث عن ' + code + '…');
+  try {
+    const hit = await findLocal(code);
+    if (hit) { resultLocal(hit.product, hit.size); return; }
+    const p = await lookupOFF(code);
+    if (!p) { resultNotFound(code); return; }
+    resultOFF(mapOFF(p, code));
+  } catch (err) { resultError(code); }
+}
+const strip = vals => '<div class="strip">' + NUTRIENTS.map(n => '<i class="' + ((vals && vals[n.key] != null) ? 'on' : '') + '" title="' + n.label + '"></i>').join('') + '</div>'
+  + '<div class="strip-cap"><span>' + (NUTRIENTS.length - missingOf(vals).length) + ' من ' + NUTRIENTS.length + ' قيمة</span><span>' + (missingOf(vals).length ? 'الناقص بالأصفر' : 'مكتمل') + '</span></div>';
+const head = (name, brand, code, img) => '<div class="res-head"><div><div class="res-name">' + esc(name || 'منتج بدون اسم') + '</div><div class="res-sub">' + (brand ? esc(brand) + ' · ' : '') + '<span class="mono">' + esc(code) + '</span></div></div>' + (img ? '<img class="res-img" src="' + esc(img) + '" alt="">' : '') + '</div>';
+const macros = (v, capt) => '<div class="macros">' + NUTRIENTS.filter(n => n.core).map(n => '<div class="macro"><b>' + fmt(v ? v[n.key] : null) + '</b><span>' + n.label + '</span></div>').join('') + '</div><div class="macros-cap">' + capt + '</div>';
+const captFor = p => p.per_100 ? 'لكل 100 ' + unitLabel(p.unit) : 'لكل حصة';
+
+function detailTable(p) {
+  const a = p.per_100 || null, b = p.per_serving || null; if (!a && !b) return '';
+  const u = unitLabel(p.unit);
+  let h = '<table class="nt"><tr><th></th>' + (a ? '<th>لكل 100 ' + u + '</th>' : '') + (b ? '<th>لكل حصة' + (p.serving_size ? ' (' + fmt(p.serving_size) + ' ' + u + ')' : '') + '</th>' : '') + '</tr>';
+  for (const n of NUTRIENTS) h += '<tr><td>' + n.label + '</td>' + (a ? '<td><b>' + fmt(a[n.key]) + '</b><small>' + n.unit + '</small></td>' : '') + (b ? '<td><b>' + fmt(b[n.key]) + '</b><small>' + n.unit + '</small></td>' : '') + '</tr>';
+  return h + '</table>';
+}
+function sizesList(p, matched) {
+  const list = (p.sizes || []).filter(Boolean); if (!list.length) return '';
+  return '<div class="sizes-title">الأحجام والحصص المسجّلة</div><div class="sizes">' + list.map(sz => '<div class="size' + (matched && matched === sz ? ' hit' : '') + '"><b>' + esc(sz.name) + '</b><span class="amt">' + fmt(sz.amount) + ' ' + unitLabel(sz.unit || p.unit) + '</span>'
+    + (sz.nutrients && sz.nutrients.kcal != null ? '<span class="kc">' + fmt(sz.nutrients.kcal) + ' kcal</span>' : '') + (sz.barcode ? '<span class="mono code">' + esc(sz.barcode) + '</span>' : '') + '</div>').join('') + '</div>';
+}
+function resultLocal(p, size) {
+  const img = p.photo || p.photo_url, u = unitLabel(p.unit), meta = [];
+  if (p.package_size) meta.push('<span>العبوة <b>' + fmt(p.package_size) + ' ' + u + '</b></span>');
+  if (p.serving_size) meta.push('<span>الحصة <b>' + fmt(p.serving_size) + ' ' + u + '</b></span>');
+  if (p.servings_per_package) meta.push('<span>عدد الحصص <b>' + fmt(p.servings_per_package) + '</b></span>');
+  ui.result.innerHTML = '<div class="card">' + (img ? '<img class="res-photo" src="' + esc(img) + '" alt="">' : '') + head(p.name, p.brand, p.barcode, null)
+    + '<div class="status ok">أضفته من قبل ✓ · ' + whenSaved(p.updated_at || p.created_at)
+    + (size ? '<small>الباركود الممسوح هو حجم: ' + esc(size.name) + ' ' + fmt(size.amount) + ' ' + unitLabel(size.unit || p.unit) + '</small>' : '')
+    + (p.complete ? '' : '<small>البيانات ناقصة — تقدر تكملها من "تعديل"</small>') + '</div>'
+    + strip(p.nutrients) + (meta.length ? '<div class="meta">' + meta.join('') + '</div>' : '') + detailTable(p) + sizesList(p, size)
+    + '<div class="actions"><div class="row"><button class="btn ghost" data-a="edit">تعديل</button><button class="btn primary" data-a="next">مسح التالي</button></div></div></div>';
+  ui.result.querySelector('[data-a=edit]').onclick = () => openForm(p, { editing: p.barcode, returnTo: 'scan' });
+  ui.result.querySelector('[data-a=next]').onclick = nextScan;
+}
+async function pickProductForSize(code) {
+  let all = []; try { all = await DB.all(); } catch (e) {}
+  if (!all.length) { toast('ما عندك منتجات محفوظة بعد'); return; }
+  all.sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
+  const render = q => {
+    const items = q ? all.filter(p => (p.name || '').toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q) || String(p.barcode).includes(q)) : all;
+    return items.slice(0, 60).map(p => '<button class="pick" data-code="' + esc(p.barcode) + '">' + ((p.photo || p.photo_url) ? '<img class="thumb" src="' + esc(p.photo || p.photo_url) + '" alt="">' : '<div class="thumb"></div>')
+      + '<div class="row-main"><div class="row-name">' + esc(p.name) + '</div><div class="row-sub">' + (p.brand ? esc(p.brand) + ' · ' : '') + '<span class="mono">' + esc(p.barcode) + '</span></div></div></button>').join('') || '<div class="empty">ما فيه نتائج</div>';
+  };
+  ui.result.innerHTML = '<div class="card"><div class="res-name">هذا الباركود حجم من أي منتج؟</div><div class="res-sub">بيُضاف كحجم جديد باسمه وكميته، وباركوده <span class="mono">' + esc(code) + '</span></div>'
+    + '<input id="pickSearch" type="search" placeholder="ابحث عن المنتج" autocomplete="off" style="margin-top:12px">'
+    + '<div class="picker" id="pickList">' + render('') + '</div>'
+    + '<div class="actions"><button class="btn ghost" data-a="back">رجوع</button></div></div>';
+  const list = ui.result.querySelector('#pickList');
+  ui.result.querySelector('#pickSearch').addEventListener('input', e => { list.innerHTML = render(e.target.value.trim().toLowerCase()); });
+  list.addEventListener('click', async e => { const b = e.target.closest('.pick'); if (!b) return; const p = await DB.get(b.dataset.code); if (p) openForm(p, { editing: p.barcode, returnTo: 'scan', newSize: { barcode: code } }); });
+  ui.result.querySelector('[data-a=back]').onclick = () => handleCode(code);
+}
+function resultOFF(m) {
+  const missing = missingOf(m.nutrients); const complete = missing.length === 0;
+  const st = complete
+    ? '<div class="status ok">موجود في Open Food Facts · البيانات كاملة</div>'
+    : '<div class="status warn">موجود في Open Food Facts لكن ناقص ' + missing.length + ' من ' + NUTRIENTS.length + '<small>' + esc(missing.map(n => n.label).join('، ')) + '</small></div>';
+  const acts = complete
+    ? '<button class="btn primary" data-a="save">حفظ في قاعدتي</button><div class="row"><button class="btn ghost" data-a="edit">تعديل ثم حفظ</button><button class="btn ghost" data-a="next">مسح التالي</button></div>'
+    : '<button class="btn primary" data-a="edit">أكمل الناقص</button><div class="row"><button class="btn ghost" data-a="next">مسح التالي</button></div>';
+  ui.result.innerHTML = '<div class="card">' + head(m.name, m.brand, m.barcode, m.photo_url) + st + strip(m.nutrients) + macros(m.nutrients, 'لكل 100 ' + unitLabel(m.unit)) + '<div class="actions">' + acts + '</div>'
+    + '<button class="link wide" data-a="size">هذا الباركود حجم من منتج محفوظ عندي</button></div>';
+  const q = a => ui.result.querySelector('[data-a=' + a + ']');
+  if (q('save')) q('save').onclick = () => saveOFFDirect(m);
+  q('size').onclick = () => pickProductForSize(m.barcode);
+  q('edit').onclick = () => openForm(m, { editing: null, returnTo: 'scan', fromOFF: true });
+  q('next').onclick = nextScan;
+}
+function resultNotFound(code) {
+  ui.result.innerHTML = '<div class="card"><div class="res-head"><div><div class="res-name">غير موجود</div><div class="res-sub"><span class="mono">' + esc(code) + '</span></div></div></div>'
+    + '<div class="status bad">هذا الباركود غير مسجّل في Open Food Facts<small>أضفه من ملصق القيم الغذائية وبينحفظ في قاعدتك</small></div>'
+    + '<div class="actions"><button class="btn primary" data-a="add">أضف المنتج يدويًا</button><div class="row"><button class="btn ghost" data-a="next">مسح التالي</button></div></div>'
+    + '<button class="link wide" data-a="size">هذا الباركود حجم من منتج محفوظ عندي</button></div>';
+  ui.result.querySelector('[data-a=add]').onclick = () => openForm({ barcode: code }, { editing: null, returnTo: 'scan' });
+  ui.result.querySelector('[data-a=next]').onclick = nextScan;
+  ui.result.querySelector('[data-a=size]').onclick = () => pickProductForSize(code);
+}
+function resultError(code) {
+  ui.result.innerHTML = '<div class="card"><div class="res-head"><div><div class="res-name">تعذر البحث</div><div class="res-sub"><span class="mono">' + esc(code) + '</span></div></div></div>'
+    + '<div class="status bad">ما قدرت أوصل لـ Open Food Facts<small>تحقق من الإنترنت، أو أضف المنتج يدويًا الآن</small></div>'
+    + '<div class="actions"><button class="btn primary" data-a="retry">إعادة المحاولة</button><div class="row"><button class="btn ghost" data-a="add">أضف يدويًا</button><button class="btn ghost" data-a="next">مسح التالي</button></div></div></div>';
+  ui.result.querySelector('[data-a=retry]').onclick = () => handleCode(code);
+  ui.result.querySelector('[data-a=add]').onclick = () => openForm({ barcode: code }, { editing: null, returnTo: 'scan' });
+  ui.result.querySelector('[data-a=next]').onclick = nextScan;
+}
+async function saveOFFDirect(m) {
+  const s = m.serving_size;
+  const rec = {
+    barcode: m.barcode, name: m.name || ('منتج ' + m.barcode), brand: m.brand, source: 'off',
+    package_size: m.package_size, unit: m.unit, serving_size: s, servings_per_package: m.servings_per_package,
+    basis: '100', nutrients: m.nutrients, per_100: m.nutrients, per_serving: s ? scale(m.nutrients, s / 100) : null,
+    complete: true, sizes: [], photo: null, photo_url: m.photo_url, created_at: now(), updated_at: now(), synced: false, photo_uploaded: true
+  };
+  try { await DB.put(rec); } catch (e) { toast('تعذر الحفظ على هذا الجهاز'); return; }
+  await refreshCount(); toast('حُفظ في قاعدتك'); nextScan(); syncNow(true);
+}
+
+/* ---------- form ---------- */
+function buildGrids() {
+  const html = n => '<label class="field num" data-key="' + n.key + '"><span>' + n.label + '</span><input inputmode="decimal" id="n_' + n.key + '" enterkeyhint="next" autocomplete="off"><em class="unit">' + n.unit + '</em></label>';
+  ui.coreGrid.innerHTML = NUTRIENTS.filter(n => n.core).map(html).join('');
+  ui.moreGrid.innerHTML = NUTRIENTS.filter(n => !n.core).map(html).join('');
+  NUTRIENTS.forEach(n => { $('#n_' + n.key).addEventListener('input', e => e.target.closest('.field').classList.remove('missing')); });
+}
+const readNutrients = () => Object.fromEntries(NUTRIENTS.map(n => [n.key, num($('#n_' + n.key).value)]));
+function addSizeRow(sz) {
+  sz = sz || {};
+  const row = document.createElement('div'); row.className = 'size-row';
+  row.innerHTML = '<input class="s-name" placeholder="الاسم (مثال: علبة كبيرة)" enterkeyhint="next" autocomplete="off">'
+    + '<label class="field num"><input class="s-amt" inputmode="decimal" placeholder="الكمية" enterkeyhint="next"><em class="unit u-unit">' + unitLabel(state.unit) + '</em></label>'
+    + '<button type="button" class="s-del" aria-label="حذف الحجم">×</button>'
+    + '<input class="s-code mono" inputmode="numeric" placeholder="باركود هذا الحجم (اختياري)" enterkeyhint="next" autocomplete="off">';
+  row.querySelector('.s-name').value = sz.name || '';
+  row.querySelector('.s-amt').value = fmtIn(sz.amount);
+  row.querySelector('.s-code').value = sz.barcode || '';
+  row.querySelector('.s-del').onclick = () => row.remove();
+  ui.sizeRows.appendChild(row);
+  return row;
+}
+function readSizes() {
+  const out = [];
+  for (const r of ui.sizeRows.querySelectorAll('.size-row')) {
+    const name = r.querySelector('.s-name').value.trim(), amount = num(r.querySelector('.s-amt').value), code = latin(r.querySelector('.s-code').value).replace(/\D/g, '');
+    if (!name && amount == null && !code) continue;
+    if (!name || !(amount > 0)) return { error: 'أكمل اسم وكمية كل حجم، أو احذف الصف الفارغ' };
+    out.push({ name, amount, barcode: code.length >= 6 ? code : null });
+  }
+  return { sizes: out };
+}
+function setUnit(u) { state.unit = u; ui.unitSeg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.u === u)); document.querySelectorAll('.u-unit').forEach(e => { e.textContent = unitLabel(u); }); }
+function setBasis(b, convert) {
+  if (convert && b !== state.basis) {
+    const s = num(ui.fServ.value); const vals = readNutrients();
+    if (NUTRIENTS.some(n => vals[n.key] != null)) {
+      if (s > 0) {
+        const f = b === 'serving' ? s / 100 : 100 / s;
+        NUTRIENTS.forEach(n => { if (vals[n.key] != null) $('#n_' + n.key).value = fmtIn(r2(vals[n.key] * f)); });
+        toast(b === 'serving' ? 'تم تحويل القيم إلى لكل حصة' : 'تم تحويل القيم إلى لكل 100');
+      } else toast('اكتب حجم الحصة أولًا حتى أحوّل القيم تلقائيًا');
+    }
+  }
+  state.basis = b; ui.basisSeg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.b === b));
+}
+function autoServ() { if (state.servNTouched) return; const p = num(ui.fPkg.value), s = num(ui.fServ.value); ui.fServN.value = (p && s) ? fmtIn(r1(p / s)) : ''; }
+function renderPhoto() {
+  const src = state.photo || state.photoUrl;
+  ui.photoPreview.hidden = !src; if (src) ui.photoPreview.src = src;
+  ui.btnPhoto.textContent = state.photo ? 'إعادة تصوير المنتج' : (state.photoUrl ? 'صوّر المنتج بنفسك (الصورة الحالية من Open Food Facts)' : 'صوّر المنتج');
+  ui.btnPhoto.classList.toggle('has', !!src);
+  ui.btnPhotoRemove.hidden = !state.photo;
+}
+function openForm(p, ctx) {
+  formCtx = Object.assign({ editing: null, returnTo: 'scan', fromOFF: false }, ctx || {}); p = p || {};
+  ui.formTitle.textContent = formCtx.editing ? 'تعديل منتج' : 'إضافة منتج';
+  ui.fName.value = p.name || ''; ui.fBrand.value = p.brand || ''; ui.fBarcode.value = p.barcode || currentCode || '';
+  setUnit(p.unit || 'g');
+  ui.fPkg.value = fmtIn(p.package_size); ui.fServ.value = fmtIn(p.serving_size); ui.fServN.value = fmtIn(p.servings_per_package);
+  state.servNTouched = p.servings_per_package != null;
+  setBasis(p.basis || '100', false);
+  const src = p.nutrients || {};
+  NUTRIENTS.forEach(n => { const el = $('#n_' + n.key); el.value = fmtIn(src[n.key]); el.closest('.field').classList.toggle('missing', !!formCtx.fromOFF && src[n.key] == null); });
+  state.photo = p.photo || null; state.photoUrl = p.photo_url || null; renderPhoto();
+  ui.sizeRows.innerHTML = ''; (p.sizes || []).filter(Boolean).forEach(addSizeRow);
+  ui.btnDelete.hidden = !formCtx.editing;
+  ui.form.hidden = false; ui.formBody.scrollTop = 0;
+  if (formCtx.newSize) {
+    const row = addSizeRow(formCtx.newSize);
+    setTimeout(() => { try { row.scrollIntoView({ block: 'center' }); } catch (e) {} row.querySelector('.s-name').focus(); }, 80);
+  } else if (!p.name) setTimeout(() => ui.fName.focus(), 60);
+}
+function closeForm() {
+  const rt = formCtx ? formCtx.returnTo : 'scan'; formCtx = null; ui.form.hidden = true;
+  if (rt === 'list') renderList(); else nextScan();
+}
+async function saveForm() {
+  const name = ui.fName.value.trim(); if (!name) { toast('اكتب اسم المنتج'); ui.fName.focus(); return; }
+  const barcode = latin(ui.fBarcode.value).replace(/\D/g, ''); if (barcode.length < 6) { toast('الباركود غير صحيح'); ui.fBarcode.focus(); return; }
+  const vals = readNutrients(); if (vals.kcal == null) { toast('السعرات مطلوبة'); $('#n_kcal').focus(); return; }
+  const serving = num(ui.fServ.value), pkg = num(ui.fPkg.value), servN = num(ui.fServN.value);
+  let per_100 = null, per_serving = null;
+  if (state.basis === '100') { per_100 = vals; if (serving > 0) per_serving = scale(vals, serving / 100); }
+  else { per_serving = vals; if (serving > 0) per_100 = scale(vals, 100 / serving); }
+  const rs = readSizes(); if (rs.error) { toast(rs.error); return; }
+  const sizes = rs.sizes.map(sz => ({ name: sz.name, amount: sz.amount, unit: state.unit, barcode: sz.barcode === barcode ? null : sz.barcode, nutrients: per_100 ? scale(per_100, sz.amount / 100) : null }));
+  let existing = null; try { existing = await DB.get(formCtx.editing || barcode); } catch (e) {}
+  const source = existing ? (existing.source === 'off' ? 'off+manual' : (existing.source || 'manual')) : (formCtx.fromOFF ? 'off+manual' : 'manual');
+  const rec = {
+    barcode, name, brand: ui.fBrand.value.trim() || null, source,
+    package_size: pkg, unit: state.unit, serving_size: serving, servings_per_package: servN,
+    basis: state.basis, nutrients: vals, per_100, per_serving,
+    complete: NUTRIENTS.every(n => vals[n.key] != null), sizes,
+    photo: state.photo || null, photo_url: state.photoUrl || null,
+    created_at: existing ? (existing.created_at || now()) : now(), updated_at: now(),
+    synced: false, photo_uploaded: state.photo ? !!(existing && existing.photo === state.photo && existing.photo_uploaded) : true
+  };
+  try {
+    await DB.put(rec);
+    if (formCtx.editing && formCtx.editing !== barcode) await DB.del(formCtx.editing);
+  } catch (e) { toast('تعذر الحفظ — مساحة التخزين ممتلئة أو المتصفح يمنع التخزين'); return; }
+  const c = await refreshCount();
+  toast('تم الحفظ · ' + c + ' منتج في قاعدتك');
+  closeForm(); syncNow(true);
+}
+async function deleteCurrent() {
+  if (!formCtx || !formCtx.editing) return;
+  if (!confirm('حذف هذا المنتج نهائيًا من قاعدتك؟')) return;
+  try { await DB.del(formCtx.editing); } catch (e) { toast('تعذر الحذف'); return; }
+  if (sbConfigured()) { const q = JSON.parse(localStorage.getItem(DELQ_KEY) || '[]'); if (!q.includes(formCtx.editing)) q.push(formCtx.editing); localStorage.setItem(DELQ_KEY, JSON.stringify(q)); }
+  await refreshCount(); toast('تم حذف المنتج'); closeForm(); syncNow(true);
+}
+
+/* ---------- list ---------- */
+async function refreshCount() { let c = 0; try { c = await DB.count(); } catch (e) {} ui.countNum.textContent = c; return c; }
+function rowHTML(p) {
+  const v = p.per_100 || p.nutrients || {}; const img = p.photo || p.photo_url;
+  return '<button class="row-item" data-code="' + esc(p.barcode) + '">'
+    + (img ? '<img class="thumb" src="' + esc(img) + '" alt="">' : '<div class="thumb">بدون صورة</div>')
+    + '<div class="row-main"><div class="row-name">' + esc(p.name) + '</div><div class="row-sub">' + (p.brand ? esc(p.brand) + ' · ' : '') + '<span class="mono">' + esc(p.barcode) + '</span>' + (p.sizes && p.sizes.length ? ' · ' + countSizes(p.sizes.length) : '') + '</div>' + strip(p.nutrients) + '</div>'
+    + '<div class="row-kcal"><b>' + fmt(v.kcal) + '</b><span>kcal</span><span>' + (p.per_100 ? '/100' : '/حصة') + '</span></div></button>';
+}
+async function renderList() {
+  let all = []; try { all = await DB.all(); } catch (e) {}
+  all.sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
+  const q = ui.search.value.trim().toLowerCase();
+  const items = q ? all.filter(p => (p.name || '').toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q) || String(p.barcode).includes(q)) : all;
+  ui.list.innerHTML = items.map(rowHTML).join('');
+  ui.listEmpty.hidden = all.length > 0; ui.listCount.textContent = all.length ? '(' + all.length + ')' : '';
+}
+
+/* ---------- export / import ---------- */
+function download(blob, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 3000);
+}
+const stamp = () => new Date().toISOString().slice(0, 10);
+async function buildExport(withPhotos) {
+  let all = []; try { all = await DB.all(); } catch (e) {}
+  all.sort((a, b) => String(a.barcode).localeCompare(String(b.barcode)));
+  const products = all.map(p => { const q = Object.assign({}, p); delete q.synced; delete q.photo_uploaded; if (!withPhotos) q.photo = null; return q; });
+  return {
+    app: 'alyaf-products', version: 1, exported_at: now(), count: products.length,
+    note: 'nutrients = القيم كما كُتبت من الملصق حسب basis (100 أو serving). per_100 و per_serving محسوبة تلقائيًا. sizes = أحجام/حصص مسماة لكل منها amount و barcode اختياري و nutrients محسوبة لذلك الحجم. الوحدات: kcal, g (protein/carbs/fat/sugar/fiber), mg (sodium/iron/caffeine/vitamin_c), mcg (vitamin_a). unit = وحدة العبوة والحصة (g أو ml).',
+    products
+  };
+}
+const csvCell = v => { if (v == null) return ''; const s = String(v); return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+function toCSV(all) {
+  const cols = ['barcode', 'name', 'brand', 'unit', 'package_size', 'serving_size', 'servings_per_package', 'sizes', 'basis', 'complete', 'source',
+    ...NUTRIENTS.map(n => 'per100_' + n.key), ...NUTRIENTS.map(n => 'serving_' + n.key)];
+  const rows = [cols.join(',')];
+  for (const p of all) {
+    const sizesTxt = (p.sizes || []).filter(Boolean).map(sz => sz.name + ' ' + sz.amount + ' ' + (sz.unit || p.unit) + (sz.barcode ? ' [' + sz.barcode + ']' : '')).join(' | ');
+    const r = [p.barcode, p.name, p.brand, p.unit, p.package_size, p.serving_size, p.servings_per_package, sizesTxt, p.basis, p.complete, p.source,
+      ...NUTRIENTS.map(n => p.per_100 ? p.per_100[n.key] : null), ...NUTRIENTS.map(n => p.per_serving ? p.per_serving[n.key] : null)];
+    rows.push(r.map(csvCell).join(','));
+  }
+  return '\uFEFF' + rows.join('\r\n');
+}
+async function exportJSON(withPhotos) {
+  const data = await buildExport(withPhotos);
+  if (!data.count) { toast('ما فيه منتجات للتصدير'); return; }
+  download(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), 'alyaf-products-' + stamp() + (withPhotos ? '' : '-lite') + '.json');
+  toast('تم تصدير ' + data.count + ' منتج');
+}
+async function exportCSV() {
+  const data = await buildExport(false);
+  if (!data.count) { toast('ما فيه منتجات للتصدير'); return; }
+  download(new Blob([toCSV(data.products)], { type: 'text/csv;charset=utf-8' }), 'alyaf-products-' + stamp() + '.csv');
+  toast('تم تصدير ' + data.count + ' منتج');
+}
+async function shareJSON() {
+  const data = await buildExport(true);
+  if (!data.count) { toast('ما فيه منتجات للمشاركة'); return; }
+  const f = new File([JSON.stringify(data, null, 2)], 'alyaf-products-' + stamp() + '.json', { type: 'application/json' });
+  try { await navigator.share({ files: [f], title: 'قاعدة منتجات ألياف' }); } catch (e) {}
+}
+async function importFile(file) {
+  try {
+    const j = JSON.parse(await file.text());
+    const arr = Array.isArray(j) ? j : (j.products || []);
+    let added = 0, updated = 0, skipped = 0;
+    for (const p of arr) {
+      if (!p || !p.barcode) { skipped++; continue; }
+      const b = String(p.barcode); const ex = await DB.get(b);
+      if (!ex) { await DB.put(Object.assign({}, p, { barcode: b, synced: false, photo_uploaded: !p.photo })); added++; }
+      else if (String(p.updated_at || '') > String(ex.updated_at || '')) { await DB.put(Object.assign({}, ex, p, { barcode: b, synced: false, photo_uploaded: !p.photo })); updated++; }
+      else skipped++;
+    }
+    toast('استيراد: ' + added + ' جديد · ' + updated + ' محدّث · ' + skipped + ' متجاهل');
+    await refreshCount(); renderList(); syncNow(true);
+  } catch (e) { toast('الملف غير صالح — لازم يكون JSON مصدّر من هذه الأداة'); }
+}
+
+/* ---------- Supabase sync (optional) ---------- */
+function loadSession() { try { session = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { session = null; } }
+function setSession(j) {
+  session = { access_token: j.access_token, refresh_token: j.refresh_token, expires_at: Date.now() + ((j.expires_in || 3600) - 30) * 1000, email: (j.user && j.user.email) || (session && session.email) || '' };
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+}
+function clearSession() { session = null; localStorage.removeItem(SESSION_KEY); }
+async function sbLogin(email, password) {
+  const r = await fetch(SB.url + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: SB.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error_description || j.msg || j.message || ('HTTP ' + r.status));
+  setSession(j);
+}
+async function sbRefresh(force) {
+  if (!session) return null;
+  if (!force && session.expires_at - Date.now() > 0) return session.access_token;
+  if (refreshing) return refreshing;
+  refreshing = (async () => {
+    const r = await fetch(SB.url + '/auth/v1/token?grant_type=refresh_token', { method: 'POST', headers: { apikey: SB.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: session.refresh_token }) });
+    if (!r.ok) { clearSession(); throw new Error('انتهت الجلسة — سجّل الدخول مرة ثانية'); }
+    setSession(await r.json()); return session.access_token;
+  })();
+  try { return await refreshing; } finally { refreshing = null; }
+}
+async function sbFetch(path, opts) {
+  opts = opts || {};
+  const tok = await sbRefresh(false); if (!tok) throw new Error('nosession');
+  const headers = Object.assign({ apikey: SB.key, 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, opts.headers || {});
+  const r = await fetch(SB.url + path, { method: opts.method || 'GET', headers, body: opts.body });
+  if (r.status === 401 && !opts._retried) { await sbRefresh(true); return sbFetch(path, Object.assign({}, opts, { _retried: true })); }
+  if (!r.ok) { let msg = ''; try { const j = await r.json(); msg = j.message || j.msg || j.error_description || j.error || j.hint || JSON.stringify(j); } catch (e) {} throw new Error(msg || ('HTTP ' + r.status)); }
+  if (r.status === 204) return null;
+  const ct = r.headers.get('content-type') || ''; return ct.includes('json') ? r.json() : r.text();
+}
+const toRow = p => ({ barcode: p.barcode, name: p.name, brand: p.brand || null, unit: p.unit || 'g', package_size: p.package_size ?? null, serving_size: p.serving_size ?? null, servings_per_package: p.servings_per_package ?? null, basis: p.basis || '100', nutrients: p.nutrients || null, per_100: p.per_100 || null, per_serving: p.per_serving || null, sizes: (p.sizes || []).filter(Boolean), complete: !!p.complete, source: p.source || 'manual', photo_url: p.photo_url || null, created_at: p.created_at || now(), updated_at: p.updated_at || now() });
+const tms = v => { const d = new Date(v || 0); return isNaN(d) ? 0 : d.getTime(); };
+async function sbUploadPhoto(barcode, dataUrl) {
+  const blob = await (await fetch(dataUrl)).blob();
+  const path = SB.bucket + '/' + barcode + '.jpg';
+  await sbFetch('/storage/v1/object/' + path, { method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'x-upsert': 'true', 'Cache-Control': '3600' }, body: blob });
+  return SB.url + '/storage/v1/object/public/' + path + '?v=' + Date.now();
+}
+async function sbPull() {
+  const since = localStorage.getItem(PULL_KEY) || '1970-01-01T00:00:00Z';
+  const rows = await sbFetch('/rest/v1/products?select=*&updated_at=gt.' + encodeURIComponent(since) + '&order=updated_at.asc&limit=1000');
+  if (!Array.isArray(rows)) return 0;
+  let n = 0;
+  for (const r of rows) {
+    const local = await DB.get(r.barcode);
+    if (local && local.synced === false) continue;
+    if (!local || tms(r.updated_at) > tms(local.updated_at)) { await DB.put(Object.assign({}, local || {}, r, { synced: true, photo: local ? (local.photo || null) : null, photo_uploaded: true })); n++; }
+  }
+  if (rows.length) localStorage.setItem(PULL_KEY, rows[rows.length - 1].updated_at);
+  return n;
+}
+async function syncNow(silent) {
+  if (!sbConfigured() || !session || syncing) return;
+  if (!navigator.onLine) { if (!silent) toast('ما فيه إنترنت — محفوظ محليًا وبيتزامن لما يرجع الاتصال'); return; }
+  syncing = true; renderSync('جاري المزامنة…');
+  try {
+    const delq = JSON.parse(localStorage.getItem(DELQ_KEY) || '[]');
+    while (delq.length) { await sbFetch('/rest/v1/products?barcode=eq.' + encodeURIComponent(delq[0]), { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); delq.shift(); localStorage.setItem(DELQ_KEY, JSON.stringify(delq)); }
+    const dirty = (await DB.all()).filter(p => p.synced === false);
+    const rows = [];
+    for (const p of dirty) {
+      if (p.photo && !p.photo_uploaded) { try { p.photo_url = await sbUploadPhoto(p.barcode, p.photo); p.photo_uploaded = true; await DB.put(p); } catch (e) {} }
+      rows.push(toRow(p));
+    }
+    for (let i = 0; i < rows.length; i += 40) await sbFetch('/rest/v1/products?on_conflict=barcode', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(rows.slice(i, i + 40)) });
+    for (const p of dirty) { const cur = await DB.get(p.barcode); if (cur && cur.updated_at === p.updated_at) { cur.synced = true; await DB.put(cur); } }
+    const pulled = await sbPull();
+    localStorage.setItem(LASTSYNC_KEY, now());
+    if (!silent) toast('تمت المزامنة · رفع ' + dirty.length + ' · سحب ' + pulled);
+    if (currentView === 'list') renderList(); refreshCount();
+  } catch (e) { if (!silent) toast('فشلت المزامنة: ' + (e.message || e)); }
+  finally { syncing = false; renderSync(); }
+}
+function renderSync(statusText) {
+  if (!sbConfigured()) {
+    ui.syncState.textContent = 'غير مربوط'; ui.syncState.className = 'pill';
+    ui.syncBody.innerHTML = '<p class="note">عشان تنحفظ المنتجات مباشرة في قاعدة التطبيق: حط رابط مشروع Supabase والمفتاح العام (anon) في السطر <span class="mono">const SB</span> أعلى كود الملف، وشغّل ملف SQL المرفق مرة وحدة.</p>';
+    return;
+  }
+  if (!session) {
+    ui.syncState.textContent = 'سجّل الدخول'; ui.syncState.className = 'pill warn';
+    ui.syncBody.innerHTML = '<input id="sbEmail" type="email" placeholder="البريد" autocomplete="email"><input id="sbPass" type="password" placeholder="كلمة المرور" autocomplete="current-password"><button class="btn primary wide" id="sbLoginBtn">تسجيل الدخول</button><p class="note">نفس الحساب المسجّل كمحرّر في جدول product_editors. المنتجات تنحفظ محليًا دائمًا، والمزامنة تصير تلقائيًا لما يكون فيه إنترنت.</p>';
+    $('#sbLoginBtn').onclick = async () => {
+      const email = $('#sbEmail').value.trim(), pass = $('#sbPass').value;
+      if (!email || !pass) { toast('اكتب البريد وكلمة المرور'); return; }
+      try { await sbLogin(email, pass); toast('تم تسجيل الدخول'); renderSync(); syncNow(false); } catch (e) { toast('فشل الدخول: ' + (e.message || e)); }
+    };
+    return;
+  }
+  ui.syncState.textContent = statusText || 'مربوط'; ui.syncState.className = 'pill ok';
+  const last = localStorage.getItem(LASTSYNC_KEY);
+  ui.syncBody.innerHTML = '<div class="meta"><span>الحساب <b>' + esc(session.email || '') + '</b></span><span>بانتظار الرفع <b id="dirtyCount">…</b></span><span>آخر مزامنة <b>' + (last ? whenSaved(last) : '—') + '</b></span></div>'
+    + '<div class="rowbtns"><button class="btn primary" id="sbSyncBtn">مزامنة الآن</button><button class="btn ghost" id="sbLogoutBtn">خروج</button></div>';
+  DB.all().then(all => { const el = $('#dirtyCount'); if (el) el.textContent = all.filter(p => p.synced === false).length; }).catch(() => {});
+  $('#sbSyncBtn').onclick = () => syncNow(false);
+  $('#sbLogoutBtn').onclick = () => { clearSession(); renderSync(); toast('تم تسجيل الخروج'); };
+}
+
+/* ---------- navigation ---------- */
+async function go(v) {
+  if (v === currentView) return;
+  if (v === 'list') { wasScanning = scanning; if (scanning) await stopScanner(); }
+  currentView = v;
+  ui.tabs.forEach(t => t.classList.toggle('active', t.dataset.go === v));
+  ui.viewScan.classList.toggle('active', v === 'scan'); ui.viewList.classList.toggle('active', v === 'list');
+  window.scrollTo(0, 0);
+  if (v === 'list') { renderList(); renderSync(); } else if (wasScanning) { wasScanning = false; startScanner(); }
+}
+
+/* ---------- wiring ---------- */
+function wire() {
+  ui.btnStart.onclick = startScanner;
+  ui.btnStop.onclick = stopScanner;
+  ui.btnManual.onclick = manualLookup;
+  ui.manualCode.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); manualLookup(); } });
+  ui.btnPhotoScan.onclick = () => ui.fileBarcode.click();
+  ui.fileBarcode.onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) scanFromPhoto(f); };
+  ui.tabs.forEach(t => { t.onclick = () => go(t.dataset.go); });
+  ui.countPill.onclick = () => go('list');
+  ui.search.addEventListener('input', renderList);
+  ui.list.addEventListener('click', async e => { const b = e.target.closest('.row-item'); if (!b) return; const p = await DB.get(b.dataset.code); if (p) openForm(p, { editing: p.barcode, returnTo: 'list' }); });
+  ui.btnExport.onclick = () => exportJSON(true);
+  ui.btnExportLite.onclick = () => exportJSON(false);
+  ui.btnExportCsv.onclick = exportCSV;
+  ui.btnShare.onclick = shareJSON;
+  ui.btnImport.onclick = () => ui.fileImport.click();
+  ui.fileImport.onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) importFile(f); };
+
+  ui.formBack.onclick = closeForm;
+  ui.formSave.onclick = saveForm; ui.formSaveTop.onclick = saveForm;
+  ui.btnDelete.onclick = deleteCurrent;
+  ui.btnPhoto.onclick = () => ui.filePhoto.click();
+  ui.filePhoto.onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { state.photo = await compressImage(f); renderPhoto(); } catch (err) { toast('تعذر قراءة الصورة'); } };
+  ui.btnPhotoRemove.onclick = () => { state.photo = null; renderPhoto(); };
+  ui.unitSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setUnit(b.dataset.u); });
+  ui.basisSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setBasis(b.dataset.b, true); });
+  ui.fPkg.addEventListener('input', autoServ); ui.fServ.addEventListener('input', autoServ);
+  ui.fServN.addEventListener('input', () => { state.servNTouched = ui.fServN.value.trim() !== ''; });
+  ui.btnAddSize.onclick = () => { const row = addSizeRow(); row.querySelector('.s-name').focus(); };
+  ui.sizeChips.addEventListener('click', e => { const c = e.target.closest('.chip'); if (!c) return; const row = addSizeRow({ name: c.dataset.name }); row.querySelector('.s-amt').focus(); });
+  ui.btnZero.onclick = () => {
+    NUTRIENTS.filter(n => !n.core).forEach(n => { const el = $('#n_' + n.key); if (num(el.value) == null) { el.value = '0'; el.closest('.field').classList.remove('missing'); } });
+    toast('تمت تعبئة الفارغ بصفر');
+  };
+  ui.form.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
+    e.preventDefault();
+    const ins = [...ui.form.querySelectorAll('input')].filter(i => i.type !== 'file' && i.type !== 'range' && i.offsetParent !== null);
+    const i = ins.indexOf(e.target);
+    if (i > -1 && i < ins.length - 1) ins[i + 1].focus(); else e.target.blur();
+  });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && scanning) stopScanner(); });
+}
+
+/* ---------- init ---------- */
+(async function init() {
+  buildGrids(); wire(); loadSession(); renderSync();
+  try { await openDB(); } catch (e) { useLS = true; }
+  await refreshCount();
+  window.addEventListener('online', () => syncNow(true));
+  syncNow(true);
+  try { ui.btnShare.hidden = !(navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.json', { type: 'application/json' })] })); } catch (e) { ui.btnShare.hidden = true; }
+  if (!window.isSecureContext) ui.hint.textContent = 'الكاميرا تشتغل فقط عبر رابط https — ارفع الملف على Netlify Drop أو GitHub Pages ثم افتح الرابط من الجوال. تقدر تكتب الباركود يدويًا الآن.';
+  loadEngine().catch(() => {});
+})();
+})();
+</script>
+</body>
+</html>
