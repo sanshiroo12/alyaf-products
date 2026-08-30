@@ -74,6 +74,11 @@ select{background:var(--card-2);border:1px solid var(--line-2);border-radius:var
 .ai-status.err{background:var(--red-tint);color:var(--red)}
 .ai-status.busy{background:var(--card-2);color:var(--muted)}
 .ai-status.warn{background:var(--amber-tint);color:var(--amber)}
+.photo-tools{display:flex;gap:8px;width:100%;margin-top:4px}
+.photo-tools .btn{flex:1;padding:10px 8px;font-size:14px}
+.pill.bad{background:var(--red-tint);color:var(--red)}
+.chips.filter{margin:0 0 10px}
+.chip.on{color:var(--green);border-color:var(--green);background:var(--green-tint)}
 .label-prev{display:flex;align-items:center;gap:12px;margin-top:8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px}
 .label-prev img{width:72px;height:72px;object-fit:cover;border-radius:12px;background:var(--card-2);flex:none}
 .label-prev .tx{flex:1;min-width:0;font-size:13px;color:var(--muted);line-height:1.5}
@@ -273,6 +278,7 @@ input::placeholder{color:var(--faint)}
         <h2>المنتجات المحفوظة <span id="listCount" class="muted"></span></h2>
         <input id="search" type="search" placeholder="ابحث بالاسم أو العلامة أو الباركود" autocomplete="off">
       </div>
+      <div class="chips filter" id="listFilter"><button class="chip on" data-f="all">الكل</button><button class="chip" data-f="photo">صور تحتاج مراجعة</button><button class="chip" data-f="nophoto">بدون صورة</button></div>
       <div id="list" class="list"></div>
       <div id="listEmpty" class="empty" hidden>ما عندك منتجات محفوظة بعد.<br>امسح أول باركود وابدأ تبني قاعدتك.</div>
     </section>
@@ -317,7 +323,14 @@ input::placeholder{color:var(--faint)}
     <div class="photo-block">
       <img id="photoPreview" hidden alt="">
       <button class="photo-btn" id="btnPhoto">صوّر المنتج</button>
+      <div class="photo-tools" id="photoTools" hidden>
+        <button class="btn primary" id="btnPhotoOk" hidden>✓ تأكيد هذه الصورة كصورة المنتج</button>
+        <button class="btn ghost" id="btnRemoveBg" hidden>إزالة الخلفية (أبيض)</button>
+        <button class="btn ghost" id="btnUndoBg" hidden>تراجع</button>
+      </div>
+      <div id="bgStatus" class="ai-status busy" hidden></div>
       <button class="link danger" id="btnPhotoRemove" hidden>حذف الصورة</button>
+      <p class="note" style="margin:0;text-align:center">للحصول على صورة أفضل: سطح فاتح وسادة، إضاءة طبيعية، والمنتج يملأ الإطار. الإضاءة والألوان تتحسّن تلقائيًا بعد التصوير.</p>
       <input type="file" id="filePhoto" accept="image/*" capture="environment" hidden>
     </div>
     <button class="ai-btn" id="btnAiLabel" type="button"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span><span class="tx"><b id="aiBtnTitle">صوّر الملصق الغذائي</b><small>وتتعبّى القيم تلقائيًا — راجعها بعدين واحفظ</small></span></button>
@@ -464,6 +477,33 @@ function compressImage(file, max = 720, q = 0.7) {
   });
 }
 
+function enhanceImage(dataUrl) {
+  return new Promise(res => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+        const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0);
+        const id = ctx.getImageData(0, 0, c.width, c.height); const d = id.data;
+        const hist = new Uint32Array(256);
+        for (let i = 0; i < d.length; i += 4) hist[(d[i] * 77 + d[i + 1] * 151 + d[i + 2] * 28) >> 8]++;
+        const total = d.length / 4; let lo = 0, hi = 255, acc = 0;
+        for (let i = 0; i < 256; i++) { acc += hist[i]; if (acc >= total * 0.01) { lo = i; break; } }
+        acc = 0; for (let i = 255; i >= 0; i--) { acc += hist[i]; if (acc >= total * 0.01) { hi = i; break; } }
+        if (hi - lo < 40) { res(dataUrl); return; }
+        const scale = 255 / (hi - lo), sat = 1.12;
+        const lut = new Uint8ClampedArray(256); for (let i = 0; i < 256; i++) lut[i] = (i - lo) * scale;
+        for (let i = 0; i < d.length; i += 4) {
+          const r = lut[d[i]], g = lut[d[i + 1]], b = lut[d[i + 2]]; const gr = 0.299 * r + 0.587 * g + 0.114 * b;
+          d[i] = gr + (r - gr) * sat; d[i + 1] = gr + (g - gr) * sat; d[i + 2] = gr + (b - gr) * sat;
+        }
+        ctx.putImageData(id, 0, 0); res(c.toDataURL('image/jpeg', 0.82));
+      } catch (e) { res(dataUrl); }
+    };
+    img.onerror = () => res(dataUrl); img.src = dataUrl;
+  });
+}
+
 /* ---------- storage (IndexedDB, localStorage fallback) ---------- */
 let idb = null, useLS = false;
 const LSKEY = 'alyaf-products';
@@ -492,12 +532,13 @@ const LS = {
 const DB = { get: b => (useLS ? LS : IDB).get(b), all: () => (useLS ? LS : IDB).all(), put: p => (useLS ? LS : IDB).put(p), del: b => (useLS ? LS : IDB).del(b), count: () => (useLS ? LS : IDB).count() };
 
 /* ---------- UI refs ---------- */
-const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','filePhoto','fName','fBrand','fBarcode','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody','aiCard','aiState','aiBody','btnAiLabel','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelPrev','labelPrevImg','labelPrevTx','lightbox','lightboxImg','lightboxClose'];
+const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','btnRemoveBg','btnUndoBg','bgStatus','filePhoto','fName','fBrand','fBarcode','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody','aiCard','aiState','aiBody','btnAiLabel','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelPrev','labelPrevImg','labelPrevTx','lightbox','lightboxImg','lightboxClose'];
 const ui = {}; ids.forEach(id => { ui[id] = document.getElementById(id); });
 ui.viewScan = $('#view-scan'); ui.viewList = $('#view-list'); ui.viewSettings = $('#view-settings'); ui.tabs = [...document.querySelectorAll('.tab')];
 
 /* ---------- state ---------- */
-const state = { unit: 'g', pkgUnit: 'g', basis: '100', photo: null, photoUrl: null, labelPhoto: null };
+const state = { unit: 'g', pkgUnit: 'g', basis: '100', photo: null, photoUrl: null, labelPhoto: null, photoOk: false, photoBackup: null };
+let listFilterMode = 'all';
 let scanning = false, starting = false, decoding = false, busy = false, formCtx = null, currentCode = null, currentView = 'scan', wasScanning = false;
 let lastCode = '', lastAt = 0, torchOn = false, curStream = null, loopTimer = null, engine = null, enginePromise = null;
 let session = null, refreshing = null, syncing = false;
@@ -890,6 +931,11 @@ function renderPhoto() {
   ui.btnPhoto.textContent = state.photo ? 'إعادة تصوير المنتج' : (state.photoUrl ? 'صوّر المنتج بنفسك (الصورة الحالية من Open Food Facts)' : 'صوّر المنتج');
   ui.btnPhoto.classList.toggle('has', !!src);
   ui.btnPhotoRemove.hidden = !state.photo;
+  const has = !!src;
+  ui.photoTools.hidden = !has;
+  ui.btnPhotoOk.hidden = !has || state.photoOk;
+  ui.btnRemoveBg.hidden = !state.photo;
+  ui.btnUndoBg.hidden = !state.photoBackup;
 }
 function openForm(p, ctx) {
   formCtx = Object.assign({ editing: null, returnTo: 'scan', fromOFF: false }, ctx || {}); p = p || {};
@@ -900,7 +946,7 @@ function openForm(p, ctx) {
   setBasis(p.basis || '100', false);
   const src = p.nutrients || {};
   NUTRIENTS.forEach(n => { const el = $('#n_' + n.key); el.value = fmtIn(src[n.key]); el.closest('.field').classList.toggle('missing', !!formCtx.fromOFF && src[n.key] == null); });
-  state.photo = p.photo || null; state.photoUrl = p.photo_url || null; renderPhoto();
+  state.photo = p.photo || null; state.photoUrl = p.photo_url || null; state.photoOk = !!p.photo_ok; state.photoBackup = null; ui.bgStatus.hidden = true; renderPhoto();
   ui.sizeRows.innerHTML = ''; (p.sizes || []).filter(Boolean).forEach(addSizeRow);
   ui.form.querySelectorAll('.field.ai').forEach(f => f.classList.remove('ai')); ui.aiStatus.hidden = true; ui.sanityBox.hidden = true; state.labelPhoto = null; ui.labelPrev.hidden = true;
   ui.btnDelete.hidden = !formCtx.editing;
@@ -934,7 +980,7 @@ async function saveForm() {
     package_size: pkg, package_unit: state.pkgUnit, unit: state.unit, serving_size: serving, servings_per_package: servN,
     basis: state.basis, nutrients: vals, per_100, per_serving,
     complete: NUTRIENTS.every(n => vals[n.key] != null), sizes,
-    photo: state.photo || null, photo_url: state.photoUrl || null,
+    photo: state.photo || null, photo_url: state.photoUrl || null, photo_ok: !!state.photoOk,
     created_at: existing ? (existing.created_at || now()) : now(), updated_at: now(),
     synced: false, photo_uploaded: state.photo ? !!(existing && existing.photo === state.photo && existing.photo_uploaded) : true
   };
@@ -960,14 +1006,16 @@ function rowHTML(p) {
   const v = p.per_100 || p.nutrients || {}; const img = p.photo || p.photo_url;
   return '<button class="row-item" data-code="' + esc(p.barcode) + '">'
     + (img ? '<img class="thumb" src="' + esc(img) + '" alt="">' : '<div class="thumb">بدون صورة</div>')
-    + '<div class="row-main"><div class="row-name">' + esc(p.name) + '</div><div class="row-sub">' + (p.brand ? esc(p.brand) + ' · ' : '') + '<span class="mono">' + esc(p.barcode) + '</span>' + (p.sizes && p.sizes.length ? ' · ' + countSizes(p.sizes.length) : '') + '</div>' + strip(p.nutrients) + '</div>'
+    + '<div class="row-main"><div class="row-name">' + esc(p.name) + '</div><div class="row-sub">' + (p.brand ? esc(p.brand) + ' · ' : '') + '<span class="mono">' + esc(p.barcode) + '</span>' + (p.sizes && p.sizes.length ? ' · ' + countSizes(p.sizes.length) : '') + ((!p.photo && !p.photo_url) ? ' <span class="pill bad">بدون صورة</span>' : (!p.photo_ok ? ' <span class="pill warn">صورة تحتاج تأكيد</span>' : '')) + '</div>' + strip(p.nutrients) + '</div>'
     + '<div class="row-kcal"><b>' + fmt(v.kcal) + '</b><span>kcal</span><span>' + (p.per_100 ? '/100' : '/حصة') + '</span></div></button>';
 }
 async function renderList() {
   let all = []; try { all = await DB.all(); } catch (e) {}
   all.sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
   const q = ui.search.value.trim().toLowerCase();
-  const items = q ? all.filter(p => (p.name || '').toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q) || String(p.barcode).includes(q)) : all;
+  let items = q ? all.filter(p => (p.name || '').toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q) || String(p.barcode).includes(q)) : all;
+  if (listFilterMode === 'photo') items = items.filter(p => (p.photo || p.photo_url) && !p.photo_ok);
+  else if (listFilterMode === 'nophoto') items = items.filter(p => !p.photo && !p.photo_url);
   ui.list.innerHTML = items.map(rowHTML).join('');
   ui.listEmpty.hidden = all.length > 0; ui.listCount.textContent = all.length ? '(' + all.length + ')' : '';
 }
@@ -1070,7 +1118,8 @@ async function sbFetch(path, opts) {
   if (r.status === 204) return null;
   const ct = r.headers.get('content-type') || ''; return ct.includes('json') ? r.json() : r.text();
 }
-const toRow = p => ({ barcode: p.barcode, name: p.name, brand: p.brand || null, unit: p.unit || 'g', package_size: p.package_size ?? null, serving_size: p.serving_size ?? null, servings_per_package: p.servings_per_package ?? null, basis: p.basis || '100', nutrients: p.nutrients || null, per_100: p.per_100 || null, per_serving: p.per_serving || null, sizes: (p.sizes || []).filter(Boolean), complete: !!p.complete, source: p.source || 'manual', photo_url: p.photo_url || null, created_at: p.created_at || now(), updated_at: p.updated_at || now() });
+const toRow = p => ({ barcode: p.barcode, name: p.name, brand: p.brand || null, unit: p.unit || 'g', package_size: p.package_size ?? null, serving_size: p.serving_size ?? null, servings_per_package: p.servings_per_package ?? null, basis: p.basis || '100', nutrients: p.nutrients || null, per_100: p.per_100 || null, per_serving: p.per_serving || null, sizes: (p.sizes || []).filter(Boolean), complete: !!p.complete, source: p.source || 'manual', photo_url: p.photo_url || null, photo_ok: !!p.photo_ok, created_at: p.created_at || now(), updated_at: p.updated_at || now() });
+let noPhotoOkCol = false;
 const tms = v => { const d = new Date(v || 0); return isNaN(d) ? 0 : d.getTime(); };
 async function sbUploadPhoto(barcode, dataUrl) {
   const blob = await (await fetch(dataUrl)).blob();
@@ -1104,7 +1153,13 @@ async function syncNow(silent) {
       if (p.photo && !p.photo_uploaded) { try { p.photo_url = await sbUploadPhoto(p.barcode, p.photo); p.photo_uploaded = true; await DB.put(p); } catch (e) {} }
       rows.push(toRow(p));
     }
-    for (let i = 0; i < rows.length; i += 40) await sbFetch('/rest/v1/products?on_conflict=barcode', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(rows.slice(i, i + 40)) });
+    const upsert = batch => sbFetch('/rest/v1/products?on_conflict=barcode', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(batch) });
+    const stripOk = batch => batch.map(r => { const q = Object.assign({}, r); delete q.photo_ok; return q; });
+    for (let i = 0; i < rows.length; i += 40) {
+      const batch = rows.slice(i, i + 40);
+      if (noPhotoOkCol) { await upsert(stripOk(batch)); continue; }
+      try { await upsert(batch); } catch (e) { if (/photo_ok/i.test(String(e.message || e))) { noPhotoOkCol = true; await upsert(stripOk(batch)); } else throw e; }
+    }
     for (const p of dirty) { const cur = await DB.get(p.barcode); if (cur && cur.updated_at === p.updated_at) { cur.synced = true; await DB.put(cur); } }
     const pulled = await sbPull();
     localStorage.setItem(LASTSYNC_KEY, now());
@@ -1309,6 +1364,39 @@ function renderAi() {
   const c = $('#aiClearBtn'); if (c) c.onclick = () => { ai = { provider: ai.provider, key: '', model: '', speed: ai.speed }; localStorage.removeItem(AI_CONFIG_KEY); renderAi(); };
 }
 
+/* ---------- background removal (optional, runs on the phone) ---------- */
+const BG_MODULE_URLS = ['https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm', 'https://esm.sh/@imgly/background-removal@1.7.0'];
+let bgMod = null;
+async function loadBgModule() {
+  if (bgMod) return bgMod; let last = null;
+  for (const u of BG_MODULE_URLS) { try { const m = await import(u); if (m && m.removeBackground) { bgMod = m; return m; } } catch (e) { last = e; } }
+  throw last || new Error('تعذر تحميل أداة إزالة الخلفية');
+}
+function loadImage(src) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('img')); i.src = src; }); }
+async function removeBgFromPhoto() {
+  if (!state.photo) { toast('صوّر المنتج أولًا'); return; }
+  const setT = (t, cls) => { ui.bgStatus.className = 'ai-status ' + (cls || 'busy'); ui.bgStatus.textContent = t; ui.bgStatus.hidden = false; };
+  ui.btnRemoveBg.disabled = true;
+  try {
+    setT('جاري تحميل أداة إزالة الخلفية (أول مرة فقط، حوالي 40 ميجا)…');
+    const mod = await loadBgModule();
+    const src = await (await fetch(state.photo)).blob();
+    const cfg = { model: 'isnet_quint8', device: 'gpu', output: { format: 'image/png' }, progress: (k, cur, tot) => { if (String(k).startsWith('fetch:')) setT('تحميل الأداة… ' + Math.round(cur / Math.max(tot, 1) * 100) + '%'); else setT('جاري إزالة الخلفية… قد تأخذ 5 إلى 20 ثانية'); } };
+    let out; try { out = await mod.removeBackground(src, cfg); } catch (e) { out = await mod.removeBackground(src, Object.assign({}, cfg, { device: 'cpu' })); }
+    const url = URL.createObjectURL(out); const img = await loadImage(url); URL.revokeObjectURL(url);
+    const c0 = document.createElement('canvas'); c0.width = img.width; c0.height = img.height; const x0 = c0.getContext('2d'); x0.drawImage(img, 0, 0);
+    const d = x0.getImageData(0, 0, c0.width, c0.height).data; let minX = c0.width, minY = c0.height, maxX = -1, maxY = -1;
+    for (let y = 0; y < c0.height; y++) for (let x = 0; x < c0.width; x++) { if (d[(y * c0.width + x) * 4 + 3] > 24) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; } }
+    if (maxX < 0) throw new Error('ما تعرّفت على المنتج بالصورة');
+    const pad = Math.round(Math.max(maxX - minX, maxY - minY) * 0.06);
+    const sx = Math.max(0, minX - pad), sy = Math.max(0, minY - pad), sw = Math.min(c0.width, maxX + pad) - sx, sh = Math.min(c0.height, maxY + pad) - sy;
+    const c = document.createElement('canvas'); c.width = sw; c.height = sh; const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, sw, sh); ctx.drawImage(c0, sx, sy, sw, sh, 0, 0, sw, sh);
+    state.photoBackup = state.photo; state.photo = c.toDataURL('image/jpeg', 0.85); state.photoOk = true; renderPhoto();
+    setT('✓ تمت إزالة الخلفية — لو النتيجة مو مضبوطة اضغط "تراجع"', 'ok');
+  } catch (e) { setT('تعذرت إزالة الخلفية: ' + (e.message || e), 'err'); }
+  finally { ui.btnRemoveBg.disabled = false; }
+}
+
 /* ---------- navigation ---------- */
 async function go(v) {
   if (v === currentView) return;
@@ -1333,6 +1421,7 @@ function wire() {
   ui.tabs.forEach(t => { t.onclick = () => go(t.dataset.go); });
   ui.countPill.onclick = () => go('list');
   ui.search.addEventListener('input', renderList);
+  ui.listFilter.addEventListener('click', e => { const c = e.target.closest('.chip'); if (!c) return; listFilterMode = c.dataset.f; ui.listFilter.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === c)); renderList(); });
   ui.list.addEventListener('click', async e => { const b = e.target.closest('.row-item'); if (!b) return; const p = await DB.get(b.dataset.code); if (p) openForm(p, { editing: p.barcode, returnTo: 'list' }); });
   ui.btnExport.onclick = () => exportJSON(true);
   ui.btnExportLite.onclick = () => exportJSON(false);
@@ -1345,8 +1434,11 @@ function wire() {
   ui.formSave.onclick = saveForm; ui.formSaveTop.onclick = saveForm;
   ui.btnDelete.onclick = deleteCurrent;
   ui.btnPhoto.onclick = () => ui.filePhoto.click();
-  ui.filePhoto.onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { state.photo = await compressImage(f); renderPhoto(); } catch (err) { toast('تعذر قراءة الصورة'); } };
-  ui.btnPhotoRemove.onclick = () => { state.photo = null; renderPhoto(); };
+  ui.filePhoto.onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { state.photo = await enhanceImage(await compressImage(f, 800, 0.85)); state.photoOk = true; state.photoBackup = null; renderPhoto(); } catch (err) { toast('تعذر قراءة الصورة'); } };
+  ui.btnPhotoRemove.onclick = () => { state.photo = null; state.photoBackup = null; renderPhoto(); };
+  ui.btnPhotoOk.onclick = () => { state.photoOk = true; renderPhoto(); toast('تم تأكيد صورة المنتج'); };
+  ui.btnRemoveBg.onclick = removeBgFromPhoto;
+  ui.btnUndoBg.onclick = () => { if (state.photoBackup) { state.photo = state.photoBackup; state.photoBackup = null; ui.bgStatus.hidden = true; renderPhoto(); } };
   const openLightbox = src => { if (!src) return; ui.lightboxImg.src = src; ui.lightbox.hidden = false; };
   ui.lightbox.onclick = () => { ui.lightbox.hidden = true; ui.lightboxImg.src = ''; };
   ui.photoPreview.onclick = () => openLightbox(ui.photoPreview.src);
@@ -1361,7 +1453,7 @@ function wire() {
     try {
       const t0 = Date.now(); const img = await compressImage(f, 1200, 0.8);
       state.labelPhoto = img; ui.labelPrevImg.src = img; ui.labelPrev.hidden = false;
-      try { state.photo = await compressImage(f, 720, 0.7); renderPhoto(); } catch (x) {}
+      try { state.photo = await enhanceImage(await compressImage(f, 800, 0.85)); state.photoOk = true; state.photoBackup = null; renderPhoto(); } catch (x) {}
       ui.labelPrevTx.textContent = 'انحفظت كصورة للمنتج تلقائيًا — اضغط عليها للتكبير';
       const res = await aiReadLabel(img); const n = applyLabel(res.data); const secs = Math.round((Date.now() - t0) / 100) / 10;
       if (n) { aiStatus('ok', '✓ تمت قراءة ' + n + ' قيمة خلال ' + secs + ' ث (الموديل: ' + esc(res.model) + '). الخانات المظللة بالأخضر جاية من الصورة — راجعها ثم احفظ.'); showSanity(); try { ui.coreGrid.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (x) {} }
