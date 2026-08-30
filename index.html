@@ -359,7 +359,7 @@ const ZX_CDN = [
 const READ_OPTS = { formats: ['EAN13', 'EAN8', 'UPCA', 'UPCE', 'Code128', 'ITF'], maxNumberOfSymbols: 1, tryHarder: true, tryRotate: true, tryInvert: true };
 const NATIVE_FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'itf'];
 /* ===== ربط Supabase (اختياري): حط رابط مشروعك والمفتاح العام anon هنا ===== */
-const SB = { url: 'https://ysldvjskipelqzyhcmzb.supabase.co', key: 'YOUR_ANON_KEY', bucket: 'product-photos' };
+const SB = { url: 'https://ysldvjskipelqzyhcmzb.supabase.co', key: 'sb_publishable_YfhZw7y97hKzFR-7_8fg-A_dfIwD6bv', bucket: 'product-photos' };
 const SB_CONFIG_KEY = 'alyaf-sb-config';
 try { const o = JSON.parse(localStorage.getItem(SB_CONFIG_KEY) || 'null'); if (o && o.url) SB.url = o.url; if (o && o.key) SB.key = o.key; } catch (e) {}
 const sbConfigured = () => /^https?:\/\//.test(SB.url) && !/YOUR-PROJECT/.test(SB.url) && !!SB.key && !/YOUR_ANON/.test(SB.key);
