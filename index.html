@@ -61,7 +61,10 @@ main{padding:0 16px}
 .manual{display:flex;gap:8px;margin-top:12px}
 .manual input{flex:1;min-width:0}
 input:not([type=range]){background:var(--card-2);border:1px solid var(--line-2);border-radius:var(--r-in);padding:12px 14px;width:100%;font-size:17px;outline:none;color:var(--text);transition:border-color .15s;-webkit-appearance:none;appearance:none}
-input:focus{border-color:var(--green)}
+input:focus,select:focus{border-color:var(--green)}
+select{background:var(--card-2);border:1px solid var(--line-2);border-radius:var(--r-in);padding:12px 14px;width:100%;font-size:17px;color:var(--text);outline:none;font:inherit;-webkit-appearance:none;appearance:none}
+.field.ai input{border-color:var(--green);background:var(--green-tint)}
+.field.ai>span::after{content:" · من الصورة";color:var(--green)}
 input::placeholder{color:var(--faint)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:var(--r-btn);padding:12px 18px;font-weight:700;font-size:16px;white-space:nowrap}
 .btn.primary{background:var(--green);color:var(--green-ink)}
@@ -260,6 +263,10 @@ input::placeholder{color:var(--faint)}
         <div class="card-title">الربط بالتطبيق <span class="pill" id="syncState">غير مربوط</span></div>
         <div id="syncBody"></div>
       </div>
+      <div class="card sync" id="aiCard">
+        <div class="card-title">قراءة الملصق بالذكاء الاصطناعي <span class="pill" id="aiState">غير مفعّل</span></div>
+        <div id="aiBody"></div>
+      </div>
       <div id="list" class="list"></div>
       <div id="listEmpty" class="empty" hidden>ما عندك منتجات محفوظة بعد.<br>امسح أول باركود وابدأ تبني قاعدتك.</div>
     </section>
@@ -285,6 +292,8 @@ input::placeholder{color:var(--faint)}
       <button class="link danger" id="btnPhotoRemove" hidden>حذف الصورة</button>
       <input type="file" id="filePhoto" accept="image/*" capture="environment" hidden>
     </div>
+    <button class="btn ghost wide" id="btnAiLabel">صوّر الملصق الغذائي وعبّي القيم تلقائيًا</button>
+    <input type="file" id="fileLabel" accept="image/*" capture="environment" hidden>
 
     <div class="card">
       <label class="field"><span>اسم المنتج</span><input id="fName" placeholder="مثال: حليب المراعي كامل الدسم" enterkeyhint="next" autocomplete="off"></label>
@@ -452,7 +461,7 @@ const LS = {
 const DB = { get: b => (useLS ? LS : IDB).get(b), all: () => (useLS ? LS : IDB).all(), put: p => (useLS ? LS : IDB).put(p), del: b => (useLS ? LS : IDB).del(b), count: () => (useLS ? LS : IDB).count() };
 
 /* ---------- UI refs ---------- */
-const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','filePhoto','fName','fBrand','fBarcode','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody'];
+const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','filePhoto','fName','fBrand','fBarcode','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody','aiCard','aiState','aiBody','btnAiLabel','fileLabel'];
 const ui = {}; ids.forEach(id => { ui[id] = document.getElementById(id); });
 ui.viewScan = $('#view-scan'); ui.viewList = $('#view-list'); ui.tabs = [...document.querySelectorAll('.tab')];
 
@@ -787,7 +796,7 @@ function buildGrids() {
   const html = n => '<label class="field num" data-key="' + n.key + '"><span>' + n.label + '</span><input inputmode="decimal" id="n_' + n.key + '" enterkeyhint="next" autocomplete="off"><em class="unit">' + n.unit + '</em></label>';
   ui.coreGrid.innerHTML = NUTRIENTS.filter(n => n.core).map(html).join('');
   ui.moreGrid.innerHTML = NUTRIENTS.filter(n => !n.core).map(html).join('');
-  NUTRIENTS.forEach(n => { $('#n_' + n.key).addEventListener('input', e => e.target.closest('.field').classList.remove('missing')); });
+  NUTRIENTS.forEach(n => { $('#n_' + n.key).addEventListener('input', e => e.target.closest('.field').classList.remove('missing', 'ai')); });
 }
 const readNutrients = () => Object.fromEntries(NUTRIENTS.map(n => [n.key, num($('#n_' + n.key).value)]));
 function addSizeRow(sz) {
@@ -862,6 +871,7 @@ function openForm(p, ctx) {
   NUTRIENTS.forEach(n => { const el = $('#n_' + n.key); el.value = fmtIn(src[n.key]); el.closest('.field').classList.toggle('missing', !!formCtx.fromOFF && src[n.key] == null); });
   state.photo = p.photo || null; state.photoUrl = p.photo_url || null; renderPhoto();
   ui.sizeRows.innerHTML = ''; (p.sizes || []).filter(Boolean).forEach(addSizeRow);
+  ui.form.querySelectorAll('.field.ai').forEach(f => f.classList.remove('ai'));
   ui.btnDelete.hidden = !formCtx.editing;
   ui.form.hidden = false; ui.formBody.scrollTop = 0;
   if (formCtx.newSize) {
@@ -1111,6 +1121,95 @@ function renderSync(statusText) {
   $('#sbLogoutBtn').onclick = () => { clearSession(); renderSync(); toast('تم تسجيل الخروج'); };
 }
 
+/* ---------- AI label reading (optional; key stays on this device) ---------- */
+const AI_CONFIG_KEY = 'alyaf-ai-config';
+const AI_BTN_TEXT = 'صوّر الملصق الغذائي وعبّي القيم تلقائيًا';
+const AI_PROVIDERS = {
+  openai:     { label: 'OpenAI (GPT)',       model: 'gpt-4o-mini',                                   hint: 'مفتاح يبدأ بـ sk-' },
+  anthropic:  { label: 'Anthropic (Claude)', model: 'claude-haiku-4-5',                              hint: 'مفتاح يبدأ بـ sk-ant-' },
+  gemini:     { label: 'Google Gemini',      model: 'gemini-2.5-flash',                              hint: 'مفتاح يبدأ بـ AIza' },
+  groq:       { label: 'Groq (مجاني)',       model: 'meta-llama/llama-4-scout-17b-16e-instruct',    hint: 'مفتاح يبدأ بـ gsk_' },
+  openrouter: { label: 'OpenRouter',         model: 'google/gemini-2.5-flash',                       hint: 'مفتاح يبدأ بـ sk-or-' }
+};
+let ai = { provider: 'openai', key: '', model: '' };
+function loadAi() { try { const o = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || 'null'); if (o && AI_PROVIDERS[o.provider]) ai = { provider: o.provider, key: o.key || '', model: o.model || '' }; } catch (e) {} }
+const aiReady = () => !!(ai.key && AI_PROVIDERS[ai.provider]);
+const aiModel = () => ai.model || AI_PROVIDERS[ai.provider].model;
+const LABEL_PROMPT = 'You read nutrition facts labels (Arabic and/or English; digits may be Arabic-Indic ٠١٢٣٤٥٦٧٨٩). Extract the values and return ONLY one JSON object, no prose, no markdown.\n'
+  + 'Schema: {"basis":"100"|"serving","unit":"g"|"ml","serving_size":number|null,"servings_per_package":number|null,"package_size":number|null,"name":string|null,"brand":string|null,'
+  + '"nutrients":{"kcal":number|null,"protein_g":number|null,"carbs_g":number|null,"fat_g":number|null,"sugar_g":number|null,"added_sugar_g":number|null,"fiber_g":number|null,"sodium_mg":number|null,"cholesterol_mg":number|null,"potassium_mg":number|null,"iron_mg":number|null,"vitamin_d_mcg":number|null,"vitamin_b12_mcg":number|null,"caffeine_mg":number|null}}\n'
+  + 'Rules:\n- If the label has a per 100 g / 100 ml column, use it and set basis "100". Otherwise use the per-serving column and set basis "serving".\n'
+  + '- unit is "ml" for liquids/beverages, otherwise "g". serving_size in g or ml as a number. servings_per_package as printed. package_size (net weight/volume) in g or ml if printed.\n'
+  + '- Energy: if only kJ is printed, kcal = kJ / 4.184.\n- Sodium in mg. If only salt is printed: sodium_mg = salt_g * 400.\n'
+  + '- Cholesterol, potassium, iron, caffeine in mg (convert g to mg by x1000). Vitamin D and B12 in mcg; if vitamin D is in IU, mcg = IU / 40.\n'
+  + '- Keep decimals exactly as printed (0.03 is not 0.3). Any value not printed must be null; never guess. Ignore trans fat and saturated fat.\n'
+  + '- name and brand only if clearly printed, else null.';
+async function aiReadLabel(dataUrl) {
+  const b64 = dataUrl.split(',')[1]; const p = ai.provider, model = aiModel();
+  let url, body, pick; const headers = { 'Content-Type': 'application/json' };
+  if (p === 'gemini') {
+    url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(ai.key);
+    body = { contents: [{ parts: [{ inline_data: { mime_type: 'image/jpeg', data: b64 } }, { text: LABEL_PROMPT }] }], generationConfig: { temperature: 0, responseMimeType: 'application/json' } };
+    pick = j => j.candidates[0].content.parts.map(x => x.text || '').join('');
+  } else if (p === 'anthropic') {
+    url = 'https://api.anthropic.com/v1/messages';
+    Object.assign(headers, { 'x-api-key': ai.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' });
+    body = { model, max_tokens: 1024, temperature: 0, messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } }, { type: 'text', text: LABEL_PROMPT }] }] };
+    pick = j => j.content.map(x => x.text || '').join('');
+  } else {
+    url = p === 'groq' ? 'https://api.groq.com/openai/v1/chat/completions' : (p === 'openrouter' ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions');
+    headers.Authorization = 'Bearer ' + ai.key;
+    const image = p === 'groq' ? { url: dataUrl } : { url: dataUrl, detail: 'high' };
+    body = { model, temperature: 0, max_tokens: 1024, messages: [{ role: 'user', content: [{ type: 'text', text: LABEL_PROMPT }, { type: 'image_url', image_url: image }] }] };
+    if (p !== 'groq') body.response_format = { type: 'json_object' };
+    pick = j => j.choices[0].message.content;
+  }
+  const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+  const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (e) {}
+  if (!r.ok) {
+    const msg = (j && ((j.error && (j.error.message || j.error.type)) || j.message)) || txt.slice(0, 200);
+    if (r.status === 401 || r.status === 403) throw new Error('المفتاح غير صحيح أو غير مفعّل');
+    if (r.status === 429) throw new Error('تجاوزت الحد المسموح — انتظر دقيقة وحاول');
+    if (r.status === 402 || /insufficient|quota|billing|credit/i.test(msg)) throw new Error('الرصيد غير كافٍ أو الفوترة غير مفعّلة عند المزوّد');
+    throw new Error(msg);
+  }
+  const out = String(pick(j) || ''); const a = out.indexOf('{'), b = out.lastIndexOf('}');
+  if (a < 0 || b < 0) throw new Error('رد غير مفهوم من الذكاء الاصطناعي');
+  return JSON.parse(out.slice(a, b + 1));
+}
+function applyLabel(r) {
+  const val = v => (typeof v === 'string') ? num(v) : ((typeof v === 'number' && isFinite(v)) ? v : null);
+  const mark = el => { const f = el.closest('.field'); if (f) { f.classList.add('ai'); f.classList.remove('missing'); } };
+  let count = 0;
+  if (r.unit === 'ml' && state.unit !== 'ml') setUnit('ml'); else if (r.unit === 'g' && state.unit !== 'g') setUnit('g');
+  const serv = val(r.serving_size), n = val(r.servings_per_package), pkg = val(r.package_size);
+  if (serv > 0) { ui.fServ.value = fmtIn(r2(serv)); mark(ui.fServ); }
+  if (n > 0) { ui.fServN.value = fmtIn(r2(n)); mark(ui.fServN); }
+  if (pkg > 0) { setPkgBase(pkg); mark(ui.fPkg); } else if (serv > 0 && n > 0) { setPkgBase(r2(serv * n)); mark(ui.fPkg); }
+  setBasis(r.basis === 'serving' ? 'serving' : '100', false);
+  NUTRIENTS.forEach(x => { const v = val(r.nutrients ? r.nutrients[x.key] : null); if (v != null && v >= 0) { const el = $('#n_' + x.key); el.value = fmtIn(r2(v)); mark(el); count++; } });
+  if (r.name && !ui.fName.value.trim()) ui.fName.value = String(r.name).trim();
+  if (r.brand && !ui.fBrand.value.trim()) ui.fBrand.value = String(r.brand).trim();
+  return count;
+}
+function renderAi() {
+  const opts = Object.keys(AI_PROVIDERS).map(k => '<option value="' + k + '"' + (k === ai.provider ? ' selected' : '') + '>' + AI_PROVIDERS[k].label + '</option>').join('');
+  ui.aiState.textContent = aiReady() ? 'مفعّل' : 'غير مفعّل'; ui.aiState.className = 'pill' + (aiReady() ? ' ok' : '');
+  ui.aiBody.innerHTML = '<p class="note">داخل نموذج المنتج تصوّر الملصق الغذائي وتتعبّى الخانات تلقائيًا، وتراجعها قبل الحفظ. المفتاح ينحفظ على هذا الجهاز فقط ولا يُرفع لأي مكان.</p>'
+    + '<label class="field"><span>المزوّد</span><select id="aiProvider">' + opts + '</select></label>'
+    + '<label class="field"><span>المفتاح</span><input id="aiKey" type="password" autocomplete="off" placeholder="' + AI_PROVIDERS[ai.provider].hint + '"></label>'
+    + '<label class="field"><span>الموديل (اتركه فاضي للافتراضي)</span><input id="aiModel" autocomplete="off" placeholder="' + AI_PROVIDERS[ai.provider].model + '"></label>'
+    + '<div class="rowbtns"><button class="btn primary" id="aiSaveBtn">حفظ</button>' + (aiReady() ? '<button class="btn ghost" id="aiClearBtn">إزالة</button>' : '') + '</div>';
+  $('#aiKey').value = ai.key || ''; $('#aiModel').value = ai.model || '';
+  $('#aiProvider').onchange = e => { const k = e.target.value; $('#aiKey').placeholder = AI_PROVIDERS[k].hint; $('#aiModel').placeholder = AI_PROVIDERS[k].model; };
+  $('#aiSaveBtn').onclick = () => {
+    const key = $('#aiKey').value.trim(); if (key.length < 10) { toast('الصق المفتاح كامل'); return; }
+    ai = { provider: $('#aiProvider').value, key, model: $('#aiModel').value.trim() };
+    localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(ai)); toast('تم حفظ إعدادات الذكاء الاصطناعي'); renderAi();
+  };
+  const c = $('#aiClearBtn'); if (c) c.onclick = () => { ai = { provider: ai.provider, key: '', model: '' }; localStorage.removeItem(AI_CONFIG_KEY); renderAi(); };
+}
+
 /* ---------- navigation ---------- */
 async function go(v) {
   if (v === currentView) return;
@@ -1147,6 +1246,17 @@ function wire() {
   ui.btnPhoto.onclick = () => ui.filePhoto.click();
   ui.filePhoto.onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { state.photo = await compressImage(f); renderPhoto(); } catch (err) { toast('تعذر قراءة الصورة'); } };
   ui.btnPhotoRemove.onclick = () => { state.photo = null; renderPhoto(); };
+  ui.btnAiLabel.onclick = () => { if (!aiReady()) { toast('فعّل قراءة الملصق أولًا من تبويب المنتجات (المزوّد والمفتاح)'); return; } ui.fileLabel.click(); };
+  ui.fileLabel.onchange = async e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    ui.btnAiLabel.disabled = true; ui.btnAiLabel.textContent = 'جاري قراءة الملصق…';
+    try {
+      const img = await compressImage(f, 1400, 0.85);
+      const r = await aiReadLabel(img); const n = applyLabel(r);
+      toast(n ? 'تمت قراءة ' + n + ' قيمة — راجع الخانات المظللة بالأخضر ثم احفظ' : 'ما لقيت قيم واضحة بالصورة — جرّب صورة أقرب وأوضح');
+    } catch (err) { toast('تعذرت القراءة: ' + (err.message || err)); }
+    finally { ui.btnAiLabel.disabled = false; ui.btnAiLabel.textContent = AI_BTN_TEXT; }
+  };
   ui.unitSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setUnit(b.dataset.u); });
   ui.basisSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setBasis(b.dataset.b, true); });
   ui.fPkg.addEventListener('input', () => linkFields('pkg')); ui.fServ.addEventListener('input', () => linkFields('serving')); ui.fServN.addEventListener('input', () => linkFields('servings'));
@@ -1164,7 +1274,7 @@ function wire() {
 
 /* ---------- init ---------- */
 (async function init() {
-  buildGrids(); wire(); loadSession(); renderSync();
+  buildGrids(); wire(); loadSession(); renderSync(); loadAi(); renderAi();
   try { await openDB(); } catch (e) { useLS = true; }
   await refreshCount();
   window.addEventListener('online', () => syncNow(true));
