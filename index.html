@@ -313,11 +313,11 @@ input::placeholder{color:var(--faint)}
       <span>القيم الغذائية لكل</span>
       <div class="seg" id="basisSeg"><button data-b="100" class="on">100 <i class="u-unit">غ</i></button><button data-b="serving">حصة واحدة</button></div>
     </div>
-    <p class="note">اكتب القيم زي ما هي على الملصق. لو اخترت "حصة واحدة" وكتبت حجم الحصة، بيتم حساب القيم لكل 100 تلقائيًا عند الحفظ.</p>
+    <p class="note">اكتب القيم زي ما هي على الملصق. أي حقل تتركه فاضي ينحفظ صفر تلقائيًا. لو اخترت "حصة واحدة" وكتبت حجم الحصة، بيتم حساب القيم لكل 100 تلقائيًا عند الحفظ.</p>
 
     <div class="card"><div class="card-title">الأساسيات</div><div class="grid2" id="coreGrid"></div></div>
     <div class="card">
-      <div class="card-title">التفاصيل <button class="link" id="btnZero">اعتبر الفارغ = 0</button></div>
+      <div class="card-title">التفاصيل <span class="pill">أي حقل فاضي ينحفظ 0 تلقائيًا</span></div>
       <div class="grid2" id="moreGrid"></div>
     </div>
 
@@ -355,7 +355,7 @@ const ZX_CDN = [
 const READ_OPTS = { formats: ['EAN13', 'EAN8', 'UPCA', 'UPCE', 'Code128', 'ITF'], maxNumberOfSymbols: 1, tryHarder: true, tryRotate: true, tryInvert: true };
 const NATIVE_FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'itf'];
 /* ===== ربط Supabase (اختياري): حط رابط مشروعك والمفتاح العام anon هنا ===== */
-const SB = { url: 'https://ysldvjskipelqzyhcmzb.supabase.co', key: 'sb_publishable_YfhZw7y97hKzFR-7_8fg-A_dfIwD6bv', bucket: 'product-photos' };
+const SB = { url: 'https://ysldvjskipelqzyhcmzb.supabase.co', key: 'sb_publishable_YfhZw7y97HkzFR-7_8fg-A_dfIwD6bv', bucket: 'product-photos' };
 const sbConfigured = () => /^https?:\/\//.test(SB.url) && !/YOUR-PROJECT/.test(SB.url) && !!SB.key && !/YOUR_ANON/.test(SB.key);
 const SESSION_KEY = 'alyaf-sb-session', PULL_KEY = 'alyaf-sb-lastpull', DELQ_KEY = 'alyaf-sb-deletes', LASTSYNC_KEY = 'alyaf-sb-lastsync';
 const OFF_FIELDS = 'code,product_name,product_name_ar,product_name_en,brands,quantity,serving_size,serving_quantity,nutriments,image_front_small_url,image_front_url,image_url';
@@ -446,7 +446,7 @@ const LS = {
 const DB = { get: b => (useLS ? LS : IDB).get(b), all: () => (useLS ? LS : IDB).all(), put: p => (useLS ? LS : IDB).put(p), del: b => (useLS ? LS : IDB).del(b), count: () => (useLS ? LS : IDB).count() };
 
 /* ---------- UI refs ---------- */
-const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','filePhoto','fName','fBrand','fBarcode','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','btnZero','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody'];
+const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','filePhoto','fName','fBrand','fBarcode','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody'];
 const ui = {}; ids.forEach(id => { ui[id] = document.getElementById(id); });
 ui.viewScan = $('#view-scan'); ui.viewList = $('#view-list'); ui.tabs = [...document.querySelectorAll('.tab')];
 
@@ -856,6 +856,7 @@ async function saveForm() {
   const name = ui.fName.value.trim(); if (!name) { toast('اكتب اسم المنتج'); ui.fName.focus(); return; }
   const barcode = latin(ui.fBarcode.value).replace(/\D/g, ''); if (barcode.length < 6) { toast('الباركود غير صحيح'); ui.fBarcode.focus(); return; }
   const vals = readNutrients(); if (vals.kcal == null) { toast('السعرات مطلوبة'); $('#n_kcal').focus(); return; }
+  NUTRIENTS.forEach(n => { if (vals[n.key] == null) vals[n.key] = 0; });
   const serving = num(ui.fServ.value), pkg = num(ui.fPkg.value), servN = num(ui.fServN.value);
   let per_100 = null, per_serving = null;
   if (state.basis === '100') { per_100 = vals; if (serving > 0) per_serving = scale(vals, serving / 100); }
@@ -1115,10 +1116,6 @@ function wire() {
   ui.fServN.addEventListener('input', () => { state.servNTouched = ui.fServN.value.trim() !== ''; });
   ui.btnAddSize.onclick = () => { const row = addSizeRow(); row.querySelector('.s-name').focus(); };
   ui.sizeChips.addEventListener('click', e => { const c = e.target.closest('.chip'); if (!c) return; const row = addSizeRow({ name: c.dataset.name }); row.querySelector('.s-amt').focus(); });
-  ui.btnZero.onclick = () => {
-    NUTRIENTS.filter(n => !n.core).forEach(n => { const el = $('#n_' + n.key); if (num(el.value) == null) { el.value = '0'; el.closest('.field').classList.remove('missing'); } });
-    toast('تمت تعبئة الفارغ بصفر');
-  };
   ui.form.addEventListener('keydown', e => {
     if (e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
     e.preventDefault();
