@@ -63,6 +63,19 @@ main{padding:0 16px}
 input:not([type=range]){background:var(--card-2);border:1px solid var(--line-2);border-radius:var(--r-in);padding:12px 14px;width:100%;font-size:17px;outline:none;color:var(--text);transition:border-color .15s;-webkit-appearance:none;appearance:none}
 input:focus,select:focus{border-color:var(--green)}
 select{background:var(--card-2);border:1px solid var(--line-2);border-radius:var(--r-in);padding:12px 14px;width:100%;font-size:17px;color:var(--text);outline:none;font:inherit;-webkit-appearance:none;appearance:none}
+.ai-btn{width:100%;margin-top:10px;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--r-card);background:var(--green-tint);border:1.5px solid var(--green);text-align:right}
+.ai-btn .ic{width:42px;height:42px;border-radius:12px;background:var(--green);color:var(--green-ink);display:flex;align-items:center;justify-content:center;flex:none}
+.ai-btn .tx{flex:1;min-width:0}
+.ai-btn .tx b{display:block;font-weight:800;font-size:16px;color:var(--text)}
+.ai-btn .tx small{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+.ai-btn:disabled{opacity:.6}
+.ai-status{margin-top:8px;padding:10px 12px;border-radius:12px;font-size:14px;font-weight:700;line-height:1.5}
+.ai-status.ok{background:var(--green-tint);color:var(--green)}
+.ai-status.err{background:var(--red-tint);color:var(--red)}
+.ai-status.busy{background:var(--card-2);color:var(--muted)}
+.unit-row{margin-bottom:10px}
+.unit-row .seg{display:flex;width:100%}
+.unit-row .seg button{flex:1;padding:8px 0}
 .field.ai input{border-color:var(--green);background:var(--green-tint)}
 .field.ai>span::after{content:" · من الصورة";color:var(--green)}
 input::placeholder{color:var(--faint)}
@@ -203,7 +216,7 @@ input::placeholder{color:var(--faint)}
 .tabs{position:fixed;bottom:0;left:0;right:0;display:flex;gap:6px;max-width:520px;margin:0 auto;background:rgba(20,27,35,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:8px 8px calc(8px + var(--sab));z-index:20}
 .tab{flex:1;padding:12px;border-radius:14px;font-weight:800;color:var(--muted);font-size:15px}
 .tab.active{color:var(--green);background:var(--green-tint)}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + var(--sab));background:#E9EEF3;color:#0C1117;padding:10px 16px;border-radius:999px;font-weight:700;font-size:14px;z-index:100;max-width:90%;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + var(--sab));background:#E9EEF3;color:#0C1117;padding:10px 16px;border-radius:16px;line-height:1.5;font-weight:700;font-size:14px;z-index:100;max-width:90%;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.35)}
 :focus-visible{outline:2px solid var(--green);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 [hidden]{display:none!important}
@@ -292,7 +305,8 @@ input::placeholder{color:var(--faint)}
       <button class="link danger" id="btnPhotoRemove" hidden>حذف الصورة</button>
       <input type="file" id="filePhoto" accept="image/*" capture="environment" hidden>
     </div>
-    <button class="btn ghost wide" id="btnAiLabel">صوّر الملصق الغذائي وعبّي القيم تلقائيًا</button>
+    <button class="ai-btn" id="btnAiLabel" type="button"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span><span class="tx"><b id="aiBtnTitle">صوّر الملصق الغذائي</b><small>وتتعبّى القيم تلقائيًا — راجعها بعدين واحفظ</small></span></button>
+    <div id="aiStatus" class="ai-status" hidden></div>
     <input type="file" id="fileLabel" accept="image/*" capture="environment" hidden>
 
     <div class="card">
@@ -302,9 +316,8 @@ input::placeholder{color:var(--faint)}
     </div>
 
     <div class="card">
-      <div class="card-title">العبوة والحصص
-        <span class="seg small" id="unitSeg"><button data-u="g" class="on">غ</button><button data-u="kg">كغ</button><button data-u="ml">مل</button><button data-u="l">لتر</button></span>
-      </div>
+      <div class="card-title">العبوة والحصص <span class="pill">وحدة العبوة</span></div>
+      <div class="unit-row"><span class="seg" id="unitSeg"><button data-u="g" class="on">غ</button><button data-u="kg">كغ</button><button data-u="ml">مل</button><button data-u="l">لتر</button></span></div>
       <div class="grid3">
         <label class="field num"><span>وزن العبوة</span><input id="fPkg" inputmode="decimal" enterkeyhint="next"><em class="unit" id="pkgUnit">غ</em></label>
         <label class="field num"><span>حجم الحصة</span><input id="fServ" inputmode="decimal" enterkeyhint="next"><em class="unit u-unit">غ</em></label>
@@ -461,7 +474,7 @@ const LS = {
 const DB = { get: b => (useLS ? LS : IDB).get(b), all: () => (useLS ? LS : IDB).all(), put: p => (useLS ? LS : IDB).put(p), del: b => (useLS ? LS : IDB).del(b), count: () => (useLS ? LS : IDB).count() };
 
 /* ---------- UI refs ---------- */
-const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','filePhoto','fName','fBrand','fBarcode','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody','aiCard','aiState','aiBody','btnAiLabel','fileLabel'];
+const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','filePhoto','fName','fBrand','fBarcode','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody','aiCard','aiState','aiBody','btnAiLabel','aiBtnTitle','aiStatus','fileLabel'];
 const ui = {}; ids.forEach(id => { ui[id] = document.getElementById(id); });
 ui.viewScan = $('#view-scan'); ui.viewList = $('#view-list'); ui.tabs = [...document.querySelectorAll('.tab')];
 
@@ -871,7 +884,7 @@ function openForm(p, ctx) {
   NUTRIENTS.forEach(n => { const el = $('#n_' + n.key); el.value = fmtIn(src[n.key]); el.closest('.field').classList.toggle('missing', !!formCtx.fromOFF && src[n.key] == null); });
   state.photo = p.photo || null; state.photoUrl = p.photo_url || null; renderPhoto();
   ui.sizeRows.innerHTML = ''; (p.sizes || []).filter(Boolean).forEach(addSizeRow);
-  ui.form.querySelectorAll('.field.ai').forEach(f => f.classList.remove('ai'));
+  ui.form.querySelectorAll('.field.ai').forEach(f => f.classList.remove('ai')); ui.aiStatus.hidden = true;
   ui.btnDelete.hidden = !formCtx.editing;
   ui.form.hidden = false; ui.formBody.scrollTop = 0;
   if (formCtx.newSize) {
@@ -1123,18 +1136,17 @@ function renderSync(statusText) {
 
 /* ---------- AI label reading (optional; key stays on this device) ---------- */
 const AI_CONFIG_KEY = 'alyaf-ai-config';
-const AI_BTN_TEXT = 'صوّر الملصق الغذائي وعبّي القيم تلقائيًا';
 const AI_PROVIDERS = {
-  openai:     { label: 'OpenAI (GPT)',       model: 'gpt-4o-mini',                                   hint: 'مفتاح يبدأ بـ sk-' },
-  anthropic:  { label: 'Anthropic (Claude)', model: 'claude-haiku-4-5',                              hint: 'مفتاح يبدأ بـ sk-ant-' },
-  gemini:     { label: 'Google Gemini',      model: 'gemini-2.5-flash',                              hint: 'مفتاح يبدأ بـ AIza أو AQ.' },
-  groq:       { label: 'Groq (مجاني)',       model: 'meta-llama/llama-4-scout-17b-16e-instruct',    hint: 'مفتاح يبدأ بـ gsk_' },
-  openrouter: { label: 'OpenRouter',         model: 'google/gemini-2.5-flash',                       hint: 'مفتاح يبدأ بـ sk-or-' }
+  openai:     { label: 'OpenAI (GPT)',       models: ['gpt-4o-mini', 'gpt-4.1-mini', 'gpt-5-mini'],                                                   hint: 'مفتاح يبدأ بـ sk-' },
+  anthropic:  { label: 'Anthropic (Claude)', models: ['claude-haiku-4-5', 'claude-sonnet-4-5'],                                                        hint: 'مفتاح يبدأ بـ sk-ant-' },
+  gemini:     { label: 'Google Gemini',      models: ['gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash-lite', 'gemini-2.5-flash'], hint: 'مفتاح يبدأ بـ AIza أو AQ.' },
+  groq:       { label: 'Groq (مجاني)',       models: ['meta-llama/llama-4-scout-17b-16e-instruct', 'meta-llama/llama-4-maverick-17b-128e-instruct'], hint: 'مفتاح يبدأ بـ gsk_' },
+  openrouter: { label: 'OpenRouter',         models: ['google/gemini-2.5-flash', 'openai/gpt-4o-mini'],                                              hint: 'مفتاح يبدأ بـ sk-or-' }
 };
+Object.values(AI_PROVIDERS).forEach(v => { v.model = v.models[0]; });
 let ai = { provider: 'openai', key: '', model: '' };
 function loadAi() { try { const o = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || 'null'); if (o && AI_PROVIDERS[o.provider]) ai = { provider: o.provider, key: o.key || '', model: o.model || '' }; } catch (e) {} }
 const aiReady = () => !!(ai.key && AI_PROVIDERS[ai.provider]);
-const aiModel = () => ai.model || AI_PROVIDERS[ai.provider].model;
 const LABEL_PROMPT = 'You read nutrition facts labels (Arabic and/or English; digits may be Arabic-Indic ٠١٢٣٤٥٦٧٨٩). Extract the values and return ONLY one JSON object, no prose, no markdown.\n'
   + 'Schema: {"basis":"100"|"serving","unit":"g"|"ml","serving_size":number|null,"servings_per_package":number|null,"package_size":number|null,"name":string|null,"brand":string|null,'
   + '"nutrients":{"kcal":number|null,"protein_g":number|null,"carbs_g":number|null,"fat_g":number|null,"sugar_g":number|null,"added_sugar_g":number|null,"fiber_g":number|null,"sodium_mg":number|null,"cholesterol_mg":number|null,"potassium_mg":number|null,"iron_mg":number|null,"vitamin_d_mcg":number|null,"vitamin_b12_mcg":number|null,"caffeine_mg":number|null}}\n'
@@ -1144,11 +1156,12 @@ const LABEL_PROMPT = 'You read nutrition facts labels (Arabic and/or English; di
   + '- Cholesterol, potassium, iron, caffeine in mg (convert g to mg by x1000). Vitamin D and B12 in mcg; if vitamin D is in IU, mcg = IU / 40.\n'
   + '- Keep decimals exactly as printed (0.03 is not 0.3). Any value not printed must be null; never guess. Ignore trans fat and saturated fat.\n'
   + '- name and brand only if clearly printed, else null.';
-async function aiReadLabel(dataUrl) {
-  const b64 = dataUrl.split(',')[1]; const p = ai.provider, model = aiModel();
+class AiError extends Error { constructor(msg, status, retryable) { super(msg); this.status = status; this.retryable = !!retryable; } }
+async function aiRequest(model, dataUrl) {
+  const b64 = dataUrl.split(',')[1]; const p = ai.provider;
   let url, body, pick; const headers = { 'Content-Type': 'application/json' };
   if (p === 'gemini') {
-    url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(ai.key);
+    url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent';
     body = { contents: [{ parts: [{ inline_data: { mime_type: 'image/jpeg', data: b64 } }, { text: LABEL_PROMPT }] }], generationConfig: { temperature: 0, responseMimeType: 'application/json' } };
     pick = j => j.candidates[0].content.parts.map(x => x.text || '').join('');
   } else if (p === 'anthropic') {
@@ -1164,28 +1177,36 @@ async function aiReadLabel(dataUrl) {
     if (p !== 'groq') body.response_format = { type: 'json_object' };
     pick = j => j.choices[0].message.content;
   }
-  let r, txt, j = null;
+  let r;
   if (p === 'gemini') {
-    const base = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent';
-    r = await fetch(base + '?key=' + encodeURIComponent(ai.key), { method: 'POST', headers: Object.assign({ 'x-goog-api-key': ai.key }, headers), body: JSON.stringify(body) });
-    if (r.status === 400 || r.status === 401 || r.status === 403) {
-      const r2 = await fetch(base, { method: 'POST', headers: Object.assign({ Authorization: 'Bearer ' + ai.key }, headers), body: JSON.stringify(body) });
+    r = await fetch(url + '?key=' + encodeURIComponent(ai.key), { method: 'POST', headers: Object.assign({ 'x-goog-api-key': ai.key }, headers), body: JSON.stringify(body) });
+    if (r.status === 401 || r.status === 403) {
+      const r2 = await fetch(url, { method: 'POST', headers: Object.assign({ Authorization: 'Bearer ' + ai.key }, headers), body: JSON.stringify(body) });
       if (r2.ok || r2.status !== 401) r = r2;
     }
-  } else {
-    r = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
-  }
-  txt = await r.text(); try { j = JSON.parse(txt); } catch (e) {}
+  } else r = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+  const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (e) {}
   if (!r.ok) {
-    const msg = (j && ((j.error && (j.error.message || j.error.type)) || j.message)) || txt.slice(0, 200);
-    if (r.status === 401 || r.status === 403) throw new Error('المفتاح غير صحيح أو غير مفعّل');
-    if (r.status === 429) throw new Error('تجاوزت الحد المسموح — انتظر دقيقة وحاول');
-    if (r.status === 402 || /insufficient|quota|billing|credit/i.test(msg)) throw new Error('الرصيد غير كافٍ أو الفوترة غير مفعّلة عند المزوّد');
-    throw new Error(msg);
+    const msg = (j && ((j.error && (j.error.message || j.error.type)) || j.message)) || txt.slice(0, 300);
+    const modelGone = r.status === 404 || /not available|not found|no longer|deprecated|unsupported model|does not exist|not supported/i.test(msg);
+    if (modelGone) throw new AiError('الموديل ' + model + ' غير متاح: ' + msg, r.status, true);
+    if (r.status === 429) throw new AiError('تجاوزت الحد المسموح لهذا الموديل — ' + msg, r.status, true);
+    if (r.status === 401 || r.status === 403) throw new AiError('المفتاح غير صحيح أو غير مفعّل — ' + msg, r.status, false);
+    if (r.status === 402 || /insufficient|quota|billing|credit/i.test(msg)) throw new AiError('الرصيد غير كافٍ أو الفوترة غير مفعّلة عند المزوّد — ' + msg, r.status, false);
+    throw new AiError(msg, r.status, false);
   }
   const out = String(pick(j) || ''); const a = out.indexOf('{'), b = out.lastIndexOf('}');
-  if (a < 0 || b < 0) throw new Error('رد غير مفهوم من الذكاء الاصطناعي');
-  return JSON.parse(out.slice(a, b + 1));
+  if (a < 0 || b < 0) throw new AiError('رد غير مفهوم من الذكاء الاصطناعي', 0, false);
+  return { data: JSON.parse(out.slice(a, b + 1)), model };
+}
+async function aiReadLabel(dataUrl) {
+  const models = ai.model ? [ai.model] : AI_PROVIDERS[ai.provider].models;
+  let last = null;
+  for (const m of models) {
+    try { return await aiRequest(m, dataUrl); }
+    catch (e) { last = e; if (!(e instanceof AiError) || !e.retryable) throw e; }
+  }
+  throw last || new Error('فشل');
 }
 function applyLabel(r) {
   const val = v => (typeof v === 'string') ? num(v) : ((typeof v === 'number' && isFinite(v)) ? v : null);
@@ -1257,15 +1278,19 @@ function wire() {
   ui.filePhoto.onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { state.photo = await compressImage(f); renderPhoto(); } catch (err) { toast('تعذر قراءة الصورة'); } };
   ui.btnPhotoRemove.onclick = () => { state.photo = null; renderPhoto(); };
   ui.btnAiLabel.onclick = () => { if (!aiReady()) { toast('فعّل قراءة الملصق أولًا من تبويب المنتجات (المزوّد والمفتاح)'); return; } ui.fileLabel.click(); };
+  const aiStatus = (cls, html) => { ui.aiStatus.className = 'ai-status ' + cls; ui.aiStatus.innerHTML = html; ui.aiStatus.hidden = false; };
   ui.fileLabel.onchange = async e => {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-    ui.btnAiLabel.disabled = true; ui.btnAiLabel.textContent = 'جاري قراءة الملصق…';
+    ui.btnAiLabel.disabled = true; ui.aiBtnTitle.textContent = 'جاري قراءة الملصق…';
+    aiStatus('busy', 'جاري إرسال الصورة إلى ' + esc(AI_PROVIDERS[ai.provider].label) + '…');
     try {
       const img = await compressImage(f, 1400, 0.85);
-      const r = await aiReadLabel(img); const n = applyLabel(r);
-      toast(n ? 'تمت قراءة ' + n + ' قيمة — راجع الخانات المظللة بالأخضر ثم احفظ' : 'ما لقيت قيم واضحة بالصورة — جرّب صورة أقرب وأوضح');
-    } catch (err) { toast('تعذرت القراءة: ' + (err.message || err)); }
-    finally { ui.btnAiLabel.disabled = false; ui.btnAiLabel.textContent = AI_BTN_TEXT; }
+      const res = await aiReadLabel(img); const n = applyLabel(res.data);
+      if (n) { aiStatus('ok', '✓ تمت قراءة ' + n + ' قيمة من الصورة (الموديل: ' + esc(res.model) + '). الخانات المظللة بالأخضر جاية من الصورة — راجعها ثم احفظ.'); try { ui.coreGrid.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (x) {} }
+      else aiStatus('err', 'ما لقيت قيم واضحة بالصورة — قرّب الكاميرا حتى يملأ الملصق الصورة، وتأكد من الإضاءة، وجرّب مرة ثانية.');
+    } catch (err) {
+      aiStatus('err', 'تعذرت القراءة: ' + esc(err.message || err) + '<br>جرّب صورة أوضح، أو غيّر المزوّد أو الموديل من تبويب "المنتجات".');
+    } finally { ui.btnAiLabel.disabled = false; ui.aiBtnTitle.textContent = 'صوّر الملصق الغذائي'; }
   };
   ui.unitSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setUnit(b.dataset.u); });
   ui.basisSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setBasis(b.dataset.b, true); });
