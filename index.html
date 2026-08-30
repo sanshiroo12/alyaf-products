@@ -355,7 +355,7 @@ const ZX_CDN = [
 const READ_OPTS = { formats: ['EAN13', 'EAN8', 'UPCA', 'UPCE', 'Code128', 'ITF'], maxNumberOfSymbols: 1, tryHarder: true, tryRotate: true, tryInvert: true };
 const NATIVE_FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'itf'];
 /* ===== ربط Supabase (اختياري): حط رابط مشروعك والمفتاح العام anon هنا ===== */
-const SB = { url: 'https://ysldvjskipelqzyhcmzb.supabase.co', key: 'sb_publishable_YfhZw7y97HkzFR-7_8fg-A_dfIwD6bv', bucket: 'product-photos' };
+const SB = { url: 'https://ysldvjskipelqzyhcmzb.supabase.co', key: 'sb_publishable_YfhZw7y97hKzFR-7_8fg-A_dfIwD6bv', bucket: 'product-photos' };
 const sbConfigured = () => /^https?:\/\//.test(SB.url) && !/YOUR-PROJECT/.test(SB.url) && !!SB.key && !/YOUR_ANON/.test(SB.key);
 const SESSION_KEY = 'alyaf-sb-session', PULL_KEY = 'alyaf-sb-lastpull', DELQ_KEY = 'alyaf-sb-deletes', LASTSYNC_KEY = 'alyaf-sb-lastsync';
 const OFF_FIELDS = 'code,product_name,product_name_ar,product_name_en,brands,quantity,serving_size,serving_quantity,nutriments,image_front_small_url,image_front_url,image_url';
