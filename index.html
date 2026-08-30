@@ -75,6 +75,19 @@ select{background:var(--card-2);border:1px solid var(--line-2);border-radius:var
 .ai-status.busy{background:var(--card-2);color:var(--muted)}
 .ai-status.warn{background:var(--amber-tint);color:var(--amber)}
 .photo-tools{display:flex;gap:8px;width:100%;margin-top:4px}
+.photo-tools .btn svg{width:18px;height:18px;flex:none}
+.label-card{margin-top:12px}
+.label-row{display:flex;gap:12px;align-items:stretch}
+.label-thumb{width:84px;flex:none;border-radius:14px;background:var(--card-2);border:1px dashed var(--line-2);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--faint);font-size:12px;text-align:center;cursor:zoom-in}
+.label-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.label-row .ai-btn{margin-top:0;flex:1}
+.off-ref .off-head{display:flex;gap:10px;align-items:center}
+.off-ref .off-head img{width:52px;height:52px;border-radius:10px;object-fit:cover;background:var(--card-2);flex:none;cursor:zoom-in}
+.off-ref .off-name{font-weight:800;font-size:15px}
+.off-ref .off-sub{color:var(--muted);font-size:13px}
+.off-ref .chips{margin-top:10px}
+.off-ref .chip{color:var(--text)}
+.off-ref .chip small{color:var(--muted);margin-right:4px}
 .photo-tools .btn{flex:1;padding:10px 8px;font-size:14px}
 .pill.bad{background:var(--red-tint);color:var(--red)}
 .chips.filter{margin:0 0 10px}
@@ -324,25 +337,34 @@ input::placeholder{color:var(--faint)}
       <img id="photoPreview" hidden alt="">
       <button class="photo-btn" id="btnPhoto">صوّر المنتج</button>
       <div class="photo-tools" id="photoTools" hidden>
-        <button class="btn primary" id="btnPhotoOk" hidden>✓ تأكيد هذه الصورة كصورة المنتج</button>
-        <button class="btn ghost" id="btnRemoveBg" hidden>إزالة الخلفية (أبيض)</button>
-        <button class="btn ghost" id="btnUndoBg" hidden>تراجع</button>
+        <button class="btn primary" id="btnPhotoOk" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>تأكيد الصورة</button>
+        <button class="btn ghost" id="btnRemoveBg" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4l5 5L8 21H3v-5z"/><path d="M13 6l5 5"/><path d="M19 2l1 1M22 6l-1-1"/></svg>خلفية بيضاء</button>
+        <button class="btn ghost" id="btnUndoBg" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 010 10h-2"/></svg>تراجع</button>
       </div>
       <div id="bgStatus" class="ai-status busy" hidden></div>
       <button class="link danger" id="btnPhotoRemove" hidden>حذف الصورة</button>
       <p class="note" style="margin:0;text-align:center">للحصول على صورة أفضل: سطح فاتح وسادة، إضاءة طبيعية، والمنتج يملأ الإطار. الإضاءة والألوان تتحسّن تلقائيًا بعد التصوير.</p>
       <input type="file" id="filePhoto" accept="image/*" capture="environment" hidden>
     </div>
-    <button class="ai-btn" id="btnAiLabel" type="button"><span class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span><span class="tx"><b id="aiBtnTitle">صوّر الملصق الغذائي</b><small>وتتعبّى القيم تلقائيًا — راجعها بعدين واحفظ</small></span></button>
-    <div id="aiStatus" class="ai-status" hidden></div>
-    <div id="sanityBox" class="ai-status warn" hidden></div>
-    <div id="labelPrev" class="label-prev" hidden><img id="labelPrevImg" alt=""><div class="tx"><span id="labelPrevTx"></span></div></div>
+    <div class="card label-card">
+      <div class="card-title">الملصق الغذائي <span class="pill">داخلي — ما يظهر للمستخدمين</span></div>
+      <div class="label-row">
+        <div class="label-thumb" id="labelThumb"><img id="labelPrevImg" alt="" hidden><span id="labelEmpty">بدون صورة</span></div>
+        <button class="ai-btn" id="btnAiLabel" type="button"><span class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/><path d="M19 2v3M17.5 3.5h3"/></svg></span><span class="tx"><b id="aiBtnTitle">صوّر الملصق وعبّي القيم</b><small>القراءة تلقائية بالذكاء الاصطناعي — راجع الأخضر ثم احفظ</small></span></button>
+      </div>
+      <div id="aiStatus" class="ai-status" hidden></div>
+      <div id="sanityBox" class="ai-status warn" hidden></div>
+    </div>
     <input type="file" id="fileLabel" accept="image/*" capture="environment" hidden>
 
     <div class="card">
       <label class="field"><span>اسم المنتج</span><input id="fName" placeholder="مثال: حليب المراعي كامل الدسم" enterkeyhint="next" autocomplete="off"></label>
       <label class="field"><span>العلامة التجارية</span><input id="fBrand" placeholder="اختياري" enterkeyhint="next" autocomplete="off"></label>
       <label class="field"><span>الباركود</span><input id="fBarcode" class="mono" inputmode="numeric" enterkeyhint="next" autocomplete="off"></label>
+    </div>
+    <div class="card off-ref" id="offRef" hidden>
+      <div class="card-title">مرجع Open Food Facts <button class="link" id="btnUseOff">استخدم هذه القيم</button></div>
+      <div id="offRefBody"></div>
     </div>
 
     <div class="card">
@@ -431,6 +453,8 @@ const scale = (o, f) => Object.fromEntries(NUTRIENTS.map(n => [n.key, o[n.key] =
 const unitLabel = u => u === 'ml' ? 'مل' : 'غ';
 const normCode = raw => { const c = latin(raw).replace(/\D/g, ''); return (c.length >= 6 && c.length <= 14) ? c : null; };
 const missingOf = vals => NUTRIENTS.filter(n => !vals || vals[n.key] == null);
+const isOwnUrl = u => !!u && !/openfoodfacts\.(org|net)/i.test(String(u));
+const ownPhoto = p => p ? (p.photo || (isOwnUrl(p.photo_url) ? p.photo_url : null)) : null;
 
 function parseQty(s) {
   if (!s) return null;
@@ -532,12 +556,12 @@ const LS = {
 const DB = { get: b => (useLS ? LS : IDB).get(b), all: () => (useLS ? LS : IDB).all(), put: p => (useLS ? LS : IDB).put(p), del: b => (useLS ? LS : IDB).del(b), count: () => (useLS ? LS : IDB).count() };
 
 /* ---------- UI refs ---------- */
-const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','btnRemoveBg','btnUndoBg','bgStatus','filePhoto','fName','fBrand','fBarcode','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody','aiCard','aiState','aiBody','btnAiLabel','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelPrev','labelPrevImg','labelPrevTx','lightbox','lightboxImg','lightboxClose'];
+const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','btnRemoveBg','btnUndoBg','bgStatus','filePhoto','fName','fBrand','fBarcode','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody','aiCard','aiState','aiBody','btnAiLabel','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelThumb','labelPrevImg','labelEmpty','offRef','btnUseOff','offRefBody','lightbox','lightboxImg','lightboxClose'];
 const ui = {}; ids.forEach(id => { ui[id] = document.getElementById(id); });
 ui.viewScan = $('#view-scan'); ui.viewList = $('#view-list'); ui.viewSettings = $('#view-settings'); ui.tabs = [...document.querySelectorAll('.tab')];
 
 /* ---------- state ---------- */
-const state = { unit: 'g', pkgUnit: 'g', basis: '100', photo: null, photoUrl: null, labelPhoto: null, photoOk: false, photoBackup: null };
+const state = { unit: 'g', pkgUnit: 'g', basis: '100', photo: null, photoUrl: null, offPhotoUrl: null, off: null, labelPhoto: null, labelUploaded: false, labelUrl: null, photoOk: false, photoBackup: null };
 let listFilterMode = 'all';
 let scanning = false, starting = false, decoding = false, busy = false, formCtx = null, currentCode = null, currentView = 'scan', wasScanning = false;
 let lastCode = '', lastAt = 0, torchOn = false, curStream = null, loopTimer = null, engine = null, enginePromise = null;
@@ -787,7 +811,7 @@ function sizesList(p, matched) {
     + (sz.nutrients && sz.nutrients.kcal != null ? '<span class="kc">' + fmt(sz.nutrients.kcal) + ' kcal</span>' : '') + (sz.barcode ? '<span class="mono code">' + esc(sz.barcode) + '</span>' : '') + '</div>').join('') + '</div>';
 }
 function resultLocal(p, size) {
-  const img = p.photo || p.photo_url, u = unitLabel(p.unit), meta = [];
+  const img = ownPhoto(p), u = unitLabel(p.unit), meta = [];
   if (p.package_size) { const pu = PKG_UNITS[p.package_unit] || PKG_UNITS[p.unit] || PKG_UNITS.g; meta.push('<span>العبوة <b>' + fmt(r2(p.package_size / pu.factor)) + ' ' + pu.label + '</b></span>'); }
   if (p.serving_size) meta.push('<span>الحصة <b>' + fmt(p.serving_size) + ' ' + u + '</b></span>');
   if (p.servings_per_package) meta.push('<span>عدد الحصص <b>' + fmt(p.servings_per_package) + '</b></span>');
@@ -806,7 +830,7 @@ async function pickProductForSize(code) {
   all.sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
   const render = q => {
     const items = q ? all.filter(p => (p.name || '').toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q) || String(p.barcode).includes(q)) : all;
-    return items.slice(0, 60).map(p => '<button class="pick" data-code="' + esc(p.barcode) + '">' + ((p.photo || p.photo_url) ? '<img class="thumb" src="' + esc(p.photo || p.photo_url) + '" alt="">' : '<div class="thumb"></div>')
+    return items.slice(0, 60).map(p => '<button class="pick" data-code="' + esc(p.barcode) + '">' + (ownPhoto(p) ? '<img class="thumb" src="' + esc(ownPhoto(p)) + '" alt="">' : '<div class="thumb"></div>')
       + '<div class="row-main"><div class="row-name">' + esc(p.name) + '</div><div class="row-sub">' + (p.brand ? esc(p.brand) + ' · ' : '') + '<span class="mono">' + esc(p.barcode) + '</span></div></div></button>').join('') || '<div class="empty">ما فيه نتائج</div>';
   };
   ui.result.innerHTML = '<div class="card"><div class="res-name">هذا الباركود حجم من أي منتج؟</div><div class="res-sub">بيُضاف كحجم جديد باسمه وكميته، وباركوده <span class="mono">' + esc(code) + '</span></div>'
@@ -831,7 +855,7 @@ function resultOFF(m) {
   const q = a => ui.result.querySelector('[data-a=' + a + ']');
   if (q('save')) q('save').onclick = () => saveOFFDirect(m);
   q('size').onclick = () => pickProductForSize(m.barcode);
-  q('edit').onclick = () => openForm(m, { editing: null, returnTo: 'scan', fromOFF: true });
+  q('edit').onclick = () => openForm(m, { editing: null, returnTo: 'scan', fromOFF: true, off: m });
   q('next').onclick = nextScan;
 }
 function resultNotFound(code) {
@@ -857,7 +881,7 @@ async function saveOFFDirect(m) {
     barcode: m.barcode, name: m.name || ('منتج ' + m.barcode), brand: m.brand, source: 'off',
     package_size: m.package_size, unit: m.unit, serving_size: s, servings_per_package: m.servings_per_package,
     basis: '100', nutrients: m.nutrients, per_100: m.nutrients, per_serving: s ? scale(m.nutrients, s / 100) : null,
-    complete: true, sizes: [], photo: null, photo_url: m.photo_url, created_at: now(), updated_at: now(), synced: false, photo_uploaded: true
+    complete: true, sizes: [], photo: null, photo_url: null, off_ref: { name: m.name || null, brand: m.brand || null, photo_url: m.photo_url || null, unit: m.unit || null, per_100: m.nutrients || null }, created_at: now(), updated_at: now(), synced: false, photo_uploaded: true
   };
   try { await DB.put(rec); } catch (e) { toast('تعذر الحفظ على هذا الجهاز'); return; }
   await refreshCount(); toast('حُفظ في قاعدتك'); nextScan(); syncNow(true);
@@ -928,7 +952,7 @@ function setBasis(b, convert) {
 function renderPhoto() {
   const src = state.photo || state.photoUrl;
   ui.photoPreview.hidden = !src; if (src) ui.photoPreview.src = src;
-  ui.btnPhoto.textContent = state.photo ? 'إعادة تصوير المنتج' : (state.photoUrl ? 'صوّر المنتج بنفسك (الصورة الحالية من Open Food Facts)' : 'صوّر المنتج');
+  ui.btnPhoto.textContent = src ? 'إعادة تصوير المنتج' : 'صوّر المنتج';
   ui.btnPhoto.classList.toggle('has', !!src);
   ui.btnPhotoRemove.hidden = !state.photo;
   const has = !!src;
@@ -936,6 +960,26 @@ function renderPhoto() {
   ui.btnPhotoOk.hidden = !has || state.photoOk;
   ui.btnRemoveBg.hidden = !state.photo;
   ui.btnUndoBg.hidden = !state.photoBackup;
+}
+function showLabelThumb() {
+  const has = !!state.labelPhoto || !!state.labelUrl;
+  ui.labelPrevImg.hidden = !has; ui.labelEmpty.hidden = has;
+  if (has) ui.labelPrevImg.src = state.labelPhoto || state.labelUrl;
+}
+function renderOffRef() {
+  const o = state.off; ui.offRef.hidden = !o; if (!o) return;
+  const v = o.per_100 || o.nutrients || {};
+  const chips = NUTRIENTS.filter(n => v[n.key] != null).map(n => '<span class="chip"><small>' + n.label + '</small>' + fmt(v[n.key]) + ' ' + n.unit + '</span>').join('');
+  ui.offRefBody.innerHTML = '<div class="off-head">' + (o.photo_url ? '<img src="' + esc(o.photo_url) + '" alt="" id="offRefImg">' : '') + '<div><div class="off-name">' + esc(o.name || '—') + '</div><div class="off-sub">' + esc(o.brand || '') + (o.unit ? ' · لكل 100 ' + unitLabel(o.unit) : ' · لكل 100') + '</div></div></div>'
+    + (chips ? '<div class="chips">' + chips + '</div>' : '<p class="note">ما فيه قيم غذائية مسجّلة عندهم لهذا المنتج.</p>');
+  const im = $('#offRefImg'); if (im) im.onclick = () => { ui.lightboxImg.src = o.photo_url; ui.lightbox.hidden = false; };
+}
+function useOffValues() {
+  const o = state.off; if (!o) return; const v = o.per_100 || o.nutrients || {};
+  setBasis('100', false); let n = 0;
+  NUTRIENTS.forEach(x => { const el = $('#n_' + x.key); if (v[x.key] != null) { el.value = fmtIn(r2(v[x.key])); el.closest('.field').classList.add('ai'); el.closest('.field').classList.remove('missing'); n++; } });
+  if (o.name && !ui.fName.value.trim()) ui.fName.value = o.name; if (o.brand && !ui.fBrand.value.trim()) ui.fBrand.value = o.brand;
+  toast('تم نقل ' + n + ' قيمة من Open Food Facts — راجعها'); showSanity();
 }
 function openForm(p, ctx) {
   formCtx = Object.assign({ editing: null, returnTo: 'scan', fromOFF: false }, ctx || {}); p = p || {};
@@ -946,9 +990,13 @@ function openForm(p, ctx) {
   setBasis(p.basis || '100', false);
   const src = p.nutrients || {};
   NUTRIENTS.forEach(n => { const el = $('#n_' + n.key); el.value = fmtIn(src[n.key]); el.closest('.field').classList.toggle('missing', !!formCtx.fromOFF && src[n.key] == null); });
-  state.photo = p.photo || null; state.photoUrl = p.photo_url || null; state.photoOk = !!p.photo_ok; state.photoBackup = null; ui.bgStatus.hidden = true; renderPhoto();
+  state.off = (formCtx.off) || p.off_ref || null;
+  state.photo = p.photo || null; state.photoUrl = isOwnUrl(p.photo_url) ? p.photo_url : null;
+  state.offPhotoUrl = (state.off && state.off.photo_url) || (!isOwnUrl(p.photo_url) ? p.photo_url : null) || null;
+  state.photoOk = !!p.photo_ok; state.photoBackup = null; ui.bgStatus.hidden = true; renderPhoto(); renderOffRef();
+  state.labelPhoto = p.label_photo || null; state.labelUrl = p.label_photo_url || null; state.labelUploaded = !!p.label_photo_uploaded; showLabelThumb();
   ui.sizeRows.innerHTML = ''; (p.sizes || []).filter(Boolean).forEach(addSizeRow);
-  ui.form.querySelectorAll('.field.ai').forEach(f => f.classList.remove('ai')); ui.aiStatus.hidden = true; ui.sanityBox.hidden = true; state.labelPhoto = null; ui.labelPrev.hidden = true;
+  ui.form.querySelectorAll('.field.ai').forEach(f => f.classList.remove('ai')); ui.aiStatus.hidden = true; ui.sanityBox.hidden = true;
   ui.btnDelete.hidden = !formCtx.editing;
   ui.form.hidden = false; ui.formBody.scrollTop = 0;
   if (formCtx.newSize) {
@@ -957,7 +1005,7 @@ function openForm(p, ctx) {
   } else if (!p.name) setTimeout(() => ui.fName.focus(), 60);
 }
 function closeForm() {
-  const rt = formCtx ? formCtx.returnTo : 'scan'; formCtx = null; ui.form.hidden = true;
+  const rt = formCtx ? formCtx.returnTo : 'scan'; formCtx = null; ui.form.hidden = true; clearDraft();
   if (rt === 'list') renderList(); else nextScan();
 }
 async function saveForm() {
@@ -980,7 +1028,10 @@ async function saveForm() {
     package_size: pkg, package_unit: state.pkgUnit, unit: state.unit, serving_size: serving, servings_per_package: servN,
     basis: state.basis, nutrients: vals, per_100, per_serving,
     complete: NUTRIENTS.every(n => vals[n.key] != null), sizes,
-    photo: state.photo || null, photo_url: state.photoUrl || null, photo_ok: !!state.photoOk,
+    photo: state.photo || null, photo_url: state.photo ? (state.photoUrl || null) : null, photo_ok: !!state.photoOk,
+    off_ref: state.off ? { name: state.off.name || null, brand: state.off.brand || null, photo_url: state.off.photo_url || null, unit: state.off.unit || null, per_100: state.off.per_100 || state.off.nutrients || null } : ((existing && existing.off_ref) || null),
+    label_photo: state.labelPhoto || null, label_photo_url: state.labelPhoto ? (state.labelUrl || null) : null,
+    label_photo_uploaded: state.labelPhoto ? !!(existing && existing.label_photo === state.labelPhoto && existing.label_photo_uploaded) : true,
     created_at: existing ? (existing.created_at || now()) : now(), updated_at: now(),
     synced: false, photo_uploaded: state.photo ? !!(existing && existing.photo === state.photo && existing.photo_uploaded) : true
   };
@@ -1003,10 +1054,10 @@ async function deleteCurrent() {
 /* ---------- list ---------- */
 async function refreshCount() { let c = 0; try { c = await DB.count(); } catch (e) {} ui.countNum.textContent = c; return c; }
 function rowHTML(p) {
-  const v = p.per_100 || p.nutrients || {}; const img = p.photo || p.photo_url;
+  const v = p.per_100 || p.nutrients || {}; const img = ownPhoto(p);
   return '<button class="row-item" data-code="' + esc(p.barcode) + '">'
     + (img ? '<img class="thumb" src="' + esc(img) + '" alt="">' : '<div class="thumb">بدون صورة</div>')
-    + '<div class="row-main"><div class="row-name">' + esc(p.name) + '</div><div class="row-sub">' + (p.brand ? esc(p.brand) + ' · ' : '') + '<span class="mono">' + esc(p.barcode) + '</span>' + (p.sizes && p.sizes.length ? ' · ' + countSizes(p.sizes.length) : '') + ((!p.photo && !p.photo_url) ? ' <span class="pill bad">بدون صورة</span>' : (!p.photo_ok ? ' <span class="pill warn">صورة تحتاج تأكيد</span>' : '')) + '</div>' + strip(p.nutrients) + '</div>'
+    + '<div class="row-main"><div class="row-name">' + esc(p.name) + '</div><div class="row-sub">' + (p.brand ? esc(p.brand) + ' · ' : '') + '<span class="mono">' + esc(p.barcode) + '</span>' + (p.sizes && p.sizes.length ? ' · ' + countSizes(p.sizes.length) : '') + ((!ownPhoto(p)) ? ' <span class="pill bad">بدون صورة</span>' : (!p.photo_ok ? ' <span class="pill warn">صورة تحتاج تأكيد</span>' : '')) + '</div>' + strip(p.nutrients) + '</div>'
     + '<div class="row-kcal"><b>' + fmt(v.kcal) + '</b><span>kcal</span><span>' + (p.per_100 ? '/100' : '/حصة') + '</span></div></button>';
 }
 async function renderList() {
@@ -1014,8 +1065,8 @@ async function renderList() {
   all.sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
   const q = ui.search.value.trim().toLowerCase();
   let items = q ? all.filter(p => (p.name || '').toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q) || String(p.barcode).includes(q)) : all;
-  if (listFilterMode === 'photo') items = items.filter(p => (p.photo || p.photo_url) && !p.photo_ok);
-  else if (listFilterMode === 'nophoto') items = items.filter(p => !p.photo && !p.photo_url);
+  if (listFilterMode === 'photo') items = items.filter(p => ownPhoto(p) && !p.photo_ok);
+  else if (listFilterMode === 'nophoto') items = items.filter(p => !ownPhoto(p));
   ui.list.innerHTML = items.map(rowHTML).join('');
   ui.listEmpty.hidden = all.length > 0; ui.listCount.textContent = all.length ? '(' + all.length + ')' : '';
 }
@@ -1029,7 +1080,7 @@ const stamp = () => new Date().toISOString().slice(0, 10);
 async function buildExport(withPhotos) {
   let all = []; try { all = await DB.all(); } catch (e) {}
   all.sort((a, b) => String(a.barcode).localeCompare(String(b.barcode)));
-  const products = all.map(p => { const q = Object.assign({}, p); delete q.synced; delete q.photo_uploaded; if (!withPhotos) q.photo = null; return q; });
+  const products = all.map(p => { const q = Object.assign({}, p); delete q.synced; delete q.photo_uploaded; delete q.label_photo_uploaded; if (!withPhotos) q.photo = null; return q; });
   return {
     app: 'alyaf-products', version: 1, exported_at: now(), count: products.length,
     note: 'nutrients = القيم كما كُتبت من الملصق حسب basis (100 أو serving). per_100 و per_serving محسوبة تلقائيًا. sizes = أحجام/حصص مسماة لكل منها amount و barcode اختياري و nutrients محسوبة لذلك الحجم. الوحدات: kcal, g (protein/carbs/fat/sugar/added_sugar/fiber), mg (sodium/cholesterol/potassium/iron/caffeine), mcg (vitamin_d/vitamin_b12). unit = وحدة الحصة والقيم (g أو ml)، package_size دائمًا بالوحدة الأساسية g/ml و package_unit = الوحدة المختارة للعرض (g/kg/ml/l).',
@@ -1118,8 +1169,8 @@ async function sbFetch(path, opts) {
   if (r.status === 204) return null;
   const ct = r.headers.get('content-type') || ''; return ct.includes('json') ? r.json() : r.text();
 }
-const toRow = p => ({ barcode: p.barcode, name: p.name, brand: p.brand || null, unit: p.unit || 'g', package_size: p.package_size ?? null, serving_size: p.serving_size ?? null, servings_per_package: p.servings_per_package ?? null, basis: p.basis || '100', nutrients: p.nutrients || null, per_100: p.per_100 || null, per_serving: p.per_serving || null, sizes: (p.sizes || []).filter(Boolean), complete: !!p.complete, source: p.source || 'manual', photo_url: p.photo_url || null, photo_ok: !!p.photo_ok, created_at: p.created_at || now(), updated_at: p.updated_at || now() });
-let noPhotoOkCol = false;
+const toRow = p => ({ barcode: p.barcode, name: p.name, brand: p.brand || null, unit: p.unit || 'g', package_size: p.package_size ?? null, serving_size: p.serving_size ?? null, servings_per_package: p.servings_per_package ?? null, basis: p.basis || '100', nutrients: p.nutrients || null, per_100: p.per_100 || null, per_serving: p.per_serving || null, sizes: (p.sizes || []).filter(Boolean), complete: !!p.complete, source: p.source || 'manual', photo_url: ownPhoto(p) ? (p.photo_url && isOwnUrl(p.photo_url) ? p.photo_url : null) : null, photo_ok: !!p.photo_ok, label_photo_url: p.label_photo_url || null, created_at: p.created_at || now(), updated_at: p.updated_at || now() });
+const missingCols = new Set();
 const tms = v => { const d = new Date(v || 0); return isNaN(d) ? 0 : d.getTime(); };
 async function sbUploadPhoto(barcode, dataUrl) {
   const blob = await (await fetch(dataUrl)).blob();
@@ -1151,14 +1202,17 @@ async function syncNow(silent) {
     const rows = [];
     for (const p of dirty) {
       if (p.photo && !p.photo_uploaded) { try { p.photo_url = await sbUploadPhoto(p.barcode, p.photo); p.photo_uploaded = true; await DB.put(p); } catch (e) {} }
+      if (p.label_photo && !p.label_photo_uploaded) { try { p.label_photo_url = await sbUploadPhoto('labels/' + p.barcode, p.label_photo); p.label_photo_uploaded = true; await DB.put(p); } catch (e) {} }
       rows.push(toRow(p));
     }
     const upsert = batch => sbFetch('/rest/v1/products?on_conflict=barcode', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(batch) });
-    const stripOk = batch => batch.map(r => { const q = Object.assign({}, r); delete q.photo_ok; return q; });
+    const stripCols = batch => batch.map(r => { const q = Object.assign({}, r); missingCols.forEach(c => { delete q[c]; }); return q; });
     for (let i = 0; i < rows.length; i += 40) {
       const batch = rows.slice(i, i + 40);
-      if (noPhotoOkCol) { await upsert(stripOk(batch)); continue; }
-      try { await upsert(batch); } catch (e) { if (/photo_ok/i.test(String(e.message || e))) { noPhotoOkCol = true; await upsert(stripOk(batch)); } else throw e; }
+      for (let attempt = 0; attempt < 4; attempt++) {
+        try { await upsert(stripCols(batch)); break; }
+        catch (e) { const m = String(e.message || e).match(/'?(photo_ok|label_photo_url)'?\s+column|column\s+'?(photo_ok|label_photo_url)/i); const col = m && (m[1] || m[2]); if (col && !missingCols.has(col)) missingCols.add(col); else throw e; }
+      }
     }
     for (const p of dirty) { const cur = await DB.get(p.barcode); if (cur && cur.updated_at === p.updated_at) { cur.synced = true; await DB.put(cur); } }
     const pulled = await sbPull();
@@ -1336,6 +1390,14 @@ function sanityCheck(vals, basisAmt) {
   if (vals.sugar_g != null && vals.carbs_g != null && vals.sugar_g > vals.carbs_g + 0.6) w.push('السكر أكبر من الكربوهيدرات الكلية');
   if (vals.added_sugar_g != null && vals.sugar_g != null && vals.added_sugar_g > vals.sugar_g + 0.6) w.push('السكر المضاف أكبر من السكر الكلي');
   if (vals.fiber_g != null && vals.carbs_g != null && vals.fiber_g > vals.carbs_g + 0.6) w.push('الألياف أكبر من الكربوهيدرات');
+  const o = state.off && (state.off.per_100 || state.off.nutrients);
+  if (o && basisAmt > 0) {
+    const mine = basisAmt === 100 ? vals : scale(vals, 100 / basisAmt);
+    [['kcal', 'السعرات', 30], ['protein_g', 'البروتين', 2], ['carbs_g', 'الكربوهيدرات', 2], ['fat_g', 'الدهون', 2], ['sugar_g', 'السكر', 2], ['sodium_mg', 'الصوديوم', 60]].forEach(([k, label, absTol]) => {
+      const a = mine[k], b = o[k]; if (a == null || b == null) return;
+      const diff = Math.abs(a - b); if (diff > absTol && diff > Math.max(a, b) * 0.25) w.push(label + ': عندك ' + fmt(r2(a)) + ' مقابل ' + fmt(r2(b)) + ' في Open Food Facts (لكل 100)');
+    });
+  }
   return w;
 }
 function showSanity() {
@@ -1364,6 +1426,65 @@ function renderAi() {
   const c = $('#aiClearBtn'); if (c) c.onclick = () => { ai = { provider: ai.provider, key: '', model: '', speed: ai.speed }; localStorage.removeItem(AI_CONFIG_KEY); renderAi(); };
 }
 
+/* ---------- form draft protection (survives a page reload) ---------- */
+const DRAFT_KEY = 'alyaf-form-draft';
+function formSnapshot() {
+  const rs = readSizes();
+  return { name: ui.fName.value, brand: ui.fBrand.value, barcode: ui.fBarcode.value, package_unit: state.pkgUnit, unit: state.unit, package_size: pkgBase(), serving_size: num(ui.fServ.value), servings_per_package: num(ui.fServN.value), basis: state.basis, nutrients: readNutrients(), sizes: rs.sizes || [], photo: state.photo, photo_url: state.photoUrl, photo_ok: state.photoOk, label_photo: state.labelPhoto, label_photo_url: state.labelUrl, label_photo_uploaded: state.labelUploaded, off_ref: state.off };
+}
+function saveDraft() { try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ ctx: { editing: formCtx && formCtx.editing, returnTo: (formCtx && formCtx.returnTo) || 'scan', fromOFF: !!(formCtx && formCtx.fromOFF) }, product: formSnapshot(), t: Date.now() })); } catch (e) {} }
+function clearDraft() { try { sessionStorage.removeItem(DRAFT_KEY); } catch (e) {} }
+function restoreDraft() {
+  try { const d = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || 'null'); if (!d || !d.product) return false; sessionStorage.removeItem(DRAFT_KEY); openForm(d.product, d.ctx || {}); toast('تم استرجاع النموذج بعد إعادة تحميل الصفحة'); return true; } catch (e) { return false; }
+}
+
+/* ---------- background removal via Gemini segmentation (no download, uses your key) ---------- */
+async function geminiSegment(dataUrl) {
+  const b64 = dataUrl.split(',')[1];
+  const prompt = 'Find the single main product package in this photo and return its segmentation mask. Output ONLY a JSON array with one object: {"box_2d":[ymin,xmin,ymax,xmax],"mask":"data:image/png;base64,...","label":"product"}. box_2d is in 0-1000 normalized coordinates. mask is a PNG probability mask that covers exactly the box. Include only the package itself; exclude hands, fingers, table, shadow and background.';
+  const models = ai.model ? [ai.model] : AI_PROVIDERS.gemini.models; let last = null;
+  for (const model of models) {
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent';
+    const body = { contents: [{ parts: [{ inline_data: { mime_type: 'image/jpeg', data: b64 } }, { text: prompt }] }], generationConfig: { temperature: 0, responseMimeType: 'application/json', thinkingConfig: /gemini-2/.test(model) ? { thinkingBudget: 0 } : { thinkingLevel: 'low' } } };
+    const send = b => fetch(url + '?key=' + encodeURIComponent(ai.key), { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': ai.key }, body: JSON.stringify(b) });
+    let r = await send(body);
+    if (r.status === 400) { const t = await r.clone().text(); if (/thinking/i.test(t)) { delete body.generationConfig.thinkingConfig; r = await send(body); } }
+    const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (e) {}
+    if (!r.ok) { const msg = (j && j.error && j.error.message) || txt.slice(0, 200); last = new Error(msg); if (r.status === 404 || r.status === 429 || /not available|not found|no longer|deprecated/i.test(msg)) continue; throw last; }
+    let out = ''; try { out = j.candidates[0].content.parts.map(x => x.text || '').join(''); } catch (e) { last = new Error('رد غير مفهوم'); continue; }
+    const a = out.indexOf('['), b2 = out.lastIndexOf(']'); let arr;
+    try { arr = JSON.parse(a >= 0 && b2 > a ? out.slice(a, b2 + 1) : out); } catch (e) { last = new Error('رد غير مفهوم'); continue; }
+    const seg = Array.isArray(arr) ? arr.find(x => x && x.mask && x.box_2d) : (arr && arr.mask ? arr : null);
+    if (!seg) { last = new Error('ما تعرّفت على المنتج بالصورة'); continue; }
+    return seg;
+  }
+  throw last || new Error('فشل');
+}
+async function removeBgGemini(dataUrl) {
+  const seg = await geminiSegment(dataUrl);
+  const img = await loadImage(dataUrl); const W = img.width, H = img.height;
+  let [ymin, xmin, ymax, xmax] = seg.box_2d.map(v => Math.max(0, Math.min(1000, Number(v) || 0)) / 1000);
+  if (ymax < ymin) { const t = ymin; ymin = ymax; ymax = t; } if (xmax < xmin) { const t = xmin; xmin = xmax; xmax = t; }
+  const bx = Math.round(xmin * W), by = Math.round(ymin * H), bw = Math.max(1, Math.round((xmax - xmin) * W)), bh = Math.max(1, Math.round((ymax - ymin) * H));
+  const maskSrc = String(seg.mask).startsWith('data:') ? seg.mask : 'data:image/png;base64,' + seg.mask;
+  const mimg = await loadImage(maskSrc);
+  const mc = document.createElement('canvas'); mc.width = bw; mc.height = bh; const mx = mc.getContext('2d'); mx.drawImage(mimg, 0, 0, bw, bh); const md = mx.getImageData(0, 0, bw, bh).data;
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0); const id = ctx.getImageData(0, 0, W, H); const d = id.data;
+  let minX = W, minY = H, maxX = -1, maxY = -1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = (y * W + x) * 4; let keep = false;
+    if (x >= bx && x < bx + bw && y >= by && y < by + bh) { const mi = ((y - by) * bw + (x - bx)) * 4; keep = md[mi] > 127 && md[mi + 3] > 0; }
+    if (keep) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+    else { d[i] = 255; d[i + 1] = 255; d[i + 2] = 255; d[i + 3] = 255; }
+  }
+  if (maxX < 0) throw new Error('القناع فاضي');
+  ctx.putImageData(id, 0, 0);
+  const pad = Math.round(Math.max(maxX - minX, maxY - minY) * 0.06);
+  const sx = Math.max(0, minX - pad), sy = Math.max(0, minY - pad), sw = Math.min(W, maxX + pad) - sx, sh = Math.min(H, maxY + pad) - sy;
+  const oc = document.createElement('canvas'); oc.width = sw; oc.height = sh; oc.getContext('2d').drawImage(c, sx, sy, sw, sh, 0, 0, sw, sh);
+  return oc.toDataURL('image/jpeg', 0.85);
+}
+
 /* ---------- background removal (optional, runs on the phone) ---------- */
 const BG_MODULE_URLS = ['https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm', 'https://esm.sh/@imgly/background-removal@1.7.0'];
 let bgMod = null;
@@ -1377,6 +1498,15 @@ async function removeBgFromPhoto() {
   if (!state.photo) { toast('صوّر المنتج أولًا'); return; }
   const setT = (t, cls) => { ui.bgStatus.className = 'ai-status ' + (cls || 'busy'); ui.bgStatus.textContent = t; ui.bgStatus.hidden = false; };
   ui.btnRemoveBg.disabled = true;
+  if (aiReady() && ai.provider === 'gemini') {
+    try {
+      setT('جاري تحديد المنتج بالذكاء الاصطناعي…');
+      const out = await removeBgGemini(state.photo);
+      state.photoBackup = state.photo; state.photo = out; state.photoOk = true; renderPhoto();
+      setT('✓ تمت إزالة الخلفية — لو النتيجة مو مضبوطة اضغط "تراجع"', 'ok'); ui.btnRemoveBg.disabled = false; return;
+    } catch (e) { setT('ما نجحت الطريقة السريعة (' + (e.message || e) + ') — جاري المحاولة بالطريقة المحلية…'); }
+  }
+  saveDraft();
   try {
     setT('جاري تحميل أداة إزالة الخلفية (أول مرة فقط، حوالي 40 ميجا)…');
     const mod = await loadBgModule();
@@ -1392,8 +1522,8 @@ async function removeBgFromPhoto() {
     const sx = Math.max(0, minX - pad), sy = Math.max(0, minY - pad), sw = Math.min(c0.width, maxX + pad) - sx, sh = Math.min(c0.height, maxY + pad) - sy;
     const c = document.createElement('canvas'); c.width = sw; c.height = sh; const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, sw, sh); ctx.drawImage(c0, sx, sy, sw, sh, 0, 0, sw, sh);
     state.photoBackup = state.photo; state.photo = c.toDataURL('image/jpeg', 0.85); state.photoOk = true; renderPhoto();
-    setT('✓ تمت إزالة الخلفية — لو النتيجة مو مضبوطة اضغط "تراجع"', 'ok');
-  } catch (e) { setT('تعذرت إزالة الخلفية: ' + (e.message || e), 'err'); }
+    setT('✓ تمت إزالة الخلفية — لو النتيجة مو مضبوطة اضغط "تراجع"', 'ok'); clearDraft();
+  } catch (e) { setT('تعذرت إزالة الخلفية: ' + (e.message || e), 'err'); clearDraft(); }
   finally { ui.btnRemoveBg.disabled = false; }
 }
 
@@ -1442,7 +1572,8 @@ function wire() {
   const openLightbox = src => { if (!src) return; ui.lightboxImg.src = src; ui.lightbox.hidden = false; };
   ui.lightbox.onclick = () => { ui.lightbox.hidden = true; ui.lightboxImg.src = ''; };
   ui.photoPreview.onclick = () => openLightbox(ui.photoPreview.src);
-  ui.labelPrevImg.onclick = () => openLightbox(state.labelPhoto);
+  ui.labelThumb.onclick = () => openLightbox(state.labelPhoto || state.labelUrl);
+  ui.btnUseOff.onclick = useOffValues;
   ui.result.addEventListener('click', e => { const im = e.target.closest('img.res-photo, img.res-img'); if (im) openLightbox(im.src); });
   ui.btnAiLabel.onclick = () => { if (!aiReady()) { toast('فعّل قراءة الملصق أولًا من تبويب الإعدادات (المزوّد والمفتاح)'); return; } ui.fileLabel.click(); };
   const aiStatus = (cls, html) => { ui.aiStatus.className = 'ai-status ' + cls; ui.aiStatus.innerHTML = html; ui.aiStatus.hidden = false; };
@@ -1452,15 +1583,14 @@ function wire() {
     aiStatus('busy', 'جاري إرسال الصورة إلى ' + esc(AI_PROVIDERS[ai.provider].label) + '…');
     try {
       const t0 = Date.now(); const img = await compressImage(f, 1200, 0.8);
-      state.labelPhoto = img; ui.labelPrevImg.src = img; ui.labelPrev.hidden = false;
-      try { state.photo = await enhanceImage(await compressImage(f, 800, 0.85)); state.photoOk = true; state.photoBackup = null; renderPhoto(); } catch (x) {}
-      ui.labelPrevTx.textContent = 'انحفظت كصورة للمنتج تلقائيًا — اضغط عليها للتكبير';
+      state.labelPhoto = img; state.labelUrl = null; state.labelUploaded = false; showLabelThumb();
+      if (!state.photo && !state.photoUrl) { try { state.photo = await enhanceImage(await compressImage(f, 800, 0.85)); state.photoOk = true; state.photoBackup = null; renderPhoto(); } catch (x) {} }
       const res = await aiReadLabel(img); const n = applyLabel(res.data); const secs = Math.round((Date.now() - t0) / 100) / 10;
       if (n) { aiStatus('ok', '✓ تمت قراءة ' + n + ' قيمة خلال ' + secs + ' ث (الموديل: ' + esc(res.model) + '). الخانات المظللة بالأخضر جاية من الصورة — راجعها ثم احفظ.'); showSanity(); try { ui.coreGrid.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (x) {} }
       else aiStatus('err', 'ما لقيت قيم واضحة بالصورة — قرّب الكاميرا حتى يملأ الملصق الصورة، وتأكد من الإضاءة، وجرّب مرة ثانية.');
     } catch (err) {
       aiStatus('err', 'تعذرت القراءة: ' + esc(err.message || err) + '<br>جرّب صورة أوضح، أو غيّر المزوّد أو الموديل من تبويب "الإعدادات".');
-    } finally { ui.btnAiLabel.disabled = false; ui.aiBtnTitle.textContent = 'صوّر الملصق الغذائي'; }
+    } finally { ui.btnAiLabel.disabled = false; ui.aiBtnTitle.textContent = 'صوّر الملصق وعبّي القيم'; }
   };
   ui.unitSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setUnit(b.dataset.u); });
   ui.basisSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setBasis(b.dataset.b, true); });
@@ -1484,6 +1614,7 @@ function wire() {
   try { await openDB(); } catch (e) { useLS = true; }
   await refreshCount();
   window.addEventListener('online', () => syncNow(true));
+  restoreDraft();
   syncNow(true);
   try { ui.btnShare.hidden = !(navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.json', { type: 'application/json' })] })); } catch (e) { ui.btnShare.hidden = true; }
   if (!window.isSecureContext) ui.hint.textContent = 'الكاميرا تشتغل فقط عبر رابط https — ارفع الملف على Netlify Drop أو GitHub Pages ثم افتح الرابط من الجوال. تقدر تكتب الباركود يدويًا الآن.';
