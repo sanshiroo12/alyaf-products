@@ -994,7 +994,7 @@ function renderPhoto() {
   ui.photoPreview.hidden = !src;
   ui.btnPhoto.textContent = src ? 'إعادة تصوير المنتج' : 'صوّر المنتج';
   ui.btnPhoto.classList.toggle('has', !!src);
-  ui.btnPhotoRemove.hidden = !state.photo;
+  ui.btnPhotoRemove.hidden = !src;
   const has = !!src;
   ui.photoTools.hidden = !has;
   ui.btnPhotoOk.hidden = !has || state.photoOk;
@@ -1081,7 +1081,7 @@ async function saveForm() {
     package_size: pkg, package_unit: state.pkgUnit, unit: state.unit, serving_size: serving, servings_per_package: servN,
     basis: state.basis, nutrients: vals, per_100, per_serving,
     complete: NUTRIENTS.every(n => vals[n.key] != null), sizes,
-    photo: state.photo || null, photo_url: state.photo ? (state.photoUrl || null) : null, photo_ok: !!state.photoOk,
+    photo: state.photo || null, photo_url: state.photoUrl || null, photo_ok: !!state.photoOk,
     off_ref: state.off ? { name: state.off.name || null, brand: state.off.brand || null, photo_url: state.off.photo_url || null, unit: state.off.unit || null, per_100: state.off.per_100 || state.off.nutrients || null } : ((existing && existing.off_ref) || null),
     label_photo: state.labelPhoto || null, label_photo_url: state.labelPhoto ? (state.labelUrl || null) : null,
     label_photo_uploaded: state.labelPhoto ? !!(existing && existing.label_photo === state.labelPhoto && existing.label_photo_uploaded) : true,
@@ -1267,13 +1267,17 @@ async function syncNow(silent) {
   try {
     const delq = JSON.parse(localStorage.getItem(DELQ_KEY) || '[]');
     while (delq.length) { await sbFetch('/rest/v1/products?barcode=eq.' + encodeURIComponent(delq[0]), { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); delq.shift(); localStorage.setItem(DELQ_KEY, JSON.stringify(delq)); }
-    const dirty = (await DB.all()).filter(p => p.synced === false);
-    const rows = [];
-    for (const p of dirty) {
-      if (p.photo && !p.photo_uploaded) { try { p.photo_url = await sbUploadPhoto(p.barcode, p.photo); p.photo_uploaded = true; await DB.put(p); } catch (e) {} }
-      if (p.label_photo && !p.label_photo_uploaded) { try { p.label_photo_url = await sbUploadPhoto('labels/' + p.barcode, p.label_photo); p.label_photo_uploaded = true; await DB.put(p); } catch (e) {} }
-      rows.push(toRow(p));
+    const all = await DB.all(); let upFail = 0, upErr = '';
+    for (const p of all) {
+      const needPhoto = p.photo && (!p.photo_uploaded || !isOwnUrl(p.photo_url));
+      const needLabel = p.label_photo && (!p.label_photo_uploaded || !p.label_photo_url);
+      if (!needPhoto && !needLabel) continue;
+      if (needPhoto) { try { p.photo_url = await sbUploadPhoto(p.barcode, p.photo); p.photo_uploaded = true; p.synced = false; } catch (e) { upFail++; upErr = String(e.message || e); } }
+      if (needLabel) { try { p.label_photo_url = await sbUploadPhoto('labels/' + p.barcode, p.label_photo); p.label_photo_uploaded = true; p.synced = false; } catch (e) { upFail++; upErr = String(e.message || e); } }
+      await DB.put(p);
     }
+    const dirty = (await DB.all()).filter(p => p.synced === false);
+    const rows = dirty.map(toRow);
     const upsert = batch => sbFetch('/rest/v1/products?on_conflict=barcode', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(batch) });
     const stripCols = batch => batch.map(r => { const q = Object.assign({}, r); missingCols.forEach(c => { delete q[c]; }); return q; });
     for (let i = 0; i < rows.length; i += 40) {
@@ -1286,7 +1290,8 @@ async function syncNow(silent) {
     for (const p of dirty) { const cur = await DB.get(p.barcode); if (cur && cur.updated_at === p.updated_at) { cur.synced = true; await DB.put(cur); } }
     const pulled = await sbPull();
     localStorage.setItem(LASTSYNC_KEY, now());
-    if (!silent) toast('تمت المزامنة · رفع ' + dirty.length + ' · سحب ' + pulled);
+    if (upFail) toast('⚠️ ' + upFail + ' صورة ما قدرت ترتفع للسحابة: ' + upErr.slice(0, 120));
+    else if (!silent) toast('تمت المزامنة · رفع ' + dirty.length + ' · سحب ' + pulled);
     if (currentView === 'list') renderList(); refreshCount(); if (currentView === 'settings') renderSync();
   } catch (e) { if (!silent) toast('فشلت المزامنة: ' + (e.message || e)); }
   finally { syncing = false; renderSync(); }
@@ -1547,9 +1552,9 @@ function wire() {
   ui.formBack.onclick = closeForm;
   ui.formSave.onclick = saveForm; ui.formSaveTop.onclick = saveForm;
   ui.btnDelete.onclick = deleteCurrent;
-  ui.btnPhoto.onclick = () => ui.filePhoto.click();
-  ui.filePhoto.onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { state.photo = await enhanceImage(await compressImage(f, 800, 0.85)); state.photoOk = true; state.photoBackup = null; state.photoFromLabel = false; renderPhoto(); } catch (err) { toast('تعذر قراءة الصورة'); } };
-  ui.btnPhotoRemove.onclick = () => { state.photo = null; state.photoBackup = null; renderPhoto(); };
+  ui.btnPhoto.onclick = () => { saveDraft(); ui.filePhoto.click(); };
+  ui.filePhoto.onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { state.photo = await enhanceImage(await compressImage(f, 800, 0.85)); state.photoOk = true; state.photoBackup = null; state.photoFromLabel = false; renderPhoto(); saveDraft(); } catch (err) { toast('تعذر قراءة الصورة: ' + (err.message || err)); } };
+  ui.btnPhotoRemove.onclick = () => { state.photo = null; state.photoUrl = null; state.photoOk = false; state.photoBackup = null; renderPhoto(); };
   ui.btnPhotoOk.onclick = () => { state.photoOk = true; renderPhoto(); toast('تم تأكيد صورة المنتج'); };
   const openLightbox = src => { if (!src) return; ui.lightboxImg.src = src; ui.lightbox.hidden = false; };
   ui.lightbox.onclick = () => { ui.lightbox.hidden = true; ui.lightboxImg.src = ''; };
@@ -1557,14 +1562,14 @@ function wire() {
   ui.labelThumb.onclick = () => openLightbox(state.labelPhoto || state.labelUrl);
   ui.btnUseOff.onclick = useOffValues;
   ui.result.addEventListener('click', e => { const im = e.target.closest('img.res-photo, img.res-img'); if (im) openLightbox(im.src); });
-  ui.btnAiLabel.onclick = () => ui.fileLabel.click();
+  ui.btnAiLabel.onclick = () => { saveDraft(); ui.fileLabel.click(); };
   const aiStatus = (cls, html) => { ui.aiStatus.className = 'ai-status ' + cls; ui.aiStatus.innerHTML = html; ui.aiStatus.hidden = false; };
   ui.fileLabel.onchange = async e => {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
     try {
       state.labelPhoto = await compressImage(f, 1200, 0.8); state.labelUrl = null; state.labelUploaded = false; showLabelThumb();
       if (!state.photo && !state.photoUrl) { try { state.photo = await enhanceImage(await compressImage(f, 800, 0.85)); state.photoOk = true; state.photoBackup = null; state.photoFromLabel = true; renderPhoto(); } catch (x) {} }
-      toast('تم حفظ صورة الملصق — اضغط "حلّل الصور" لتعبئة القيم');
+      saveDraft(); toast('تم حفظ صورة الملصق — اضغط "حلّل الصور" لتعبئة القيم');
     } catch (err) { toast('تعذر قراءة الصورة'); }
   };
   ui.btnAnalyze.onclick = async () => {
