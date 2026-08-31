@@ -353,12 +353,9 @@ input::placeholder{color:var(--faint)}
       <button class="photo-btn" id="btnPhoto">صوّر المنتج</button>
       <div class="photo-tools" id="photoTools" hidden>
         <button class="btn primary" id="btnPhotoOk" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>تأكيد الصورة</button>
-        <button class="btn ghost" id="btnRemoveBg" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4l5 5L8 21H3v-5z"/><path d="M13 6l5 5"/><path d="M19 2l1 1M22 6l-1-1"/></svg>خلفية بيضاء</button>
-        <button class="btn ghost" id="btnUndoBg" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 010 10h-2"/></svg>تراجع</button>
       </div>
-      <div id="bgStatus" class="ai-status busy" hidden></div>
       <button class="link danger" id="btnPhotoRemove" hidden>حذف الصورة</button>
-      <p class="note" style="margin:0;text-align:center">للحصول على صورة أفضل: سطح فاتح وسادة، إضاءة طبيعية، والمنتج يملأ الإطار. الإضاءة والألوان تتحسّن تلقائيًا بعد التصوير.</p>
+      <p class="note" style="margin:0;text-align:center">للحصول على صورة أفضل: سطح فاتح وسادة، إضاءة طبيعية، والمنتج يملأ الإطار بدون يدك. الإضاءة والألوان تتحسّن تلقائيًا بعد التصوير.</p>
       <input type="file" id="filePhoto" accept="image/*" capture="environment" hidden>
     </div>
     <div class="card label-card">
@@ -367,7 +364,7 @@ input::placeholder{color:var(--faint)}
         <div class="label-thumb" id="labelThumb"><img id="labelPrevImg" alt="" hidden><span id="labelEmpty">الملصق الغذائي</span></div>
         <button class="btn ghost" id="btnAiLabel" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>صوّر الملصق الغذائي</button>
       </div>
-      <button class="ai-btn" id="btnAnalyze" type="button"><span class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg></span><span class="tx"><b id="aiBtnTitle">حلّل الصور وعبّي كل شي</b><small>صورة المنتج من الأمام + الملصق: الاسم عربي وإنجليزي، العلامة، القيم، وخلفية بيضاء — بضغطة</small></span></button>
+      <button class="ai-btn" id="btnAnalyze" type="button"><span class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg></span><span class="tx"><b id="aiBtnTitle">حلّل الصور وعبّي كل شي</b><small>صورة المنتج من الأمام + الملصق: الاسم عربي وإنجليزي، العلامة، والقيم — بضغطة</small></span></button>
       <div id="aiStatus" class="ai-status" hidden></div>
       <div id="sanityBox" class="ai-status warn" hidden></div>
     </div>
@@ -425,6 +422,14 @@ input::placeholder{color:var(--faint)}
   <div class="form-foot"><button class="btn primary big" id="formSave">حفظ المنتج</button></div>
 </div>
 
+<div id="detail" class="form" hidden>
+  <div class="form-top">
+    <button class="icon-btn" id="detailBack">→ رجوع</button>
+    <div class="form-title">تفاصيل المنتج</div>
+    <button class="save-mini" id="detailEdit">تعديل</button>
+  </div>
+  <div class="form-body" id="detailBody"></div>
+</div>
 <div id="toast" class="toast" hidden></div>
 <div id="lightbox" class="lightbox" hidden><button class="x" id="lightboxClose">إغلاق ✕</button><img id="lightboxImg" alt=""></div>
 
@@ -581,7 +586,7 @@ const LS = {
 const DB = { get: b => (useLS ? LS : IDB).get(b), all: () => (useLS ? LS : IDB).all(), put: p => (useLS ? LS : IDB).put(p), del: b => (useLS ? LS : IDB).del(b), count: () => (useLS ? LS : IDB).count() };
 
 /* ---------- UI refs ---------- */
-const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','btnRemoveBg','btnUndoBg','bgStatus','filePhoto','fName','fNameEn','fBrand','brandSuggest','fBarcode','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody','aiCard','aiState','aiBody','btnAiLabel','btnAnalyze','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelThumb','labelPrevImg','labelEmpty','offRef','btnUseOff','offRefBody','lightbox','lightboxImg','lightboxClose'];
+const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','filePhoto','fName','fNameEn','fBrand','brandSuggest','fBarcode','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody','aiCard','aiState','aiBody','btnAiLabel','btnAnalyze','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelThumb','labelPrevImg','labelEmpty','offRef','btnUseOff','offRefBody','lightbox','lightboxImg','lightboxClose','detail','detailBack','detailEdit','detailBody'];
 const ui = {}; ids.forEach(id => { ui[id] = document.getElementById(id); });
 ui.viewScan = $('#view-scan'); ui.viewList = $('#view-list'); ui.viewSettings = $('#view-settings'); ui.tabs = [...document.querySelectorAll('.tab')];
 
@@ -835,16 +840,25 @@ function sizesList(p, matched) {
   return '<div class="sizes-title">الأحجام والحصص المسجّلة</div><div class="sizes">' + list.map(sz => '<div class="size' + (matched && matched === sz ? ' hit' : '') + '"><b>' + esc(sz.name) + '</b><span class="amt">' + fmt(sz.amount) + ' ' + unitLabel(sz.unit || p.unit) + '</span>'
     + (sz.nutrients && sz.nutrients.kcal != null ? '<span class="kc">' + fmt(sz.nutrients.kcal) + ' kcal</span>' : '') + (sz.barcode ? '<span class="mono code">' + esc(sz.barcode) + '</span>' : '') + '</div>').join('') + '</div>';
 }
-function resultLocal(p, size) {
+function productDetailHTML(p, size, statusText) {
   const img = ownPhoto(p), u = unitLabel(p.unit), meta = [];
   if (p.package_size) { const pu = PKG_UNITS[p.package_unit] || PKG_UNITS[p.unit] || PKG_UNITS.g; meta.push('<span>العبوة <b>' + fmt(r2(p.package_size / pu.factor)) + ' ' + pu.label + '</b></span>'); }
   if (p.serving_size) meta.push('<span>الحصة <b>' + fmt(p.serving_size) + ' ' + u + '</b></span>');
   if (p.servings_per_package) meta.push('<span>عدد الحصص <b>' + fmt(p.servings_per_package) + '</b></span>');
-  ui.result.innerHTML = '<div class="card">' + (img ? '<img class="res-photo" src="' + esc(img) + '" alt="">' : '') + head(p.name, p.brand, p.barcode, null)
-    + '<div class="status ok">أضفته من قبل ✓ · ' + whenSaved(p.updated_at || p.created_at)
+  return (img ? '<img class="res-photo" src="' + esc(img) + '" alt="">' : '') + head(p.name, p.brand, p.barcode, null)
+    + (p.name_en ? '<div class="res-sub" dir="ltr" style="text-align:left">' + esc(p.name_en) + '</div>' : '')
+    + '<div class="status ok">' + statusText + ' · ' + whenSaved(p.updated_at || p.created_at)
     + (size ? '<small>الباركود الممسوح هو حجم: ' + esc(size.name) + ' ' + fmt(size.amount) + ' ' + unitLabel(size.unit || p.unit) + '</small>' : '')
     + (p.complete ? '' : '<small>البيانات ناقصة — تقدر تكملها من "تعديل"</small>') + '</div>'
-    + strip(p.nutrients) + (meta.length ? '<div class="meta">' + meta.join('') + '</div>' : '') + detailTable(p) + sizesList(p, size)
+    + strip(p.nutrients) + (meta.length ? '<div class="meta">' + meta.join('') + '</div>' : '') + detailTable(p) + sizesList(p, size);
+}
+function openDetail(p) {
+  ui.detailBody.innerHTML = '<div class="card">' + productDetailHTML(p, null, 'محفوظ') + '</div>';
+  ui.detail.hidden = false; ui.detailBody.scrollTop = 0;
+  ui.detailEdit.onclick = () => { ui.detail.hidden = true; openForm(p, { editing: p.barcode, returnTo: 'list' }); };
+}
+function resultLocal(p, size) {
+  ui.result.innerHTML = '<div class="card">' + productDetailHTML(p, size, 'أضفته من قبل ✓')
     + '<div class="actions"><div class="row"><button class="btn ghost" data-a="edit">تعديل</button><button class="btn primary" data-a="next">مسح التالي</button></div></div></div>';
   ui.result.querySelector('[data-a=edit]').onclick = () => openForm(p, { editing: p.barcode, returnTo: 'scan' });
   ui.result.querySelector('[data-a=next]').onclick = nextScan;
@@ -976,15 +990,14 @@ function setBasis(b, convert) {
 }
 function renderPhoto() {
   const src = state.photo || state.photoUrl;
-  ui.photoPreview.hidden = !src; if (src) ui.photoPreview.src = src;
+  if (ui.photoPreview.getAttribute('src') !== src) { ui.photoPreview.removeAttribute('src'); if (src) ui.photoPreview.src = src; }
+  ui.photoPreview.hidden = !src;
   ui.btnPhoto.textContent = src ? 'إعادة تصوير المنتج' : 'صوّر المنتج';
   ui.btnPhoto.classList.toggle('has', !!src);
   ui.btnPhotoRemove.hidden = !state.photo;
   const has = !!src;
   ui.photoTools.hidden = !has;
   ui.btnPhotoOk.hidden = !has || state.photoOk;
-  ui.btnRemoveBg.hidden = !state.photo;
-  ui.btnUndoBg.hidden = !state.photoBackup;
 }
 const BRANDS_KEY = 'alyaf-brands'; let brands = [];
 function addBrand(b, persist) { b = String(b || '').trim(); if (!b) return; if (!brands.some(x => x.toLowerCase() === b.toLowerCase())) { brands.push(b); if (persist !== false) { try { localStorage.setItem(BRANDS_KEY, JSON.stringify(brands)); } catch (e) {} } } }
@@ -997,9 +1010,13 @@ function renderBrandSuggest() {
   ui.brandSuggest.hidden = !list.length;
 }
 function showLabelThumb() {
-  const has = !!state.labelPhoto || !!state.labelUrl;
-  ui.labelPrevImg.hidden = !has; ui.labelEmpty.hidden = has;
-  if (has) ui.labelPrevImg.src = state.labelPhoto || state.labelUrl;
+  const src = state.labelPhoto || state.labelUrl;
+  ui.labelPrevImg.onload = null; ui.labelPrevImg.onerror = null; ui.labelPrevImg.removeAttribute('src'); ui.labelPrevImg.hidden = true;
+  if (!src) { ui.labelEmpty.textContent = 'الملصق الغذائي'; ui.labelEmpty.hidden = false; return; }
+  ui.labelEmpty.textContent = 'جاري التحميل…'; ui.labelEmpty.hidden = false;
+  ui.labelPrevImg.onload = () => { ui.labelPrevImg.hidden = false; ui.labelEmpty.hidden = true; };
+  ui.labelPrevImg.onerror = () => { ui.labelEmpty.textContent = 'تعذر تحميل صورة الملصق'; };
+  ui.labelPrevImg.src = src;
 }
 function renderOffRef() {
   const o = state.off; ui.offRef.hidden = !o; if (!o) return;
@@ -1028,7 +1045,7 @@ function openForm(p, ctx) {
   state.off = (formCtx.off) || p.off_ref || null;
   state.photo = p.photo || null; state.photoUrl = isOwnUrl(p.photo_url) ? p.photo_url : null;
   state.offPhotoUrl = (state.off && state.off.photo_url) || (!isOwnUrl(p.photo_url) ? p.photo_url : null) || null;
-  state.photoOk = !!p.photo_ok; state.photoBackup = null; ui.bgStatus.hidden = true; renderPhoto(); renderOffRef();
+  state.photoOk = !!p.photo_ok; state.photoBackup = null; renderPhoto(); renderOffRef();
   state.labelPhoto = p.label_photo || null; state.labelUrl = p.label_photo_url || null; state.labelUploaded = !!p.label_photo_uploaded; showLabelThumb();
   ui.sizeRows.innerHTML = ''; (p.sizes || []).filter(Boolean).forEach(addSizeRow);
   ui.form.querySelectorAll('.field.ai, .field.translated').forEach(f => f.classList.remove('ai', 'translated')); ui.aiStatus.hidden = true; ui.sanityBox.hidden = true;
@@ -1492,95 +1509,6 @@ function restoreDraft() {
   try { const d = JSON.parse(sessionStorage.getItem(DRAFT_KEY) || 'null'); if (!d || !d.product) return false; sessionStorage.removeItem(DRAFT_KEY); openForm(d.product, d.ctx || {}); toast('تم استرجاع النموذج بعد إعادة تحميل الصفحة'); return true; } catch (e) { return false; }
 }
 
-/* ---------- background removal via Gemini segmentation (no download, uses your key) ---------- */
-async function geminiSegment(dataUrl) {
-  const b64 = dataUrl.split(',')[1];
-  const prompt = 'Find the single main product package in this photo and return its segmentation mask. Output ONLY a JSON array with one object: {"box_2d":[ymin,xmin,ymax,xmax],"mask":"data:image/png;base64,...","label":"product"}. box_2d is in 0-1000 normalized coordinates. mask is a PNG probability mask that covers exactly the box. Include only the package itself; exclude hands, fingers, table, shadow and background.';
-  const models = ai.model ? [ai.model] : AI_PROVIDERS.gemini.models; let last = null;
-  for (const model of models) {
-    const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent';
-    const body = { contents: [{ parts: [{ inline_data: { mime_type: 'image/jpeg', data: b64 } }, { text: prompt }] }], generationConfig: { temperature: 0, responseMimeType: 'application/json', thinkingConfig: /gemini-2/.test(model) ? { thinkingBudget: 0 } : { thinkingLevel: 'low' } } };
-    const send = b => fetch(url + '?key=' + encodeURIComponent(ai.key), { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': ai.key }, body: JSON.stringify(b) });
-    let r = await send(body);
-    if (r.status === 400) { const t = await r.clone().text(); if (/thinking/i.test(t)) { delete body.generationConfig.thinkingConfig; r = await send(body); } }
-    const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (e) {}
-    if (!r.ok) { const msg = (j && j.error && j.error.message) || txt.slice(0, 200); last = new Error(msg); if (r.status === 404 || r.status === 429 || /not available|not found|no longer|deprecated/i.test(msg)) continue; throw last; }
-    let out = ''; try { out = j.candidates[0].content.parts.map(x => x.text || '').join(''); } catch (e) { last = new Error('رد غير مفهوم'); continue; }
-    const a = out.indexOf('['), b2 = out.lastIndexOf(']'); let arr;
-    try { arr = JSON.parse(a >= 0 && b2 > a ? out.slice(a, b2 + 1) : out); } catch (e) { last = new Error('رد غير مفهوم'); continue; }
-    const seg = Array.isArray(arr) ? arr.find(x => x && x.mask && x.box_2d) : (arr && arr.mask ? arr : null);
-    if (!seg) { last = new Error('ما تعرّفت على المنتج بالصورة'); continue; }
-    return seg;
-  }
-  throw last || new Error('فشل');
-}
-async function removeBgGemini(dataUrl) {
-  const seg = await geminiSegment(dataUrl);
-  const img = await loadImage(dataUrl); const W = img.width, H = img.height;
-  let [ymin, xmin, ymax, xmax] = seg.box_2d.map(v => Math.max(0, Math.min(1000, Number(v) || 0)) / 1000);
-  if (ymax < ymin) { const t = ymin; ymin = ymax; ymax = t; } if (xmax < xmin) { const t = xmin; xmin = xmax; xmax = t; }
-  const bx = Math.round(xmin * W), by = Math.round(ymin * H), bw = Math.max(1, Math.round((xmax - xmin) * W)), bh = Math.max(1, Math.round((ymax - ymin) * H));
-  const maskSrc = String(seg.mask).startsWith('data:') ? seg.mask : 'data:image/png;base64,' + seg.mask;
-  const mimg = await loadImage(maskSrc);
-  const mc = document.createElement('canvas'); mc.width = bw; mc.height = bh; const mx = mc.getContext('2d'); mx.drawImage(mimg, 0, 0, bw, bh); const md = mx.getImageData(0, 0, bw, bh).data;
-  const c = document.createElement('canvas'); c.width = W; c.height = H; const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0); const id = ctx.getImageData(0, 0, W, H); const d = id.data;
-  let minX = W, minY = H, maxX = -1, maxY = -1;
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const i = (y * W + x) * 4; let keep = false;
-    if (x >= bx && x < bx + bw && y >= by && y < by + bh) { const mi = ((y - by) * bw + (x - bx)) * 4; keep = md[mi] > 127 && md[mi + 3] > 0; }
-    if (keep) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
-    else { d[i] = 255; d[i + 1] = 255; d[i + 2] = 255; d[i + 3] = 255; }
-  }
-  if (maxX < 0) throw new Error('القناع فاضي');
-  ctx.putImageData(id, 0, 0);
-  const pad = Math.round(Math.max(maxX - minX, maxY - minY) * 0.06);
-  const sx = Math.max(0, minX - pad), sy = Math.max(0, minY - pad), sw = Math.min(W, maxX + pad) - sx, sh = Math.min(H, maxY + pad) - sy;
-  const oc = document.createElement('canvas'); oc.width = sw; oc.height = sh; oc.getContext('2d').drawImage(c, sx, sy, sw, sh, 0, 0, sw, sh);
-  return oc.toDataURL('image/jpeg', 0.85);
-}
-
-/* ---------- background removal (optional, runs on the phone) ---------- */
-const BG_MODULE_URLS = ['https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm', 'https://esm.sh/@imgly/background-removal@1.7.0'];
-let bgMod = null;
-async function loadBgModule() {
-  if (bgMod) return bgMod; let last = null;
-  for (const u of BG_MODULE_URLS) { try { const m = await import(u); if (m && m.removeBackground) { bgMod = m; return m; } } catch (e) { last = e; } }
-  throw last || new Error('تعذر تحميل أداة إزالة الخلفية');
-}
-function loadImage(src) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('img')); i.src = src; }); }
-async function removeBgFromPhoto() {
-  if (!state.photo) { toast('صوّر المنتج أولًا'); return; }
-  const setT = (t, cls) => { ui.bgStatus.className = 'ai-status ' + (cls || 'busy'); ui.bgStatus.textContent = t; ui.bgStatus.hidden = false; };
-  ui.btnRemoveBg.disabled = true;
-  if (aiReady() && ai.provider === 'gemini') {
-    try {
-      setT('جاري تحديد المنتج بالذكاء الاصطناعي…');
-      const out = await removeBgGemini(state.photo);
-      state.photoBackup = state.photo; state.photo = out; state.photoOk = true; renderPhoto();
-      setT('✓ تمت إزالة الخلفية — لو النتيجة مو مضبوطة اضغط "تراجع"', 'ok'); ui.btnRemoveBg.disabled = false; return;
-    } catch (e) { setT('ما نجحت الطريقة السريعة (' + (e.message || e) + ') — جاري المحاولة بالطريقة المحلية…'); }
-  }
-  saveDraft();
-  try {
-    setT('جاري تحميل أداة إزالة الخلفية (أول مرة فقط، حوالي 40 ميجا)…');
-    const mod = await loadBgModule();
-    const src = await (await fetch(state.photo)).blob();
-    const cfg = { model: 'isnet_quint8', device: 'gpu', output: { format: 'image/png' }, progress: (k, cur, tot) => { if (String(k).startsWith('fetch:')) setT('تحميل الأداة… ' + Math.round(cur / Math.max(tot, 1) * 100) + '%'); else setT('جاري إزالة الخلفية… قد تأخذ 5 إلى 20 ثانية'); } };
-    let out; try { out = await mod.removeBackground(src, cfg); } catch (e) { out = await mod.removeBackground(src, Object.assign({}, cfg, { device: 'cpu' })); }
-    const url = URL.createObjectURL(out); const img = await loadImage(url); URL.revokeObjectURL(url);
-    const c0 = document.createElement('canvas'); c0.width = img.width; c0.height = img.height; const x0 = c0.getContext('2d'); x0.drawImage(img, 0, 0);
-    const d = x0.getImageData(0, 0, c0.width, c0.height).data; let minX = c0.width, minY = c0.height, maxX = -1, maxY = -1;
-    for (let y = 0; y < c0.height; y++) for (let x = 0; x < c0.width; x++) { if (d[(y * c0.width + x) * 4 + 3] > 24) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; } }
-    if (maxX < 0) throw new Error('ما تعرّفت على المنتج بالصورة');
-    const pad = Math.round(Math.max(maxX - minX, maxY - minY) * 0.06);
-    const sx = Math.max(0, minX - pad), sy = Math.max(0, minY - pad), sw = Math.min(c0.width, maxX + pad) - sx, sh = Math.min(c0.height, maxY + pad) - sy;
-    const c = document.createElement('canvas'); c.width = sw; c.height = sh; const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, sw, sh); ctx.drawImage(c0, sx, sy, sw, sh, 0, 0, sw, sh);
-    state.photoBackup = state.photo; state.photo = c.toDataURL('image/jpeg', 0.85); state.photoOk = true; renderPhoto();
-    setT('✓ تمت إزالة الخلفية — لو النتيجة مو مضبوطة اضغط "تراجع"', 'ok'); clearDraft();
-  } catch (e) { setT('تعذرت إزالة الخلفية: ' + (e.message || e), 'err'); clearDraft(); }
-  finally { ui.btnRemoveBg.disabled = false; }
-}
-
 /* ---------- navigation ---------- */
 async function go(v) {
   if (v === currentView) return;
@@ -1606,7 +1534,9 @@ function wire() {
   ui.countPill.onclick = () => go('list');
   ui.search.addEventListener('input', renderList);
   ui.listFilter.addEventListener('click', e => { const c = e.target.closest('.chip'); if (!c) return; listFilterMode = c.dataset.f; ui.listFilter.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === c)); renderList(); });
-  ui.list.addEventListener('click', async e => { const b = e.target.closest('.row-item'); if (!b) return; const p = await DB.get(b.dataset.code); if (p) openForm(p, { editing: p.barcode, returnTo: 'list' }); });
+  ui.list.addEventListener('click', async e => { const b = e.target.closest('.row-item'); if (!b) return; const p = await DB.get(b.dataset.code); if (p) openDetail(p); });
+  ui.detailBack.onclick = () => { ui.detail.hidden = true; };
+  ui.detailBody.addEventListener('click', e => { const im = e.target.closest('img.res-photo'); if (im) { ui.lightboxImg.src = im.src; ui.lightbox.hidden = false; } });
   ui.btnExport.onclick = () => exportJSON(true);
   ui.btnExportLite.onclick = () => exportJSON(false);
   ui.btnExportCsv.onclick = exportCSV;
@@ -1621,8 +1551,6 @@ function wire() {
   ui.filePhoto.onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { state.photo = await enhanceImage(await compressImage(f, 800, 0.85)); state.photoOk = true; state.photoBackup = null; state.photoFromLabel = false; renderPhoto(); } catch (err) { toast('تعذر قراءة الصورة'); } };
   ui.btnPhotoRemove.onclick = () => { state.photo = null; state.photoBackup = null; renderPhoto(); };
   ui.btnPhotoOk.onclick = () => { state.photoOk = true; renderPhoto(); toast('تم تأكيد صورة المنتج'); };
-  ui.btnRemoveBg.onclick = removeBgFromPhoto;
-  ui.btnUndoBg.onclick = () => { if (state.photoBackup) { state.photo = state.photoBackup; state.photoBackup = null; ui.bgStatus.hidden = true; renderPhoto(); } };
   const openLightbox = src => { if (!src) return; ui.lightboxImg.src = src; ui.lightbox.hidden = false; };
   ui.lightbox.onclick = () => { ui.lightbox.hidden = true; ui.lightboxImg.src = ''; };
   ui.photoPreview.onclick = () => openLightbox(ui.photoPreview.src);
@@ -1650,14 +1578,12 @@ function wire() {
       const images = [], notes = [];
       if (front) { images.push(front); notes.push('Photo ' + images.length + ' is the FRONT of the package.'); }
       if (label) { images.push(label); notes.push('Photo ' + images.length + ' is the NUTRITION FACTS label.'); }
-      const segP = (front && ai.provider === 'gemini') ? removeBgGemini(front).catch(() => null) : Promise.resolve(null);
-      const [res, cut] = await Promise.all([aiAnalyze(images, notes.join(' ') + '\n' + LABEL_PROMPT), segP]);
+      const res = await aiAnalyze(images, notes.join(' ') + '\n' + LABEL_PROMPT);
       const n = applyLabel(res.data); const secs = Math.round((Date.now() - t0) / 100) / 10;
-      if (cut) { state.photoBackup = state.photo; state.photo = cut; state.photoOk = true; renderPhoto(); }
-      const bits = []; if (ui.fName.value.trim()) bits.push('الاسم'); if (ui.fBrand.value.trim()) bits.push('العلامة'); if (n) bits.push(n + ' قيمة'); if (cut) bits.push('خلفية بيضاء');
+      const bits = []; if (ui.fName.value.trim()) bits.push('الاسم'); if (ui.fBrand.value.trim()) bits.push('العلامة'); if (n) bits.push(n + ' قيمة');
       if (bits.length) { aiStatus('ok', '✓ خلال ' + secs + ' ث: ' + bits.join(' · ') + ' (الموديل: ' + esc(res.model) + '). المظلل بالأخضر من الصور، والأصفر مترجم آليًا — راجع ثم احفظ.'); showSanity(); try { ui.fName.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (x) {} }
       else aiStatus('err', 'ما لقيت معلومات واضحة بالصور — قرّب الكاميرا وتأكد من الإضاءة وجرّب مرة ثانية.');
-      if (!front) aiStatus('warn', ui.aiStatus.innerHTML + '<br>ما فيه صورة للمنتج من الأمام — الاسم والعلامة قد يكونان ناقصين، وما تم قص الخلفية.');
+      if (!front) aiStatus('warn', ui.aiStatus.innerHTML + '<br>ما فيه صورة للمنتج من الأمام — الاسم والعلامة قد يكونان ناقصين.');
     } catch (err) {
       aiStatus('err', 'تعذر التحليل: ' + esc(err.message || err) + '<br>جرّب صور أوضح، أو غيّر المزوّد أو الموديل من تبويب "الإعدادات".');
     } finally { ui.btnAnalyze.disabled = false; ui.aiBtnTitle.textContent = 'حلّل الصور وعبّي كل شي'; }
