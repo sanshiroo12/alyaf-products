@@ -114,6 +114,17 @@ select{background:var(--card-2);border:1px solid var(--line-2);border-radius:var
 .field.translated input{border-color:rgba(255,179,64,.75);background:rgba(255,179,64,.06)}
 .field.translated>span::after{content:" · مترجم آليًا — راجعه";color:var(--amber)}
 .suggest{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chips.cats{max-height:168px;overflow:auto;margin-top:10px;padding-bottom:2px}
+.cat-new{margin-top:10px;display:flex;flex-direction:column;gap:8px;background:var(--card-2);border-radius:14px;padding:10px}
+.cat-new .btn{width:100%;margin-top:0}
+.filter-row{display:flex;gap:8px;align-items:center;margin:0 0 12px}
+.cat-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.cat-row:last-child{border-bottom:0}
+.cat-row .tx{flex:1;min-width:0}
+.cat-row b{font-weight:800}
+.cat-row small{color:var(--muted);margin-right:6px}
+.cat-row .btn{padding:8px 12px;font-size:13px}
+.filter-row select{flex:1}
 .label-row .btn{flex:1;white-space:normal;line-height:1.25}
 .field.ai>span::after{content:" · من الصورة";color:var(--green)}
 input::placeholder{color:var(--faint)}
@@ -306,6 +317,7 @@ input::placeholder{color:var(--faint)}
         <h2>المنتجات المحفوظة <span id="listCount" class="muted"></span></h2>
         <input id="search" type="search" placeholder="ابحث بالاسم أو العلامة أو الباركود" autocomplete="off">
       </div>
+      <div class="filter-row"><select id="catFilter"><option value="">كل الأصناف</option></select></div>
       <div class="chips filter" id="listFilter"><button class="chip on" data-f="all">الكل</button><button class="chip" data-f="photo">صور تحتاج مراجعة</button><button class="chip" data-f="nophoto">بدون صورة</button></div>
       <div id="list" class="list"></div>
       <div id="listEmpty" class="empty" hidden>ما عندك منتجات محفوظة بعد.<br>امسح أول باركود وابدأ تبني قاعدتك.</div>
@@ -329,6 +341,11 @@ input::placeholder{color:var(--faint)}
       <div class="card sync" id="aiCard">
         <div class="card-title">قراءة الملصق بالذكاء الاصطناعي <span class="pill" id="aiState">غير مفعّل</span></div>
         <div id="aiBody"></div>
+      </div>
+      <div class="card sync" id="catsCard">
+        <div class="card-title">الأصناف <span class="pill" id="catsCount"></span></div>
+        <p class="note" style="margin:0 0 6px">حذف صنف ما يحذف منتجاته — تصير "غير مصنّفة" وتقدر تعطيها صنف ثاني من القائمة.</p>
+        <div id="catsBody"></div>
       </div>
     </section>
   </main>
@@ -376,6 +393,19 @@ input::placeholder{color:var(--faint)}
       <label class="field"><span>العلامة التجارية (بالإنجليزي)</span><input id="fBrand" placeholder="Almarai" enterkeyhint="next" autocomplete="off" dir="ltr" style="text-align:left"></label>
       <div class="suggest" id="brandSuggest" hidden></div>
       <label class="field"><span>الباركود</span><input id="fBarcode" class="mono" inputmode="numeric" enterkeyhint="next" autocomplete="off"></label>
+    </div>
+    <div class="card">
+      <div class="card-title">الصنف <span class="pill" id="catSel">غير محدد</span></div>
+      <div class="ai-status ok" id="catDesc" hidden></div>
+      <input id="catSearch" placeholder="ابحث عن صنف… أو اكتب اسم صنف جديد" autocomplete="off" style="margin-top:8px">
+      <div class="chips cats" id="catChips"></div>
+      <div id="catNew" class="cat-new" hidden>
+        <input id="catNewAr" placeholder="اسم الصنف بالعربي" autocomplete="off">
+        <input id="catNewEn" placeholder="Category name in English" dir="ltr" style="text-align:left" autocomplete="off">
+        <input id="catNewDesc" placeholder="توضيح وأمثلة (مثال: لحوم غنم وبقر ومفروم…)" autocomplete="off">
+        <button class="btn primary" id="catNewSave" type="button">إضافة الصنف واختياره</button>
+      </div>
+      <details class="help"><summary><span class="q">?</span>دليل الأصناف (أمثلة لكل صنف عشان ما نلخبط)</summary><div id="catGuide"></div></details>
     </div>
     <div class="card off-ref" id="offRef" hidden>
       <div class="card-title">مرجع Open Food Facts <button class="link" id="btnUseOff">استخدم هذه القيم</button></div>
@@ -586,12 +616,12 @@ const LS = {
 const DB = { get: b => (useLS ? LS : IDB).get(b), all: () => (useLS ? LS : IDB).all(), put: p => (useLS ? LS : IDB).put(p), del: b => (useLS ? LS : IDB).del(b), count: () => (useLS ? LS : IDB).count() };
 
 /* ---------- UI refs ---------- */
-const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','filePhoto','fName','fNameEn','fBrand','brandSuggest','fBarcode','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody','aiCard','aiState','aiBody','btnAiLabel','btnAnalyze','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelThumb','labelPrevImg','labelEmpty','offRef','btnUseOff','offRefBody','lightbox','lightboxImg','lightboxClose','detail','detailBack','detailEdit','detailBody'];
+const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','catFilter','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','filePhoto','fName','fNameEn','fBrand','brandSuggest','fBarcode','catSel','catDesc','catSearch','catChips','catNew','catNewAr','catNewEn','catNewDesc','catNewSave','catGuide','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody','catsCard','catsCount','catsBody','aiCard','aiState','aiBody','btnAiLabel','btnAnalyze','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelThumb','labelPrevImg','labelEmpty','offRef','btnUseOff','offRefBody','lightbox','lightboxImg','lightboxClose','detail','detailBack','detailEdit','detailBody'];
 const ui = {}; ids.forEach(id => { ui[id] = document.getElementById(id); });
 ui.viewScan = $('#view-scan'); ui.viewList = $('#view-list'); ui.viewSettings = $('#view-settings'); ui.tabs = [...document.querySelectorAll('.tab')];
 
 /* ---------- state ---------- */
-const state = { unit: 'g', pkgUnit: 'g', basis: '100', photo: null, photoUrl: null, offPhotoUrl: null, off: null, labelPhoto: null, labelUploaded: false, labelUrl: null, photoOk: false, photoBackup: null, photoFromLabel: false };
+const state = { unit: 'g', pkgUnit: 'g', basis: '100', photo: null, photoUrl: null, offPhotoUrl: null, off: null, labelPhoto: null, labelUploaded: false, labelUrl: null, photoOk: false, photoBackup: null, photoFromLabel: false, category: null };
 let listFilterMode = 'all', autoPulled = false;
 let scanning = false, starting = false, decoding = false, busy = false, formCtx = null, currentCode = null, currentView = 'scan', wasScanning = false;
 let lastCode = '', lastAt = 0, torchOn = false, curStream = null, loopTimer = null, engine = null, enginePromise = null;
@@ -999,6 +1029,115 @@ function renderPhoto() {
   ui.photoTools.hidden = !has;
   ui.btnPhotoOk.hidden = !has || state.photoOk;
 }
+const DEFAULT_CATS = [
+  ['milk','حليب','Milk','حليب طازج، طويل الأجل، بودرة، مكثف، حليب بنكهات'],
+  ['dairy','ألبان (زبادي ولبن)','Dairy (Yogurt & Laban)','زبادي، لبن، لبنة، قشطة، كريمة، زبدة'],
+  ['cheese','أجبان','Cheese','شرائح، مثلثات، جبن كريمي، فيتا، موزاريلا، بارميزان، حلوم'],
+  ['eggs','بيض','Eggs','بيض دجاج بأنواعه (عادي، بلدي، أوميغا)'],
+  ['meat','لحوم','Meat','لحم غنم، بقر، جمل، مفروم، برجر لحم، ولحوم مصنعة (مرتديلا، سجق، نقانق)'],
+  ['poultry','دواجن','Poultry','دجاج كامل، صدور، أفخاذ، مفروم، ناقتس، برجر دجاج، رومي، بط'],
+  ['seafood','أسماك ومأكولات بحرية','Seafood','أسماك طازجة أو مجمدة، تونة وسردين معلب، روبيان، سلمون'],
+  ['vegetables','خضار','Vegetables','خضار طازجة، مقطعة، أو مجمدة، أعشاب، سلطات خضار'],
+  ['fruits','فواكه','Fruits','فواكه طازجة، مجففة، مجمدة، أو معلبة بالشراب'],
+  ['bakery','خبز ومخبوزات','Bread & Bakery','خبز، توست، صامولي، كرواسون، تورتيلا، فطائر، معجنات مالحة'],
+  ['cereal','حبوب الإفطار','Breakfast Cereals','كورن فليكس، شوفان، جرانولا، حبوب إفطار الأطفال'],
+  ['rice_pasta','أرز ومعكرونة','Rice & Pasta','أرز بأنواعه، معكرونة، نودلز، إندومي، شعيرية، برغل، كسكس'],
+  ['legumes','بقوليات','Legumes','عدس، حمص، فول، فاصوليا، لوبيا (جافة أو معلبة)'],
+  ['oils','زيوت وسمن','Oils & Ghee','زيت زيتون، زيوت نباتية، سمن، مارجرين'],
+  ['spices','توابل وبهارات','Spices','بهارات، ملح، فلفل، مكعبات مرق، خلطات توابل'],
+  ['sauces','صلصات ومخللات','Sauces & Pickles','كاتشب، مايونيز، شطة، صلصات حارة، صويا، خردل، مخللات، زيتون'],
+  ['canned','معلبات','Canned Food','ذرة، فاصوليا، طماطم معلبة، فول مدمس، حمص مسلوق (التونة تروح للأسماك)'],
+  ['frozen','مجمدات','Frozen Food','بيتزا، سمبوسة، بطاطس مجمدة، معجنات مجمدة (الخضار المجمدة تروح للخضار)'],
+  ['chips','شيبس ومقرمشات','Chips & Snacks','شيبس، بوب كورن، مقرمشات، بسكويت مالح، بريتزل'],
+  ['biscuits','بسكويت وكيك','Biscuits & Cakes','بسكويت حلو، كيك، مافن، ويفر، دونات'],
+  ['chocolate','شوكولاتة وحلويات','Chocolate & Candy','شوكولاتة، سكاكر، حلوى، علكة، حلاوة طحينية'],
+  ['nuts_dates','مكسرات وتمور','Nuts & Dates','مكسرات، بذور، تمر، معجون تمر، زبدة فول سوداني'],
+  ['soda','مشروبات غازية','Soft Drinks','مشروبات غازية ومشروبات شعير (مالت)'],
+  ['juice','عصائر','Juices','عصائر طازجة أو معلبة، نكتار، مشروبات فواكه'],
+  ['water','مياه','Water','مياه شرب، مياه غازية، مياه بنكهة'],
+  ['energy','مشروبات طاقة','Energy Drinks','مشروبات الطاقة والمشروبات الرياضية'],
+  ['coffee_tea','قهوة وشاي','Coffee & Tea','قهوة، شاي، كابتشينو، مشروبات قهوة جاهزة، كاكاو'],
+  ['plant_drinks','مشروبات نباتية','Plant-based Drinks','حليب شوفان، لوز، صويا، جوز الهند'],
+  ['ready_meals','وجبات جاهزة','Ready Meals','وجبات جاهزة للأكل أو التسخين، شوربات جاهزة، ساندويتشات، سلطات معبأة'],
+  ['baby','أغذية أطفال','Baby Food','حليب أطفال، سيريلاك، أطعمة أطفال معبأة'],
+  ['supplements','مكملات وبروتين','Supplements & Protein','بروتين بودرة، بارات بروتين، مكملات، فيتامينات'],
+  ['diet','صحي ودايت','Healthy & Diet','منتجات دايت، خالية من السكر، كيتو، خالية من الغلوتين (لو ما يناسبها صنف آخر)'],
+  ['ice_cream','آيس كريم','Ice Cream','آيس كريم، مثلجات، جيلاتي'],
+  ['desserts','حلا شرقي','Arabic Desserts','كنافة، بقلاوة، مهلبية، كريم كراميل، جيلي، بودنغ'],
+  ['other','أخرى','Other','أي منتج ما يناسب الأصناف اللي فوق']
+];
+const CATS_KEY = 'alyaf-cats', CATS_DEL_KEY = 'alyaf-cats-deleted'; let cats = [], catsTableMissing = false;
+const deletedCats = () => { try { return JSON.parse(localStorage.getItem(CATS_DEL_KEY) || '[]'); } catch (e) { return []; } };
+function saveCats() { try { localStorage.setItem(CATS_KEY, JSON.stringify(cats)); } catch (e) {} }
+function loadCats() {
+  try { cats = JSON.parse(localStorage.getItem(CATS_KEY) || 'null') || []; } catch (e) { cats = []; }
+  const gone = deletedCats(); cats = cats.filter(c => !gone.includes(c.id));
+  DEFAULT_CATS.forEach(([id, ar, en, desc], i) => { if (gone.includes(id)) return; const c = cats.find(x => x.id === id); if (!c) cats.push({ id, name_ar: ar, name_en: en, desc_ar: desc, custom: false, sort: i, synced: false }); else if (!c.desc_ar) { c.desc_ar = desc; c.synced = false; } });
+  saveCats(); renderCatFilter();
+}
+const catById = id => cats.find(c => c.id === id) || null;
+const catLabel = id => { const c = catById(id); return c ? c.name_ar : ''; };
+function addCategory(ar, en, desc) {
+  ar = String(ar || '').trim(); en = String(en || '').trim(); desc = String(desc || '').trim(); if (!ar) return null;
+  const exists = cats.find(c => c.name_ar === ar || (en && (c.name_en || '').toLowerCase() === en.toLowerCase())); if (exists) return exists;
+  let id = en ? en.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') : '';
+  if (!id || cats.some(c => c.id === id)) id = 'c_' + Date.now().toString(36);
+  const c = { id, name_ar: ar, name_en: en || ar, desc_ar: desc || null, custom: true, sort: 100 + cats.length, synced: false }; cats.push(c); saveCats(); renderCatFilter(); return c;
+}
+function renderCat() {
+  const c = catById(state.category); ui.catSel.textContent = c ? c.name_ar : 'غير محدد'; ui.catSel.className = 'pill' + (c ? ' ok' : '');
+  ui.catDesc.hidden = !(c && c.desc_ar); if (c && c.desc_ar) ui.catDesc.innerHTML = '<b>' + esc(c.name_ar) + ':</b> ' + esc(c.desc_ar);
+  renderCatChips();
+}
+function renderCatGuide() {
+  ui.catGuide.innerHTML = cats.slice().sort((a, b) => (a.sort ?? 100) - (b.sort ?? 100)).map(c => '<div class="case"><b>' + esc(c.name_ar) + ' <small dir="ltr">' + esc(c.name_en || '') + '</small></b>' + esc(c.desc_ar || '—') + '</div>').join('');
+}
+function renderCatChips() {
+  const q = ui.catSearch.value.trim().toLowerCase();
+  const list = cats.filter(c => !q || c.name_ar.includes(q) || (c.name_en || '').toLowerCase().includes(q)).sort((a, b) => (a.sort ?? 100) - (b.sort ?? 100));
+  ui.catChips.innerHTML = list.map(c => '<button type="button" class="chip' + (c.id === state.category ? ' on' : '') + '" data-id="' + esc(c.id) + '">' + esc(c.name_ar) + '</button>').join('')
+    + '<button type="button" class="chip" data-new="1" style="color:var(--green);border-color:var(--green)">+ صنف جديد</button>';
+}
+function renderCatFilter() {
+  const cur = ui.catFilter.value;
+  ui.catFilter.innerHTML = '<option value="">كل الأصناف</option>' + cats.slice().sort((a, b) => (a.sort ?? 100) - (b.sort ?? 100)).map(c => '<option value="' + esc(c.id) + '">' + esc(c.name_ar) + '</option>').join('');
+  ui.catFilter.value = cur;
+}
+async function renderCats() {
+  let all = []; try { all = await DB.all(); } catch (e) {}
+  const counts = {}; all.forEach(p => { if (p.category) counts[p.category] = (counts[p.category] || 0) + 1; });
+  const list = cats.slice().sort((a, b) => (a.sort ?? 100) - (b.sort ?? 100));
+  ui.catsCount.textContent = list.length + ' صنف';
+  ui.catsBody.innerHTML = list.map(c => '<div class="cat-row"><div class="tx"><b>' + esc(c.name_ar) + '</b><small dir="ltr">' + esc(c.name_en || '') + '</small><div class="note" style="margin:2px 0 0">' + (counts[c.id] ? counts[c.id] + ' منتج' : 'بدون منتجات') + (c.desc_ar ? ' · ' + esc(c.desc_ar) : '') + '</div></div><button class="btn danger" data-del="' + esc(c.id) + '">حذف</button></div>').join('') || '<p class="note">ما فيه أصناف.</p>';
+}
+async function deleteCategory(id) {
+  const c = catById(id); if (!c) return;
+  let all = []; try { all = await DB.all(); } catch (e) {}
+  const inCat = all.filter(p => p.category === id);
+  const msg = '⚠️ حذف الصنف "' + c.name_ar + '"؟\n' + (inCat.length ? inCat.length + ' منتج بداخله بيصيرون "غير مصنّفين" (ما ينحذفون).' : 'ما فيه منتجات بداخله.') + '\n\nهذا الإجراء ينطبق على كل الأجهزة والتطبيق.';
+  if (!confirm(msg)) return;
+  for (const p of inCat) { p.category = null; p.synced = false; p.updated_at = now(); await DB.put(p); }
+  cats = cats.filter(x => x.id !== id); saveCats();
+  try { const gone = deletedCats(); if (!gone.includes(id)) gone.push(id); localStorage.setItem(CATS_DEL_KEY, JSON.stringify(gone)); } catch (e) {}
+  if (sbConfigured() && session && !catsTableMissing) { try { await sbFetch('/rest/v1/categories?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); } catch (e) { toast('تم الحذف محليًا، وفشل حذفه من السحابة: ' + (e.message || e)); } }
+  renderCatFilter(); renderCats(); toast('تم حذف الصنف' + (inCat.length ? ' وتحويل ' + inCat.length + ' منتج إلى غير مصنّف' : ''));
+  syncNow(true);
+}
+async function syncCategories() {
+  if (catsTableMissing || !sbConfigured() || !session) return;
+  try {
+    const rows = await sbFetch('/rest/v1/categories?select=*&order=sort.asc.nullslast,name_ar.asc');
+    const gone = deletedCats();
+    (rows || []).forEach(r => { if (gone.includes(r.id)) return; const c = catById(r.id); if (c) { c.name_ar = r.name_ar || c.name_ar; c.name_en = r.name_en || c.name_en; if (r.sort != null) c.sort = r.sort; if (r.desc_ar) c.desc_ar = r.desc_ar; c.synced = true; } else cats.push({ id: r.id, name_ar: r.name_ar, name_en: r.name_en || r.name_ar, desc_ar: r.desc_ar || null, custom: !!r.custom, sort: r.sort ?? 100, synced: true }); });
+    const push = cats.filter(c => !c.synced).map(c => ({ id: c.id, name_ar: c.name_ar, name_en: c.name_en, desc_ar: c.desc_ar || null, custom: !!c.custom, sort: c.sort ?? 100 }));
+    if (push.length) {
+      const up = rows2 => sbFetch('/rest/v1/categories?on_conflict=id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(rows2) });
+      try { await up(push); } catch (e) { if (/desc_ar/i.test(String(e.message || e))) await up(push.map(r => { const q = Object.assign({}, r); delete q.desc_ar; return q; })); else throw e; }
+      cats.forEach(c => { c.synced = true; });
+    }
+    saveCats(); renderCatFilter(); if (currentView === 'settings') renderCats();
+  } catch (e) { if (/categor|relation|does not exist|not find|404/i.test(String(e.message || e))) catsTableMissing = true; }
+}
 const BRANDS_KEY = 'alyaf-brands'; let brands = [];
 function addBrand(b, persist) { b = String(b || '').trim(); if (!b) return; if (!brands.some(x => x.toLowerCase() === b.toLowerCase())) { brands.push(b); if (persist !== false) { try { localStorage.setItem(BRANDS_KEY, JSON.stringify(brands)); } catch (e) {} } } }
 function matchBrand(b) { b = String(b || '').trim(); const hit = brands.find(x => x.toLowerCase() === b.toLowerCase()); return hit || b; }
@@ -1036,7 +1175,7 @@ function useOffValues() {
 function openForm(p, ctx) {
   formCtx = Object.assign({ editing: null, returnTo: 'scan', fromOFF: false }, ctx || {}); p = p || {};
   ui.formTitle.textContent = formCtx.editing ? 'تعديل منتج' : 'إضافة منتج';
-  ui.fName.value = p.name || ''; ui.fNameEn.value = p.name_en || ''; ui.fBrand.value = p.brand || ''; ui.fBarcode.value = p.barcode || currentCode || ''; ui.brandSuggest.hidden = true; state.photoFromLabel = false;
+  ui.fName.value = p.name || ''; ui.fNameEn.value = p.name_en || ''; ui.fBrand.value = p.brand || ''; ui.fBarcode.value = p.barcode || currentCode || ''; ui.brandSuggest.hidden = true; state.photoFromLabel = false; state.category = p.category || null; ui.catSearch.value = ''; ui.catNew.hidden = true; renderCat(); renderCatGuide();
   ui.fPkg.value = ''; setUnit(p.package_unit || p.unit || 'g');
   setPkgBase(p.package_size); ui.fServ.value = fmtIn(p.serving_size); ui.fServN.value = fmtIn(p.servings_per_package);
   setBasis(p.basis || '100', false);
@@ -1077,7 +1216,7 @@ async function saveForm() {
   let existing = null; try { existing = await DB.get(formCtx.editing || barcode); } catch (e) {}
   const source = existing ? (existing.source === 'off' ? 'off+manual' : (existing.source || 'manual')) : (formCtx.fromOFF ? 'off+manual' : 'manual');
   const rec = {
-    barcode, name, name_en: nameEn, brand: brandIn || null, source,
+    barcode, name, name_en: nameEn, brand: brandIn || null, category: state.category || null, source,
     package_size: pkg, package_unit: state.pkgUnit, unit: state.unit, serving_size: serving, servings_per_package: servN,
     basis: state.basis, nutrients: vals, per_100, per_serving,
     complete: NUTRIENTS.every(n => vals[n.key] != null), sizes,
@@ -1110,7 +1249,7 @@ function rowHTML(p) {
   const v = p.per_100 || p.nutrients || {}; const img = ownPhoto(p);
   return '<button class="row-item" data-code="' + esc(p.barcode) + '">'
     + (img ? '<img class="thumb" src="' + esc(img) + '" alt="">' : '<div class="thumb">بدون صورة</div>')
-    + '<div class="row-main"><div class="row-name">' + esc(p.name) + '</div><div class="row-sub">' + (p.brand ? esc(p.brand) + ' · ' : '') + '<span class="mono">' + esc(p.barcode) + '</span></div>' + (() => { const b = []; if (p.sizes && p.sizes.length) b.push('<span class="pill">' + countSizes(p.sizes.length) + '</span>'); if (!ownPhoto(p)) b.push('<span class="pill bad">بدون صورة</span>'); else if (!p.photo_ok) b.push('<span class="pill warn">صورة تحتاج تأكيد</span>'); return b.length ? '<div class="row-badges">' + b.join('') + '</div>' : ''; })() + strip(p.nutrients) + '</div>'
+    + '<div class="row-main"><div class="row-name">' + esc(p.name) + '</div><div class="row-sub">' + (p.brand ? esc(p.brand) + ' · ' : '') + '<span class="mono">' + esc(p.barcode) + '</span></div>' + (() => { const b = []; if (p.category && catLabel(p.category)) b.push('<span class="pill ok">' + esc(catLabel(p.category)) + '</span>'); if (p.sizes && p.sizes.length) b.push('<span class="pill">' + countSizes(p.sizes.length) + '</span>'); if (!ownPhoto(p)) b.push('<span class="pill bad">بدون صورة</span>'); else if (!p.photo_ok) b.push('<span class="pill warn">صورة تحتاج تأكيد</span>'); return b.length ? '<div class="row-badges">' + b.join('') + '</div>' : ''; })() + strip(p.nutrients) + '</div>'
     + '<div class="row-kcal"><b>' + fmt(v.kcal) + '</b><span>kcal</span><span>' + (p.per_100 ? '/100' : '/حصة') + '</span></div></button>';
 }
 async function renderList() {
@@ -1118,6 +1257,7 @@ async function renderList() {
   all.sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
   const q = ui.search.value.trim().toLowerCase();
   let items = q ? all.filter(p => (p.name || '').toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q) || String(p.barcode).includes(q)) : all;
+  const cf = ui.catFilter.value; if (cf) items = items.filter(p => p.category === cf);
   if (listFilterMode === 'photo') items = items.filter(p => ownPhoto(p) && !p.photo_ok);
   else if (listFilterMode === 'nophoto') items = items.filter(p => !ownPhoto(p));
   ui.list.innerHTML = items.map(rowHTML).join('');
@@ -1148,6 +1288,7 @@ async function buildExport(withPhotos) {
   const products = all.map(p => { const q = Object.assign({}, p); delete q.synced; delete q.photo_uploaded; delete q.label_photo_uploaded; if (!withPhotos) q.photo = null; return q; });
   return {
     app: 'alyaf-products', version: 1, exported_at: now(), count: products.length,
+    categories: cats.map(c => ({ id: c.id, name_ar: c.name_ar, name_en: c.name_en })),
     note: 'nutrients = القيم كما كُتبت من الملصق حسب basis (100 أو serving). per_100 و per_serving محسوبة تلقائيًا. sizes = أحجام/حصص مسماة لكل منها amount و barcode اختياري و nutrients محسوبة لذلك الحجم. الوحدات: kcal, g (protein/carbs/fat/sugar/added_sugar/fiber), mg (sodium/cholesterol/potassium/iron/caffeine), mcg (vitamin_d/vitamin_b12). unit = وحدة الحصة والقيم (g أو ml)، package_size دائمًا بالوحدة الأساسية g/ml و package_unit = الوحدة المختارة للعرض (g/kg/ml/l).',
     products
   };
@@ -1234,7 +1375,7 @@ async function sbFetch(path, opts) {
   if (r.status === 204) return null;
   const ct = r.headers.get('content-type') || ''; return ct.includes('json') ? r.json() : r.text();
 }
-const toRow = p => ({ barcode: p.barcode, name: p.name, name_en: p.name_en || null, brand: p.brand || null, unit: p.unit || 'g', package_size: p.package_size ?? null, serving_size: p.serving_size ?? null, servings_per_package: p.servings_per_package ?? null, basis: p.basis || '100', nutrients: p.nutrients || null, per_100: p.per_100 || null, per_serving: p.per_serving || null, sizes: (p.sizes || []).filter(Boolean), complete: !!p.complete, source: p.source || 'manual', photo_url: ownPhoto(p) ? (p.photo_url && isOwnUrl(p.photo_url) ? p.photo_url : null) : null, photo_ok: !!p.photo_ok, label_photo_url: p.label_photo_url || null, created_at: p.created_at || now(), updated_at: p.updated_at || now() });
+const toRow = p => ({ barcode: p.barcode, name: p.name, name_en: p.name_en || null, brand: p.brand || null, category: p.category || null, unit: p.unit || 'g', package_size: p.package_size ?? null, serving_size: p.serving_size ?? null, servings_per_package: p.servings_per_package ?? null, basis: p.basis || '100', nutrients: p.nutrients || null, per_100: p.per_100 || null, per_serving: p.per_serving || null, sizes: (p.sizes || []).filter(Boolean), complete: !!p.complete, source: p.source || 'manual', photo_url: ownPhoto(p) ? (p.photo_url && isOwnUrl(p.photo_url) ? p.photo_url : null) : null, photo_ok: !!p.photo_ok, label_photo_url: p.label_photo_url || null, created_at: p.created_at || now(), updated_at: p.updated_at || now() });
 const missingCols = new Set();
 const tms = v => { const d = new Date(v || 0); return isNaN(d) ? 0 : d.getTime(); };
 async function sbUploadPhoto(barcode, dataUrl) {
@@ -1265,6 +1406,7 @@ async function syncNow(silent) {
   if (!navigator.onLine) { if (!silent) toast('ما فيه إنترنت — محفوظ محليًا وبيتزامن لما يرجع الاتصال'); return; }
   syncing = true; renderSync('جاري المزامنة…');
   try {
+    await syncCategories();
     const delq = JSON.parse(localStorage.getItem(DELQ_KEY) || '[]');
     while (delq.length) { await sbFetch('/rest/v1/products?barcode=eq.' + encodeURIComponent(delq[0]), { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); delq.shift(); localStorage.setItem(DELQ_KEY, JSON.stringify(delq)); }
     const all = await DB.all(); let upFail = 0, upErr = '';
@@ -1284,7 +1426,7 @@ async function syncNow(silent) {
       const batch = rows.slice(i, i + 40);
       for (let attempt = 0; attempt < 4; attempt++) {
         try { await upsert(stripCols(batch)); break; }
-        catch (e) { const m = String(e.message || e).match(/'?(photo_ok|label_photo_url|name_en)'?\s+column|column\s+'?(photo_ok|label_photo_url|name_en)/i); const col = m && (m[1] || m[2]); if (col && !missingCols.has(col)) missingCols.add(col); else throw e; }
+        catch (e) { const m = String(e.message || e).match(/'?(photo_ok|label_photo_url|name_en|category)'?\s+column|column\s+'?(photo_ok|label_photo_url|name_en|category)/i); const col = m && (m[1] || m[2]); if (col && !missingCols.has(col)) missingCols.add(col); else throw e; }
       }
     }
     for (const p of dirty) { const cur = await DB.get(p.barcode); if (cur && cur.updated_at === p.updated_at) { cur.synced = true; await DB.put(cur); } }
@@ -1352,7 +1494,7 @@ let ai = { provider: 'openai', key: '', model: '', speed: 'fast' };
 function loadAi() { try { const o = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || 'null'); if (o && AI_PROVIDERS[o.provider]) ai = { provider: o.provider, key: o.key || '', model: o.model || '', speed: o.speed === 'accurate' ? 'accurate' : 'fast' }; } catch (e) {} }
 const aiReady = () => !!(ai.key && AI_PROVIDERS[ai.provider]);
 const LABEL_PROMPT = 'You analyze photos of ONE packaged food product (Arabic and/or English text; digits may be Arabic-Indic ٠١٢٣٤٥٦٧٨٩). You may get a FRONT-of-package photo and/or a NUTRITION FACTS label photo. Extract what is visible and return ONLY one JSON object, no prose, no markdown.\n'
-  + 'Schema: {"basis":"100"|"serving","unit":"g"|"ml","serving_size":number|null,"servings_per_package":number|null,"package_size":number|null,"name_ar":string|null,"name_en":string|null,"name_en_source":"printed"|"translated"|null,"brand":string|null,'
+  + 'Schema: {"basis":"100"|"serving","unit":"g"|"ml","serving_size":number|null,"servings_per_package":number|null,"package_size":number|null,"name_ar":string|null,"name_en":string|null,"name_en_source":"printed"|"translated"|null,"brand":string|null,"category":string|null,'
   + '"nutrients":{"kcal":number|null,"protein_g":number|null,"carbs_g":number|null,"fat_g":number|null,"sugar_g":number|null,"added_sugar_g":number|null,"fiber_g":number|null,"sodium_mg":number|null,"cholesterol_mg":number|null,"potassium_mg":number|null,"iron_mg":number|null,"vitamin_d_mcg":number|null,"vitamin_b12_mcg":number|null,"caffeine_mg":number|null}}\n'
   + 'Rules:\n- If the label has a per 100 g / 100 ml column, use it and set basis "100". Otherwise use the per-serving column and set basis "serving".\n'
   + '- unit is "ml" for liquids/beverages, otherwise "g". serving_size in g or ml as a number. servings_per_package as printed. package_size (net weight/volume) in g or ml if printed.\n'
@@ -1444,6 +1586,7 @@ function applyLabel(r) {
   const nameAr = r.name_ar || r.name; if (nameAr && String(nameAr).trim()) { ui.fName.value = String(nameAr).trim(); mark(ui.fName); }
   if (r.name_en && String(r.name_en).trim()) { ui.fNameEn.value = String(r.name_en).trim(); mark(ui.fNameEn); if (r.name_en_source === 'translated') ui.fNameEn.closest('.field').classList.add('translated'); }
   if (r.brand && String(r.brand).trim()) { ui.fBrand.value = matchBrand(r.brand); mark(ui.fBrand); }
+  if (r.category && catById(r.category) && !state.category) { state.category = r.category; renderCat(); }
   return count;
 }
 function sanityCheck(vals, basisAmt) {
@@ -1523,7 +1666,7 @@ async function go(v) {
   ui.viewScan.classList.toggle('active', v === 'scan'); ui.viewList.classList.toggle('active', v === 'list'); ui.viewSettings.classList.toggle('active', v === 'settings');
   window.scrollTo(0, 0);
   if (v === 'list') renderList();
-  else if (v === 'settings') { renderSync(); renderAi(); }
+  else if (v === 'settings') { renderSync(); renderAi(); renderCats(); }
   else if (wasScanning) { wasScanning = false; startScanner(); }
 }
 
@@ -1583,7 +1726,8 @@ function wire() {
       const images = [], notes = [];
       if (front) { images.push(front); notes.push('Photo ' + images.length + ' is the FRONT of the package.'); }
       if (label) { images.push(label); notes.push('Photo ' + images.length + ' is the NUTRITION FACTS label.'); }
-      const res = await aiAnalyze(images, notes.join(' ') + '\n' + LABEL_PROMPT);
+      const catHint = '\n- category: choose the best matching id from this list (or null): ' + cats.map(c => c.id + '=' + (c.name_en || c.name_ar) + (c.desc_ar ? ' (' + c.desc_ar.slice(0, 50) + ')' : '')).join('; ') + '.';
+      const res = await aiAnalyze(images, notes.join(' ') + '\n' + LABEL_PROMPT + catHint);
       const n = applyLabel(res.data); const secs = Math.round((Date.now() - t0) / 100) / 10;
       const bits = []; if (ui.fName.value.trim()) bits.push('الاسم'); if (ui.fBrand.value.trim()) bits.push('العلامة'); if (n) bits.push(n + ' قيمة');
       if (bits.length) { aiStatus('ok', '✓ خلال ' + secs + ' ث: ' + bits.join(' · ') + ' (الموديل: ' + esc(res.model) + '). المظلل بالأخضر من الصور، والأصفر مترجم آليًا — راجع ثم احفظ.'); showSanity(); try { ui.fName.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (x) {} }
@@ -1593,6 +1737,15 @@ function wire() {
       aiStatus('err', 'تعذر التحليل: ' + esc(err.message || err) + '<br>جرّب صور أوضح، أو غيّر المزوّد أو الموديل من تبويب "الإعدادات".');
     } finally { ui.btnAnalyze.disabled = false; ui.aiBtnTitle.textContent = 'حلّل الصور وعبّي كل شي'; }
   };
+  ui.catSearch.addEventListener('input', renderCatChips);
+  ui.catChips.addEventListener('click', e => {
+    const c = e.target.closest('.chip'); if (!c) return;
+    if (c.dataset.new) { ui.catNew.hidden = false; ui.catNewAr.value = ui.catSearch.value.trim(); ui.catNewEn.value = ''; (ui.catNewAr.value ? ui.catNewEn : ui.catNewAr).focus(); return; }
+    state.category = (state.category === c.dataset.id) ? null : c.dataset.id; ui.catSearch.value = ''; renderCat();
+  });
+  ui.catNewSave.onclick = () => { const c = addCategory(ui.catNewAr.value, ui.catNewEn.value, ui.catNewDesc.value); if (!c) { toast('اكتب اسم الصنف بالعربي'); return; } state.category = c.id; ui.catNew.hidden = true; ui.catSearch.value = ''; ui.catNewDesc.value = ''; renderCat(); renderCatGuide(); toast('تمت إضافة الصنف: ' + c.name_ar); syncCategories().catch(() => {}); };
+  ui.catFilter.addEventListener('change', renderList);
+  ui.catsBody.addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (b) deleteCategory(b.dataset.del); });
   ui.fBrand.addEventListener('focus', renderBrandSuggest); ui.fBrand.addEventListener('input', renderBrandSuggest);
   ui.fBrand.addEventListener('blur', () => setTimeout(() => { ui.brandSuggest.hidden = true; }, 200));
   ui.brandSuggest.addEventListener('pointerdown', e => { const c = e.target.closest('.chip'); if (!c) return; e.preventDefault(); ui.fBrand.value = c.dataset.b; ui.brandSuggest.hidden = true; ui.fBrand.closest('.field').classList.remove('ai'); });
@@ -1616,7 +1769,7 @@ function wire() {
 (async function init() {
   buildGrids(); wire(); loadSession(); renderSync(); loadAi(); renderAi();
   try { await openDB(); } catch (e) { useLS = true; }
-  await refreshCount(); loadBrands();
+  await refreshCount(); loadBrands(); loadCats();
   window.addEventListener('online', () => syncNow(true));
   restoreDraft();
   syncNow(true);
