@@ -62,7 +62,8 @@ main{padding:0 16px}
 .manual input{flex:1;min-width:0}
 input:not([type=range]){background:var(--card-2);border:1px solid var(--line-2);border-radius:var(--r-in);padding:12px 14px;width:100%;font-size:17px;outline:none;color:var(--text);transition:border-color .15s;-webkit-appearance:none;appearance:none}
 input:focus,select:focus{border-color:var(--green)}
-select{background:var(--card-2);border:1px solid var(--line-2);border-radius:var(--r-in);padding:12px 14px;width:100%;font-size:17px;color:var(--text);outline:none;font:inherit;-webkit-appearance:none;appearance:none}
+select{background:var(--card-2) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238C98A6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>") no-repeat left 14px center;background-size:16px;border:1px solid var(--line-2);border-radius:var(--r-in);padding:12px 40px 12px 14px;padding-left:40px;padding-right:14px;width:100%;font-size:16px;font-weight:700;color:var(--text);outline:none;font-family:inherit;-webkit-appearance:none;appearance:none;text-align:right}
+select option{color:#0C1117}
 .ai-btn{width:100%;margin-top:10px;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--r-card);background:var(--green-tint);border:1.5px solid var(--green);text-align:right}
 .ai-btn .ic{width:42px;height:42px;border-radius:12px;background:var(--green);color:var(--green-ink);display:flex;align-items:center;justify-content:center;flex:none}
 .ai-btn .tx{flex:1;min-width:0}
@@ -1030,47 +1031,36 @@ function renderPhoto() {
   ui.btnPhotoOk.hidden = !has || state.photoOk;
 }
 const DEFAULT_CATS = [
-  ['milk','حليب','Milk','حليب طازج، طويل الأجل، بودرة، مكثف، حليب بنكهات'],
-  ['dairy','ألبان (زبادي ولبن)','Dairy (Yogurt & Laban)','زبادي، لبن، لبنة، قشطة، كريمة، زبدة'],
-  ['cheese','أجبان','Cheese','شرائح، مثلثات، جبن كريمي، فيتا، موزاريلا، بارميزان، حلوم'],
-  ['eggs','بيض','Eggs','بيض دجاج بأنواعه (عادي، بلدي، أوميغا)'],
-  ['meat','لحوم','Meat','لحم غنم، بقر، جمل، مفروم، برجر لحم، ولحوم مصنعة (مرتديلا، سجق، نقانق)'],
-  ['poultry','دواجن','Poultry','دجاج كامل، صدور، أفخاذ، مفروم، ناقتس، برجر دجاج، رومي، بط'],
-  ['seafood','أسماك ومأكولات بحرية','Seafood','أسماك طازجة أو مجمدة، تونة وسردين معلب، روبيان، سلمون'],
-  ['vegetables','خضار','Vegetables','خضار طازجة، مقطعة، أو مجمدة، أعشاب، سلطات خضار'],
-  ['fruits','فواكه','Fruits','فواكه طازجة، مجففة، مجمدة، أو معلبة بالشراب'],
-  ['bakery','خبز ومخبوزات','Bread & Bakery','خبز، توست، صامولي، كرواسون، تورتيلا، فطائر، معجنات مالحة'],
-  ['cereal','حبوب الإفطار','Breakfast Cereals','كورن فليكس، شوفان، جرانولا، حبوب إفطار الأطفال'],
-  ['rice_pasta','أرز ومعكرونة','Rice & Pasta','أرز بأنواعه، معكرونة، نودلز، إندومي، شعيرية، برغل، كسكس'],
-  ['legumes','بقوليات','Legumes','عدس، حمص، فول، فاصوليا، لوبيا (جافة أو معلبة)'],
-  ['oils','زيوت وسمن','Oils & Ghee','زيت زيتون، زيوت نباتية، سمن، مارجرين'],
-  ['spices','توابل وبهارات','Spices','بهارات، ملح، فلفل، مكعبات مرق، خلطات توابل'],
-  ['sauces','صلصات ومخللات','Sauces & Pickles','كاتشب، مايونيز، شطة، صلصات حارة، صويا، خردل، مخللات، زيتون'],
-  ['canned','معلبات','Canned Food','ذرة، فاصوليا، طماطم معلبة، فول مدمس، حمص مسلوق (التونة تروح للأسماك)'],
-  ['frozen','مجمدات','Frozen Food','بيتزا، سمبوسة، بطاطس مجمدة، معجنات مجمدة (الخضار المجمدة تروح للخضار)'],
-  ['chips','شيبس ومقرمشات','Chips & Snacks','شيبس، بوب كورن، مقرمشات، بسكويت مالح، بريتزل'],
-  ['biscuits','بسكويت وكيك','Biscuits & Cakes','بسكويت حلو، كيك، مافن، ويفر، دونات'],
-  ['chocolate','شوكولاتة وحلويات','Chocolate & Candy','شوكولاتة، سكاكر، حلوى، علكة، حلاوة طحينية'],
-  ['nuts_dates','مكسرات وتمور','Nuts & Dates','مكسرات، بذور، تمر، معجون تمر، زبدة فول سوداني'],
-  ['soda','مشروبات غازية','Soft Drinks','مشروبات غازية ومشروبات شعير (مالت)'],
-  ['juice','عصائر','Juices','عصائر طازجة أو معلبة، نكتار، مشروبات فواكه'],
-  ['water','مياه','Water','مياه شرب، مياه غازية، مياه بنكهة'],
-  ['energy','مشروبات طاقة','Energy Drinks','مشروبات الطاقة والمشروبات الرياضية'],
-  ['coffee_tea','قهوة وشاي','Coffee & Tea','قهوة، شاي، كابتشينو، مشروبات قهوة جاهزة، كاكاو'],
-  ['plant_drinks','مشروبات نباتية','Plant-based Drinks','حليب شوفان، لوز، صويا، جوز الهند'],
-  ['ready_meals','وجبات جاهزة','Ready Meals','وجبات جاهزة للأكل أو التسخين، شوربات جاهزة، ساندويتشات، سلطات معبأة'],
+  ['dairy','حليب وألبان وأجبان','Milk, Dairy & Cheese','حليب بأنواعه، زبادي، لبن، لبنة، قشطة، زبدة، كريمة، وكل الأجبان'],
+  ['soda','مشروبات غازية','Soft Drinks','المشروبات الغازية فقط (كولا، سفن أب، ميرندا…) — صنف مستقل لأنها فريدة'],
+  ['drinks','مشروبات','Drinks','عصائر، مياه، مشروبات طاقة ورياضية، مالت، مشروبات قهوة جاهزة، حليب نباتي (شوفان، لوز)'],
+  ['coffee_tea','قهوة وشاي','Coffee & Tea','بن، قهوة سريعة التحضير، كابتشينو بودرة، شاي، كاكاو، هيل وزعفران'],
+  ['snacks','شيبس ومقرمشات ومكسرات','Chips, Snacks, Nuts & Dates','شيبس، بوب كورن، مقرمشات، بسكويت مالح، مكسرات، بذور، تمور'],
+  ['sweets','حلويات وشوكولاتة','Chocolate, Sweets & Biscuits','شوكولاتة، سكاكر، علكة، بسكويت حلو، كيك، ويفر، آيس كريم، حلاوة'],
+  ['bakery','خبز ومخبوزات','Bread & Bakery','خبز، توست، صامولي، كرواسون، تورتيلا، فطائر ومعجنات'],
+  ['cereal','حبوب الإفطار والشوفان','Cereals & Oats','كورن فليكس، شوفان، جرانولا، حبوب إفطار الأطفال'],
+  ['pantry','أرز ومعكرونة وبقوليات','Rice, Pasta, Legumes & Noodles','أرز، معكرونة، نودلز وإندومي، شعيرية، برغل، عدس، حمص، فول وفاصوليا جافة'],
+  ['condiments','صلصات وتوابل وزيوت','Sauces, Spices, Oils & Spreads','كاتشب، مايونيز، شطة، صويا، مخللات، بهارات، ملح، مكعبات مرق، زيوت، سمن، مربى، عسل، زبدة فول سوداني'],
+  ['canned','معلبات','Canned Food','تونة، سردين، ذرة، فاصوليا، طماطم، فول مدمس، حمص مسلوق (أي شي معلب)'],
+  ['frozen','مجمدات ولحوم مصنّعة','Frozen & Processed Meats','بيتزا وسمبوسة وبطاطس مجمدة، ناقتس، برجر، خضار مجمدة، مرتديلا، سجق، نقانق'],
+  ['ready','وجبات جاهزة وشوربات','Ready Meals & Soups','وجبات جاهزة للأكل أو التسخين، شوربات، ساندويتشات وسلطات معبأة'],
   ['baby','أغذية أطفال','Baby Food','حليب أطفال، سيريلاك، أطعمة أطفال معبأة'],
-  ['supplements','مكملات وبروتين','Supplements & Protein','بروتين بودرة، بارات بروتين، مكملات، فيتامينات'],
-  ['diet','صحي ودايت','Healthy & Diet','منتجات دايت، خالية من السكر، كيتو، خالية من الغلوتين (لو ما يناسبها صنف آخر)'],
-  ['ice_cream','آيس كريم','Ice Cream','آيس كريم، مثلجات، جيلاتي'],
-  ['desserts','حلا شرقي','Arabic Desserts','كنافة، بقلاوة، مهلبية، كريم كراميل، جيلي، بودنغ'],
+  ['supplements','مكملات وبروتين','Supplements & Protein','بروتين بودرة، بارات بروتين، مكملات غذائية، فيتامينات'],
   ['other','أخرى','Other','أي منتج ما يناسب الأصناف اللي فوق']
 ];
+const CATS_VERSION = 2;
+const CAT_MIGRATE = { milk:'dairy', cheese:'dairy', eggs:'other', meat:'other', poultry:'frozen', seafood:'canned', vegetables:'other', fruits:'other', rice_pasta:'pantry', legumes:'pantry', oils:'condiments', spices:'condiments', sauces:'condiments', chips:'snacks', nuts_dates:'snacks', biscuits:'sweets', chocolate:'sweets', ice_cream:'sweets', desserts:'sweets', juice:'drinks', water:'drinks', energy:'drinks', plant_drinks:'drinks', ready_meals:'ready', diet:'other' };
 const CATS_KEY = 'alyaf-cats', CATS_DEL_KEY = 'alyaf-cats-deleted'; let cats = [], catsTableMissing = false;
 const deletedCats = () => { try { return JSON.parse(localStorage.getItem(CATS_DEL_KEY) || '[]'); } catch (e) { return []; } };
 function saveCats() { try { localStorage.setItem(CATS_KEY, JSON.stringify(cats)); } catch (e) {} }
 function loadCats() {
   try { cats = JSON.parse(localStorage.getItem(CATS_KEY) || 'null') || []; } catch (e) { cats = []; }
+  let ver = 0; try { ver = Number(localStorage.getItem(CATS_KEY + '-v') || 0); } catch (e) {}
+  if (ver < CATS_VERSION) {
+    cats = cats.filter(c => c.custom);
+    try { localStorage.setItem(CATS_KEY + '-v', String(CATS_VERSION)); } catch (e) {}
+    DB.all().then(async all => { let n = 0; for (const p of all) { if (p.category && CAT_MIGRATE[p.category]) { p.category = CAT_MIGRATE[p.category]; p.synced = false; p.updated_at = now(); await DB.put(p); n++; } } if (n) { toast('تم تحديث أصناف ' + n + ' منتج للأصناف الجديدة'); if (currentView === 'list') renderList(); } }).catch(() => {});
+  }
   const gone = deletedCats(); cats = cats.filter(c => !gone.includes(c.id));
   DEFAULT_CATS.forEach(([id, ar, en, desc], i) => { if (gone.includes(id)) return; const c = cats.find(x => x.id === id); if (!c) cats.push({ id, name_ar: ar, name_en: en, desc_ar: desc, custom: false, sort: i, synced: false }); else if (!c.desc_ar) { c.desc_ar = desc; c.synced = false; } });
   saveCats(); renderCatFilter();
@@ -1128,7 +1118,7 @@ async function syncCategories() {
   try {
     const rows = await sbFetch('/rest/v1/categories?select=*&order=sort.asc.nullslast,name_ar.asc');
     const gone = deletedCats();
-    (rows || []).forEach(r => { if (gone.includes(r.id)) return; const c = catById(r.id); if (c) { c.name_ar = r.name_ar || c.name_ar; c.name_en = r.name_en || c.name_en; if (r.sort != null) c.sort = r.sort; if (r.desc_ar) c.desc_ar = r.desc_ar; c.synced = true; } else cats.push({ id: r.id, name_ar: r.name_ar, name_en: r.name_en || r.name_ar, desc_ar: r.desc_ar || null, custom: !!r.custom, sort: r.sort ?? 100, synced: true }); });
+    (rows || []).forEach(r => { if (gone.includes(r.id) || CAT_MIGRATE[r.id]) return; const c = catById(r.id); if (c) { c.name_ar = r.name_ar || c.name_ar; c.name_en = r.name_en || c.name_en; if (r.sort != null) c.sort = r.sort; if (r.desc_ar) c.desc_ar = r.desc_ar; c.synced = true; } else cats.push({ id: r.id, name_ar: r.name_ar, name_en: r.name_en || r.name_ar, desc_ar: r.desc_ar || null, custom: !!r.custom, sort: r.sort ?? 100, synced: true }); });
     const push = cats.filter(c => !c.synced).map(c => ({ id: c.id, name_ar: c.name_ar, name_en: c.name_en, desc_ar: c.desc_ar || null, custom: !!c.custom, sort: c.sort ?? 100 }));
     if (push.length) {
       const up = rows2 => sbFetch('/rest/v1/categories?on_conflict=id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(rows2) });
