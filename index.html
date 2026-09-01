@@ -201,7 +201,17 @@ input::placeholder{color:var(--faint)}
 .sizes-head{display:flex;align-items:center;justify-content:space-between;margin-top:18px;font-weight:800;font-size:14px;color:var(--muted)}
 .size-row{display:grid;grid-template-columns:1fr 108px 38px;gap:8px;margin-top:10px;align-items:center}
 .size-row .field{margin-top:0}
-.size-row .s-code{grid-column:1/-1;font-size:15px;padding:10px 12px}
+.size-row .code-row{grid-column:1/-1}
+.code-row{display:flex;gap:8px;align-items:stretch}
+.code-row input{flex:1;min-width:0}
+.scan-mini{flex:none;display:inline-flex;align-items:center;gap:6px;padding:0 14px;font-size:13px;white-space:nowrap}
+.size-row .s-code{font-size:15px;padding:10px 12px}
+.field .conv{display:block;margin-top:6px;font-size:12px;color:var(--green);font-weight:700;background:none;border:0;padding:0;text-align:right}
+.mini-scan{position:fixed;inset:0;z-index:400;background:#000;display:flex;align-items:center;justify-content:center}
+.mini-scan video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.mini-frame{position:relative;width:78%;max-width:340px;height:150px;border:3px solid rgba(52,199,133,.9);border-radius:18px;box-shadow:0 0 0 2000px rgba(0,0,0,.45)}
+.mini-hint{position:absolute;bottom:calc(120px + var(--sab));left:0;right:0;text-align:center;color:#fff;font-weight:700}
+.mini-scan .btn{position:absolute;bottom:calc(40px + var(--sab));left:50%;transform:translateX(-50%);background:rgba(255,255,255,.14);color:#fff;border-color:transparent}
 .size-row .s-del{width:38px;height:48px;border-radius:12px;background:var(--red-tint);color:var(--red);font-size:22px;font-weight:700;line-height:1}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
 .chip{background:var(--card-2);border:1px solid var(--line-2);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;color:var(--muted)}
@@ -326,7 +336,7 @@ input::placeholder{color:var(--faint)}
         <input id="search" type="search" placeholder="ابحث بالاسم أو العلامة أو الباركود" autocomplete="off">
       </div>
       <div class="filter-row"><select id="catFilter"><option value="">كل الأصناف</option></select></div>
-      <div class="chips filter" id="listFilter"><button class="chip on" data-f="all">الكل</button><button class="chip" data-f="photo">صور تحتاج مراجعة</button><button class="chip" data-f="nophoto">بدون صورة</button><button class="chip" data-f="incomplete">قيم ناقصة</button></div>
+      <div class="chips filter" id="listFilter"><button class="chip on" data-f="all">الكل</button><button class="chip" data-f="photo">صور تحتاج مراجعة</button><button class="chip" data-f="nophoto">بدون صورة</button></div>
       <div id="list" class="list"></div>
       <div id="listEmpty" class="empty" hidden>ما عندك منتجات محفوظة بعد.<br>امسح أول باركود وابدأ تبني قاعدتك.</div>
     </section>
@@ -359,8 +369,9 @@ input::placeholder{color:var(--faint)}
   </main>
 
   <nav class="tabs">
-    <button class="tab active" data-go="scan">مسح</button>
+    <button class="tab" data-go="entry">تسجيل منتج</button>
     <button class="tab" data-go="list">المنتجات</button>
+    <button class="tab active" data-go="scan">مسح</button>
     <button class="tab" data-go="settings">الإعدادات</button>
   </nav>
 </div>
@@ -400,7 +411,7 @@ input::placeholder{color:var(--faint)}
       <label class="field"><span>اسم المنتج بالإنجليزي</span><input id="fNameEn" placeholder="Almarai Full Fat Milk" enterkeyhint="next" autocomplete="off" dir="ltr" style="text-align:left"></label>
       <label class="field"><span>العلامة التجارية (بالإنجليزي)</span><input id="fBrand" placeholder="Almarai" enterkeyhint="next" autocomplete="off" dir="ltr" style="text-align:left"></label>
       <div class="suggest" id="brandSuggest" hidden></div>
-      <label class="field"><span>الباركود</span><input id="fBarcode" class="mono" inputmode="numeric" enterkeyhint="next" autocomplete="off"></label>
+      <label class="field"><span>الباركود الأساسي</span><div class="code-row"><input id="fBarcode" class="mono" inputmode="numeric" enterkeyhint="next" autocomplete="off" placeholder="امسحه أو اكتبه"><button type="button" class="btn ghost scan-mini" id="btnScanMain"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 9v6M11 9v6M15 9v6"/></svg>امسح</button></div><p class="note" style="margin:6px 0 0">لو المنتج له أكثر من حجم، امسح باركود كل حجم تحت في قسم "الأحجام".</p></label>
     </div>
     <div class="card">
       <div class="card-title">الصنف <span class="pill" id="catSel">غير محدد</span></div>
@@ -447,11 +458,11 @@ input::placeholder{color:var(--faint)}
       <span>القيم الغذائية لكل</span>
       <div class="seg" id="basisSeg"><button data-b="100" class="on">100 <i class="u-unit">غ</i></button><button data-b="serving">حصة واحدة</button></div>
     </div>
-    <p class="note">اكتب القيم زي ما هي على الملصق. أي حقل تتركه فاضي يبقى فاضي (ما ينحفظ صفر) وتقدر تعبّيه لاحقًا. لو اخترت "حصة واحدة" وكتبت حجم الحصة، بيتم حساب القيم لكل 100 تلقائيًا عند الحفظ.</p>
+    <p class="note">اكتب القيم زي ما هي على الملصق. أي حقل تتركه فاضي ينحفظ صفر تلقائيًا عند الإضافة. لو اخترت "حصة واحدة" وكتبت حجم الحصة، بيتم حساب القيم لكل 100 تلقائيًا عند الحفظ.</p>
 
     <div class="card"><div class="card-title">الأساسيات</div><div class="grid2" id="coreGrid"></div></div>
     <div class="card">
-      <div class="card-title">التفاصيل <span class="pill">الفاضي يبقى فاضي وتعبّيه لاحقًا</span></div>
+      <div class="card-title">التفاصيل <span class="pill">أي حقل فاضي ينحفظ 0 عند الإضافة</span></div>
       <div class="grid2" id="moreGrid"></div>
     </div>
 
@@ -460,6 +471,12 @@ input::placeholder{color:var(--faint)}
   <div class="form-foot"><button class="btn primary big" id="formSave">حفظ المنتج</button></div>
 </div>
 
+<div id="miniScan" class="mini-scan" hidden>
+  <video id="miniVideo" playsinline muted autoplay></video>
+  <div class="mini-frame"></div>
+  <div class="mini-hint">وجّه الكاميرا على الباركود</div>
+  <button type="button" id="miniCancel" class="btn">إلغاء</button>
+</div>
 <div id="detail" class="form" hidden>
   <div class="form-top">
     <button class="icon-btn" id="detailBack">→ رجوع</button>
@@ -625,7 +642,7 @@ const LS = {
 const DB = { get: b => (useLS ? LS : IDB).get(b), all: () => (useLS ? LS : IDB).all(), put: p => (useLS ? LS : IDB).put(p), del: b => (useLS ? LS : IDB).del(b), count: () => (useLS ? LS : IDB).count() };
 
 /* ---------- UI refs ---------- */
-const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','catFilter','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','filePhoto','fName','fNameEn','fBrand','brandSuggest','fBarcode','catSel','catDesc','catChips','catNew','catNewIcon','catNewAr','catNewEn','catNewDesc','catNewSave','catGuide','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody','catsCard','catsCount','catsBody','aiCard','aiState','aiBody','btnAiLabel','btnAnalyze','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelThumb','labelPrevImg','labelEmpty','offRef','btnUseOff','offRefBody','lightbox','lightboxImg','lightboxClose','detail','detailBack','detailEdit','detailBody'];
+const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','catFilter','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','filePhoto','fName','fNameEn','fBrand','brandSuggest','fBarcode','btnScanMain','catSel','catDesc','catChips','catNew','catNewIcon','catNewAr','catNewEn','catNewDesc','catNewSave','catGuide','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody','catsCard','catsCount','catsBody','aiCard','aiState','aiBody','btnAiLabel','btnAnalyze','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelThumb','labelPrevImg','labelEmpty','offRef','btnUseOff','offRefBody','lightbox','lightboxImg','lightboxClose','miniScan','miniVideo','miniCancel','detail','detailBack','detailEdit','detailBody'];
 const ui = {}; ids.forEach(id => { ui[id] = document.getElementById(id); });
 ui.viewScan = $('#view-scan'); ui.viewList = $('#view-list'); ui.viewSettings = $('#view-settings'); ui.tabs = [...document.querySelectorAll('.tab')];
 
@@ -672,8 +689,8 @@ const work = document.createElement('canvas');
 const wctx = work.getContext('2d', { willReadFrequently: true });
 function pickNative(list) { const hit = list && list.find(x => x.rawValue); return hit ? hit.rawValue : null; }
 function pickWasm(list) { const hit = list && list.find(x => x.isValid && x.text); return hit ? hit.text : null; }
-async function decodeVideoFrame() {
-  const v = ui.video; const vw = v.videoWidth, vh = v.videoHeight; if (!vw || !vh) return null;
+async function decodeVideoFrame(vEl) {
+  const v = vEl || ui.video; const vw = v.videoWidth, vh = v.videoHeight; if (!vw || !vh) return null;
   if (engine.native) { try { const code = pickNative(await engine.native.detect(v)); if (code) return code; } catch (e) {} }
   if (engine.wasm) {
     const bandH = Math.round(vh * 0.6), y0 = Math.round((vh - bandH) / 2);
@@ -701,6 +718,25 @@ async function decodeImageFile(file) {
   if (engine.wasm) { const img = wctx.getImageData(0, 0, work.width, work.height); return pickWasm(await window.ZXingWASM.readBarcodes(img, READ_OPTS)); }
   return null;
 }
+
+/* ---------- mini scanner (inside the form) ---------- */
+let miniStream = null, miniActive = false;
+async function openMiniScan(cb) {
+  if (scanning) { try { await stopScanner(); } catch (e) {} }
+  try { await loadEngine(); } catch (e) { toast('تعذر تحميل محرك القراءة — تأكد من الإنترنت'); return; }
+  ui.miniScan.hidden = false; miniActive = true;
+  try {
+    miniStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } } });
+    ui.miniVideo.srcObject = miniStream; await ui.miniVideo.play();
+  } catch (e) { toast('ما قدرت أفتح الكاميرا: ' + (e.name || e)); closeMiniScan(); return; }
+  const loop = async () => {
+    if (!miniActive) return;
+    try { const code = normCode(await decodeVideoFrame(ui.miniVideo)); if (code) { closeMiniScan(); if (navigator.vibrate) navigator.vibrate(60); cb(code); return; } } catch (e) {}
+    setTimeout(loop, 140);
+  };
+  loop();
+}
+function closeMiniScan() { miniActive = false; if (miniStream) { miniStream.getTracks().forEach(t => t.stop()); miniStream = null; } try { ui.miniVideo.srcObject = null; } catch (e) {} ui.miniScan.hidden = true; }
 
 /* ---------- camera ---------- */
 async function startScanner() {
@@ -979,11 +1015,12 @@ function addSizeRow(sz) {
   row.innerHTML = '<input class="s-name" placeholder="الاسم (مثال: علبة كبيرة)" enterkeyhint="next" autocomplete="off">'
     + '<label class="field num"><input class="s-amt" inputmode="decimal" placeholder="الكمية" enterkeyhint="next"><em class="unit u-unit">' + unitLabel(state.unit) + '</em></label>'
     + '<button type="button" class="s-del" aria-label="حذف الحجم">×</button>'
-    + '<input class="s-code mono" inputmode="numeric" placeholder="باركود هذا الحجم (اختياري)" enterkeyhint="next" autocomplete="off">';
+    + '<div class="code-row"><input class="s-code mono" inputmode="numeric" placeholder="باركود هذا الحجم" enterkeyhint="next" autocomplete="off"><button type="button" class="btn ghost scan-mini s-scan"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 9v6M11 9v6M15 9v6"/></svg>امسح</button></div>';
   row.querySelector('.s-name').value = sz.name || '';
   row.querySelector('.s-amt').value = fmtIn(sz.amount);
   row.querySelector('.s-code').value = sz.barcode || '';
   row.querySelector('.s-del').onclick = () => row.remove();
+  row.querySelector('.s-scan').onclick = () => openMiniScan(code => { row.querySelector('.s-code').value = code; toast('تم مسح باركود الحجم'); });
   ui.sizeRows.appendChild(row);
   return row;
 }
@@ -1202,6 +1239,7 @@ async function saveForm() {
   const nameEn = ui.fNameEn.value.trim() || null; const brandIn = matchBrand(ui.fBrand.value); if (brandIn) addBrand(brandIn);
   const barcode = latin(ui.fBarcode.value).replace(/\D/g, ''); if (barcode.length < 6) { toast('الباركود غير صحيح'); ui.fBarcode.focus(); return; }
   const vals = readNutrients();
+  NUTRIENTS.forEach(n => { if (vals[n.key] == null) vals[n.key] = 0; });
   const serving = num(ui.fServ.value), pkg = pkgBase(), servN = num(ui.fServN.value);
   const warns = sanityCheck(vals, state.basis === '100' ? 100 : serving);
   if (warns.length && !confirm('⚠️ فيه قيم تبدو غير منطقية:\n• ' + warns.join('\n• ') + '\n\nتبي تحفظ على كل حال؟')) { showSanity(); return; }
@@ -1257,7 +1295,6 @@ async function renderList() {
   const cf = ui.catFilter.value; if (cf) items = items.filter(p => p.category === cf);
   if (listFilterMode === 'photo') items = items.filter(p => ownPhoto(p) && !p.photo_ok);
   else if (listFilterMode === 'nophoto') items = items.filter(p => !ownPhoto(p));
-  else if (listFilterMode === 'incomplete') items = items.filter(p => !p.complete);
   ui.list.innerHTML = items.map(rowHTML).join('');
   ui.listCount.textContent = all.length ? '(' + all.length + ')' : '';
   ui.listEmpty.hidden = items.length > 0;
@@ -1657,6 +1694,10 @@ function restoreDraft() {
 }
 
 /* ---------- navigation ---------- */
+function openEntry() {
+  if (ui.form && !ui.form.hidden) return;
+  openForm({ source: 'manual' }, { editing: null, returnTo: currentView === 'settings' ? 'list' : currentView });
+}
 async function go(v) {
   if (v === currentView) return;
   if (v !== 'scan' && currentView === 'scan') { wasScanning = scanning; if (scanning) await stopScanner(); }
@@ -1670,6 +1711,19 @@ async function go(v) {
 }
 
 /* ---------- wiring ---------- */
+function addConverters() {
+  const CONV = [
+    ['kcal', 'الملصق كاتب كيلوجول (kJ)؟ اضغط هنا للتحويل إلى سعرات', v => v / 4.184],
+    ['vitamin_d_mcg', 'الملصق كاتب IU؟ اضغط هنا للتحويل إلى مكغ', v => v / 40],
+    ['sodium_mg', 'الملصق كاتب ملح Salt بالغرام؟ اضغط هنا لتحويله إلى صوديوم', v => v * 400]
+  ];
+  CONV.forEach(([k, label, f]) => {
+    const el = $('#n_' + k); if (!el) return; const fd = el.closest('.field');
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'conv'; b.textContent = label;
+    b.onclick = e => { e.preventDefault(); const v = num(el.value); if (v == null) { toast('اكتب الرقم أولًا ثم اضغط التحويل'); el.focus(); return; } el.value = fmtIn(r2(f(v))); fd.classList.add('ai'); toast('تم التحويل ✓'); };
+    fd.appendChild(b);
+  });
+}
 function wire() {
   ui.btnStart.onclick = startScanner;
   ui.btnStop.onclick = stopScanner;
@@ -1677,12 +1731,14 @@ function wire() {
   ui.manualCode.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); manualLookup(); } });
   ui.btnPhotoScan.onclick = () => ui.fileBarcode.click();
   ui.fileBarcode.onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) scanFromPhoto(f); };
-  ui.tabs.forEach(t => { t.onclick = () => go(t.dataset.go); });
+  ui.tabs.forEach(t => { t.onclick = () => { if (t.dataset.go === 'entry') openEntry(); else go(t.dataset.go); }; });
   ui.countPill.onclick = () => go('list');
   ui.search.addEventListener('input', renderList);
   ui.listFilter.addEventListener('click', e => { const c = e.target.closest('.chip'); if (!c) return; listFilterMode = c.dataset.f; ui.listFilter.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === c)); renderList(); });
   ui.list.addEventListener('click', async e => { const b = e.target.closest('.row-item'); if (!b) return; const p = await DB.get(b.dataset.code); if (p) openDetail(p); });
   ui.detailBack.onclick = () => { ui.detail.hidden = true; };
+  ui.miniCancel.onclick = closeMiniScan;
+  ui.btnScanMain.onclick = () => openMiniScan(code => { ui.fBarcode.value = code; toast('تم مسح الباركود الأساسي'); });
   ui.detailBody.addEventListener('click', e => { const im = e.target.closest('img.res-photo'); if (im) { ui.lightboxImg.src = im.src; ui.lightbox.hidden = false; } });
   ui.btnExport.onclick = () => exportJSON(true);
   ui.btnExportLite.onclick = () => exportJSON(false);
@@ -1774,7 +1830,7 @@ function wire() {
 
 /* ---------- init ---------- */
 (async function init() {
-  buildGrids(); wire(); loadSession(); renderSync(); loadAi(); renderAi();
+  buildGrids(); addConverters(); wire(); loadSession(); renderSync(); loadAi(); renderAi();
   try { await openDB(); } catch (e) { useLS = true; }
   await refreshCount(); loadBrands(); loadCats();
   window.addEventListener('online', () => syncNow(true));
