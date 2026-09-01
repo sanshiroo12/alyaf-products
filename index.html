@@ -118,7 +118,14 @@ select option{color:#0C1117}
 .chips.cats{max-height:168px;overflow:auto;margin-top:10px;padding-bottom:2px}
 .cat-new{margin-top:10px;display:flex;flex-direction:column;gap:8px;background:var(--card-2);border-radius:14px;padding:10px}
 .cat-new .btn{width:100%;margin-top:0}
-.filter-row{display:flex;gap:8px;align-items:center;margin:0 0 12px}
+.filter-row{display:flex;gap:8px;align-items:center;margin:10px 0 10px}
+.list-head input,.filter-row select{height:48px}
+.chips.filter .chip{height:36px;display:inline-flex;align-items:center}
+.cat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
+.cat-tile{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:14px;background:var(--card-2);border:1px solid var(--line);font-weight:700;font-size:14px;text-align:right;min-height:50px;line-height:1.25;color:var(--text)}
+.cat-tile .em{font-size:20px;flex:none;width:26px;text-align:center}
+.cat-tile.on{border-color:var(--green);background:var(--green-tint);color:var(--green)}
+.cat-tile.add{border-style:dashed;color:var(--green);justify-content:center}
 .cat-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
 .cat-row:last-child{border-bottom:0}
 .cat-row .tx{flex:1;min-width:0}
@@ -319,7 +326,7 @@ input::placeholder{color:var(--faint)}
         <input id="search" type="search" placeholder="ابحث بالاسم أو العلامة أو الباركود" autocomplete="off">
       </div>
       <div class="filter-row"><select id="catFilter"><option value="">كل الأصناف</option></select></div>
-      <div class="chips filter" id="listFilter"><button class="chip on" data-f="all">الكل</button><button class="chip" data-f="photo">صور تحتاج مراجعة</button><button class="chip" data-f="nophoto">بدون صورة</button></div>
+      <div class="chips filter" id="listFilter"><button class="chip on" data-f="all">الكل</button><button class="chip" data-f="photo">صور تحتاج مراجعة</button><button class="chip" data-f="nophoto">بدون صورة</button><button class="chip" data-f="incomplete">قيم ناقصة</button></div>
       <div id="list" class="list"></div>
       <div id="listEmpty" class="empty" hidden>ما عندك منتجات محفوظة بعد.<br>امسح أول باركود وابدأ تبني قاعدتك.</div>
     </section>
@@ -397,10 +404,10 @@ input::placeholder{color:var(--faint)}
     </div>
     <div class="card">
       <div class="card-title">الصنف <span class="pill" id="catSel">غير محدد</span></div>
-      <div class="ai-status ok" id="catDesc" hidden></div>
-      <input id="catSearch" placeholder="ابحث عن صنف… أو اكتب اسم صنف جديد" autocomplete="off" style="margin-top:8px">
-      <div class="chips cats" id="catChips"></div>
+      <div class="cat-grid" id="catChips"></div>
+      <div class="ai-status ok" id="catDesc" hidden style="margin-top:10px"></div>
       <div id="catNew" class="cat-new" hidden>
+        <input id="catNewIcon" placeholder="رمز (اختياري) مثل 🍯" autocomplete="off" maxlength="4">
         <input id="catNewAr" placeholder="اسم الصنف بالعربي" autocomplete="off">
         <input id="catNewEn" placeholder="Category name in English" dir="ltr" style="text-align:left" autocomplete="off">
         <input id="catNewDesc" placeholder="توضيح وأمثلة (مثال: لحوم غنم وبقر ومفروم…)" autocomplete="off">
@@ -440,11 +447,11 @@ input::placeholder{color:var(--faint)}
       <span>القيم الغذائية لكل</span>
       <div class="seg" id="basisSeg"><button data-b="100" class="on">100 <i class="u-unit">غ</i></button><button data-b="serving">حصة واحدة</button></div>
     </div>
-    <p class="note">اكتب القيم زي ما هي على الملصق. أي حقل تتركه فاضي ينحفظ صفر تلقائيًا. لو اخترت "حصة واحدة" وكتبت حجم الحصة، بيتم حساب القيم لكل 100 تلقائيًا عند الحفظ.</p>
+    <p class="note">اكتب القيم زي ما هي على الملصق. أي حقل تتركه فاضي يبقى فاضي (ما ينحفظ صفر) وتقدر تعبّيه لاحقًا. لو اخترت "حصة واحدة" وكتبت حجم الحصة، بيتم حساب القيم لكل 100 تلقائيًا عند الحفظ.</p>
 
     <div class="card"><div class="card-title">الأساسيات</div><div class="grid2" id="coreGrid"></div></div>
     <div class="card">
-      <div class="card-title">التفاصيل <span class="pill">أي حقل فاضي ينحفظ 0 تلقائيًا</span></div>
+      <div class="card-title">التفاصيل <span class="pill">الفاضي يبقى فاضي وتعبّيه لاحقًا</span></div>
       <div class="grid2" id="moreGrid"></div>
     </div>
 
@@ -474,10 +481,10 @@ const now = () => new Date().toISOString();
 const NUTRIENTS = [
   { key:'kcal',          label:'السعرات',      unit:'kcal', core:true },
   { key:'protein_g',     label:'البروتين',     unit:'غ',    core:true },
-  { key:'carbs_g',       label:'الكربوهيدرات', unit:'غ',    core:true },
-  { key:'fat_g',         label:'الدهون',       unit:'غ',    core:true },
-  { key:'sugar_g',         label:'السكر',        unit:'غ' },
-  { key:'added_sugar_g',   label:'سكر مضاف',     unit:'غ' },
+  { key:'carbs_g',       label:'الكارب',       unit:'غ',    core:true },
+  { key:'fat_g',         label:'الدهون الكلية', unit:'غ',    core:true },
+  { key:'sugar_g',         label:'السكر الكلي',  unit:'غ' },
+  { key:'added_sugar_g',   label:'السكر المضاف', unit:'غ' },
   { key:'fiber_g',         label:'الألياف',      unit:'غ' },
   { key:'sodium_mg',       label:'الصوديوم',     unit:'ملغ' },
   { key:'cholesterol_mg',  label:'الكوليسترول',  unit:'ملغ' },
@@ -617,7 +624,7 @@ const LS = {
 const DB = { get: b => (useLS ? LS : IDB).get(b), all: () => (useLS ? LS : IDB).all(), put: p => (useLS ? LS : IDB).put(p), del: b => (useLS ? LS : IDB).del(b), count: () => (useLS ? LS : IDB).count() };
 
 /* ---------- UI refs ---------- */
-const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','catFilter','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','filePhoto','fName','fNameEn','fBrand','brandSuggest','fBarcode','catSel','catDesc','catSearch','catChips','catNew','catNewAr','catNewEn','catNewDesc','catNewSave','catGuide','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody','catsCard','catsCount','catsBody','aiCard','aiState','aiBody','btnAiLabel','btnAnalyze','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelThumb','labelPrevImg','labelEmpty','offRef','btnUseOff','offRefBody','lightbox','lightboxImg','lightboxClose','detail','detailBack','detailEdit','detailBody'];
+const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','catFilter','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','filePhoto','fName','fNameEn','fBrand','brandSuggest','fBarcode','catSel','catDesc','catChips','catNew','catNewIcon','catNewAr','catNewEn','catNewDesc','catNewSave','catGuide','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody','catsCard','catsCount','catsBody','aiCard','aiState','aiBody','btnAiLabel','btnAnalyze','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelThumb','labelPrevImg','labelEmpty','offRef','btnUseOff','offRefBody','lightbox','lightboxImg','lightboxClose','detail','detailBack','detailEdit','detailBody'];
 const ui = {}; ids.forEach(id => { ui[id] = document.getElementById(id); });
 ui.viewScan = $('#view-scan'); ui.viewList = $('#view-list'); ui.viewSettings = $('#view-settings'); ui.tabs = [...document.querySelectorAll('.tab')];
 
@@ -1031,22 +1038,22 @@ function renderPhoto() {
   ui.btnPhotoOk.hidden = !has || state.photoOk;
 }
 const DEFAULT_CATS = [
-  ['dairy','حليب وألبان وأجبان','Milk, Dairy & Cheese','حليب بأنواعه، زبادي، لبن، لبنة، قشطة، زبدة، كريمة، وكل الأجبان'],
-  ['soda','مشروبات غازية','Soft Drinks','المشروبات الغازية فقط (كولا، سفن أب، ميرندا…) — صنف مستقل لأنها فريدة'],
-  ['drinks','مشروبات','Drinks','عصائر، مياه، مشروبات طاقة ورياضية، مالت، مشروبات قهوة جاهزة، حليب نباتي (شوفان، لوز)'],
-  ['coffee_tea','قهوة وشاي','Coffee & Tea','بن، قهوة سريعة التحضير، كابتشينو بودرة، شاي، كاكاو، هيل وزعفران'],
-  ['snacks','شيبس ومقرمشات ومكسرات','Chips, Snacks, Nuts & Dates','شيبس، بوب كورن، مقرمشات، بسكويت مالح، مكسرات، بذور، تمور'],
-  ['sweets','حلويات وشوكولاتة','Chocolate, Sweets & Biscuits','شوكولاتة، سكاكر، علكة، بسكويت حلو، كيك، ويفر، آيس كريم، حلاوة'],
-  ['bakery','خبز ومخبوزات','Bread & Bakery','خبز، توست، صامولي، كرواسون، تورتيلا، فطائر ومعجنات'],
-  ['cereal','حبوب الإفطار والشوفان','Cereals & Oats','كورن فليكس، شوفان، جرانولا، حبوب إفطار الأطفال'],
-  ['pantry','أرز ومعكرونة وبقوليات','Rice, Pasta, Legumes & Noodles','أرز، معكرونة، نودلز وإندومي، شعيرية، برغل، عدس، حمص، فول وفاصوليا جافة'],
-  ['condiments','صلصات وتوابل وزيوت','Sauces, Spices, Oils & Spreads','كاتشب، مايونيز، شطة، صويا، مخللات، بهارات، ملح، مكعبات مرق، زيوت، سمن، مربى، عسل، زبدة فول سوداني'],
-  ['canned','معلبات','Canned Food','تونة، سردين، ذرة، فاصوليا، طماطم، فول مدمس، حمص مسلوق (أي شي معلب)'],
-  ['frozen','مجمدات ولحوم مصنّعة','Frozen & Processed Meats','بيتزا وسمبوسة وبطاطس مجمدة، ناقتس، برجر، خضار مجمدة، مرتديلا، سجق، نقانق'],
-  ['ready','وجبات جاهزة وشوربات','Ready Meals & Soups','وجبات جاهزة للأكل أو التسخين، شوربات، ساندويتشات وسلطات معبأة'],
-  ['baby','أغذية أطفال','Baby Food','حليب أطفال، سيريلاك، أطعمة أطفال معبأة'],
-  ['supplements','مكملات وبروتين','Supplements & Protein','بروتين بودرة، بارات بروتين، مكملات غذائية، فيتامينات'],
-  ['other','أخرى','Other','أي منتج ما يناسب الأصناف اللي فوق']
+  ['dairy','حليب وألبان وأجبان','Milk, Dairy & Cheese','🥛','حليب بأنواعه، زبادي، لبن، لبنة، قشطة، زبدة، كريمة، وكل الأجبان'],
+  ['soda','مشروبات غازية','Soft Drinks','🥤','المشروبات الغازية فقط (كولا، سفن أب، ميرندا…) — صنف مستقل لأنها فريدة'],
+  ['drinks','مشروبات','Drinks','🧃','عصائر، مياه، مشروبات طاقة ورياضية، مالت، مشروبات قهوة جاهزة، حليب نباتي (شوفان، لوز)'],
+  ['coffee_tea','قهوة وشاي','Coffee & Tea','☕','بن، قهوة سريعة التحضير، كابتشينو بودرة، شاي، كاكاو، هيل وزعفران'],
+  ['snacks','شيبس ومقرمشات ومكسرات','Chips, Snacks, Nuts & Dates','🍿','شيبس، بوب كورن، مقرمشات، بسكويت مالح، مكسرات، بذور، تمور'],
+  ['sweets','حلويات وشوكولاتة','Chocolate, Sweets & Biscuits','🍫','شوكولاتة، سكاكر، علكة، بسكويت حلو، كيك، ويفر، آيس كريم، حلاوة'],
+  ['bakery','خبز ومخبوزات','Bread & Bakery','🍞','خبز، توست، صامولي، كرواسون، تورتيلا، فطائر ومعجنات'],
+  ['cereal','حبوب الإفطار والشوفان','Cereals & Oats','🥣','كورن فليكس، شوفان، جرانولا، حبوب إفطار الأطفال'],
+  ['pantry','أرز ومعكرونة وبقوليات','Rice, Pasta, Legumes & Noodles','🍚','أرز، معكرونة، نودلز وإندومي، شعيرية، برغل، عدس، حمص، فول وفاصوليا جافة'],
+  ['condiments','صلصات وتوابل وزيوت','Sauces, Spices, Oils & Spreads','🧂','كاتشب، مايونيز، شطة، صويا، مخللات، بهارات، ملح، مكعبات مرق، زيوت، سمن، مربى، عسل، زبدة فول سوداني'],
+  ['canned','معلبات','Canned Food','🥫','تونة، سردين، ذرة، فاصوليا، طماطم، فول مدمس، حمص مسلوق (أي شي معلب)'],
+  ['frozen','مجمدات ولحوم مصنّعة','Frozen & Processed Meats','🧊','بيتزا وسمبوسة وبطاطس مجمدة، ناقتس، برجر، خضار مجمدة، مرتديلا، سجق، نقانق'],
+  ['ready','وجبات جاهزة وشوربات','Ready Meals & Soups','🍱','وجبات جاهزة للأكل أو التسخين، شوربات، ساندويتشات وسلطات معبأة'],
+  ['baby','أغذية أطفال','Baby Food','🍼','حليب أطفال، سيريلاك، أطعمة أطفال معبأة'],
+  ['supplements','مكملات وبروتين','Supplements & Protein','💪','بروتين بودرة، بارات بروتين، مكملات غذائية، فيتامينات'],
+  ['other','أخرى','Other','📦','أي منتج ما يناسب الأصناف اللي فوق']
 ];
 const CATS_VERSION = 2;
 const CAT_MIGRATE = { milk:'dairy', cheese:'dairy', eggs:'other', meat:'other', poultry:'frozen', seafood:'canned', vegetables:'other', fruits:'other', rice_pasta:'pantry', legumes:'pantry', oils:'condiments', spices:'condiments', sauces:'condiments', chips:'snacks', nuts_dates:'snacks', biscuits:'sweets', chocolate:'sweets', ice_cream:'sweets', desserts:'sweets', juice:'drinks', water:'drinks', energy:'drinks', plant_drinks:'drinks', ready_meals:'ready', diet:'other' };
@@ -1062,35 +1069,35 @@ function loadCats() {
     DB.all().then(async all => { let n = 0; for (const p of all) { if (p.category && CAT_MIGRATE[p.category]) { p.category = CAT_MIGRATE[p.category]; p.synced = false; p.updated_at = now(); await DB.put(p); n++; } } if (n) { toast('تم تحديث أصناف ' + n + ' منتج للأصناف الجديدة'); if (currentView === 'list') renderList(); } }).catch(() => {});
   }
   const gone = deletedCats(); cats = cats.filter(c => !gone.includes(c.id));
-  DEFAULT_CATS.forEach(([id, ar, en, desc], i) => { if (gone.includes(id)) return; const c = cats.find(x => x.id === id); if (!c) cats.push({ id, name_ar: ar, name_en: en, desc_ar: desc, custom: false, sort: i, synced: false }); else if (!c.desc_ar) { c.desc_ar = desc; c.synced = false; } });
+  DEFAULT_CATS.forEach(([id, ar, en, icon, desc], i) => { if (gone.includes(id)) return; const c = cats.find(x => x.id === id); if (!c) cats.push({ id, name_ar: ar, name_en: en, icon, desc_ar: desc, custom: false, sort: i, synced: false }); else { if (!c.desc_ar) { c.desc_ar = desc; c.synced = false; } if (!c.icon) c.icon = icon; } });
   saveCats(); renderCatFilter();
 }
 const catById = id => cats.find(c => c.id === id) || null;
+const catIcon = c => (c && c.icon) ? c.icon : '🏷️';
 const catLabel = id => { const c = catById(id); return c ? c.name_ar : ''; };
-function addCategory(ar, en, desc) {
+function addCategory(ar, en, desc, icon) {
   ar = String(ar || '').trim(); en = String(en || '').trim(); desc = String(desc || '').trim(); if (!ar) return null;
   const exists = cats.find(c => c.name_ar === ar || (en && (c.name_en || '').toLowerCase() === en.toLowerCase())); if (exists) return exists;
   let id = en ? en.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') : '';
   if (!id || cats.some(c => c.id === id)) id = 'c_' + Date.now().toString(36);
-  const c = { id, name_ar: ar, name_en: en || ar, desc_ar: desc || null, custom: true, sort: 100 + cats.length, synced: false }; cats.push(c); saveCats(); renderCatFilter(); return c;
+  const c = { id, name_ar: ar, name_en: en || ar, desc_ar: desc || null, icon: (icon || '').trim() || null, custom: true, sort: 100 + cats.length, synced: false }; cats.push(c); saveCats(); renderCatFilter(); return c;
 }
 function renderCat() {
   const c = catById(state.category); ui.catSel.textContent = c ? c.name_ar : 'غير محدد'; ui.catSel.className = 'pill' + (c ? ' ok' : '');
-  ui.catDesc.hidden = !(c && c.desc_ar); if (c && c.desc_ar) ui.catDesc.innerHTML = '<b>' + esc(c.name_ar) + ':</b> ' + esc(c.desc_ar);
+  ui.catDesc.hidden = !(c && c.desc_ar); if (c && c.desc_ar) ui.catDesc.innerHTML = catIcon(c) + ' <b>' + esc(c.name_ar) + ':</b> ' + esc(c.desc_ar);
   renderCatChips();
 }
 function renderCatGuide() {
-  ui.catGuide.innerHTML = cats.slice().sort((a, b) => (a.sort ?? 100) - (b.sort ?? 100)).map(c => '<div class="case"><b>' + esc(c.name_ar) + ' <small dir="ltr">' + esc(c.name_en || '') + '</small></b>' + esc(c.desc_ar || '—') + '</div>').join('');
+  ui.catGuide.innerHTML = cats.slice().sort((a, b) => (a.sort ?? 100) - (b.sort ?? 100)).map(c => '<div class="case"><b>' + catIcon(c) + ' ' + esc(c.name_ar) + ' <small dir="ltr">' + esc(c.name_en || '') + '</small></b>' + esc(c.desc_ar || '—') + '</div>').join('');
 }
 function renderCatChips() {
-  const q = ui.catSearch.value.trim().toLowerCase();
-  const list = cats.filter(c => !q || c.name_ar.includes(q) || (c.name_en || '').toLowerCase().includes(q)).sort((a, b) => (a.sort ?? 100) - (b.sort ?? 100));
-  ui.catChips.innerHTML = list.map(c => '<button type="button" class="chip' + (c.id === state.category ? ' on' : '') + '" data-id="' + esc(c.id) + '">' + esc(c.name_ar) + '</button>').join('')
-    + '<button type="button" class="chip" data-new="1" style="color:var(--green);border-color:var(--green)">+ صنف جديد</button>';
+  const list = cats.slice().sort((a, b) => (a.sort ?? 100) - (b.sort ?? 100));
+  ui.catChips.innerHTML = list.map(c => '<button type="button" class="cat-tile' + (c.id === state.category ? ' on' : '') + '" data-id="' + esc(c.id) + '"><span class="em">' + catIcon(c) + '</span><span>' + esc(c.name_ar) + '</span></button>').join('')
+    + '<button type="button" class="cat-tile add" data-new="1">+ صنف جديد</button>';
 }
 function renderCatFilter() {
   const cur = ui.catFilter.value;
-  ui.catFilter.innerHTML = '<option value="">كل الأصناف</option>' + cats.slice().sort((a, b) => (a.sort ?? 100) - (b.sort ?? 100)).map(c => '<option value="' + esc(c.id) + '">' + esc(c.name_ar) + '</option>').join('');
+  ui.catFilter.innerHTML = '<option value="">🏷️ كل الأصناف</option>' + cats.slice().sort((a, b) => (a.sort ?? 100) - (b.sort ?? 100)).map(c => '<option value="' + esc(c.id) + '">' + catIcon(c) + ' ' + esc(c.name_ar) + '</option>').join('');
   ui.catFilter.value = cur;
 }
 async function renderCats() {
@@ -1098,7 +1105,7 @@ async function renderCats() {
   const counts = {}; all.forEach(p => { if (p.category) counts[p.category] = (counts[p.category] || 0) + 1; });
   const list = cats.slice().sort((a, b) => (a.sort ?? 100) - (b.sort ?? 100));
   ui.catsCount.textContent = list.length + ' صنف';
-  ui.catsBody.innerHTML = list.map(c => '<div class="cat-row"><div class="tx"><b>' + esc(c.name_ar) + '</b><small dir="ltr">' + esc(c.name_en || '') + '</small><div class="note" style="margin:2px 0 0">' + (counts[c.id] ? counts[c.id] + ' منتج' : 'بدون منتجات') + (c.desc_ar ? ' · ' + esc(c.desc_ar) : '') + '</div></div><button class="btn danger" data-del="' + esc(c.id) + '">حذف</button></div>').join('') || '<p class="note">ما فيه أصناف.</p>';
+  ui.catsBody.innerHTML = list.map(c => '<div class="cat-row"><div class="tx"><b>' + catIcon(c) + ' ' + esc(c.name_ar) + '</b><small dir="ltr">' + esc(c.name_en || '') + '</small><div class="note" style="margin:2px 0 0">' + (counts[c.id] ? counts[c.id] + ' منتج' : 'بدون منتجات') + (c.desc_ar ? ' · ' + esc(c.desc_ar) : '') + '</div></div><button class="btn danger" data-del="' + esc(c.id) + '">حذف</button></div>').join('') || '<p class="note">ما فيه أصناف.</p>';
 }
 async function deleteCategory(id) {
   const c = catById(id); if (!c) return;
@@ -1118,11 +1125,11 @@ async function syncCategories() {
   try {
     const rows = await sbFetch('/rest/v1/categories?select=*&order=sort.asc.nullslast,name_ar.asc');
     const gone = deletedCats();
-    (rows || []).forEach(r => { if (gone.includes(r.id) || CAT_MIGRATE[r.id]) return; const c = catById(r.id); if (c) { c.name_ar = r.name_ar || c.name_ar; c.name_en = r.name_en || c.name_en; if (r.sort != null) c.sort = r.sort; if (r.desc_ar) c.desc_ar = r.desc_ar; c.synced = true; } else cats.push({ id: r.id, name_ar: r.name_ar, name_en: r.name_en || r.name_ar, desc_ar: r.desc_ar || null, custom: !!r.custom, sort: r.sort ?? 100, synced: true }); });
-    const push = cats.filter(c => !c.synced).map(c => ({ id: c.id, name_ar: c.name_ar, name_en: c.name_en, desc_ar: c.desc_ar || null, custom: !!c.custom, sort: c.sort ?? 100 }));
+    (rows || []).forEach(r => { if (gone.includes(r.id) || CAT_MIGRATE[r.id]) return; const c = catById(r.id); if (c) { c.name_ar = r.name_ar || c.name_ar; c.name_en = r.name_en || c.name_en; if (r.sort != null) c.sort = r.sort; if (r.desc_ar) c.desc_ar = r.desc_ar; if (r.icon) c.icon = r.icon; c.synced = true; } else cats.push({ id: r.id, name_ar: r.name_ar, name_en: r.name_en || r.name_ar, desc_ar: r.desc_ar || null, icon: r.icon || null, custom: !!r.custom, sort: r.sort ?? 100, synced: true }); });
+    const push = cats.filter(c => !c.synced).map(c => ({ id: c.id, name_ar: c.name_ar, name_en: c.name_en, desc_ar: c.desc_ar || null, icon: c.icon || null, custom: !!c.custom, sort: c.sort ?? 100 }));
     if (push.length) {
       const up = rows2 => sbFetch('/rest/v1/categories?on_conflict=id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(rows2) });
-      try { await up(push); } catch (e) { if (/desc_ar/i.test(String(e.message || e))) await up(push.map(r => { const q = Object.assign({}, r); delete q.desc_ar; return q; })); else throw e; }
+      try { await up(push); } catch (e) { const msg = String(e.message || e); if (/icon|desc_ar/i.test(msg)) { const p2 = push.map(r => { const q = Object.assign({}, r); if (/icon/i.test(msg)) delete q.icon; if (/desc_ar/i.test(msg)) delete q.desc_ar; return q; }); try { await up(p2); } catch (e2) { await up(p2.map(r => { const q = Object.assign({}, r); delete q.icon; delete q.desc_ar; return q; })); } } else throw e; }
       cats.forEach(c => { c.synced = true; });
     }
     saveCats(); renderCatFilter(); if (currentView === 'settings') renderCats();
@@ -1165,7 +1172,7 @@ function useOffValues() {
 function openForm(p, ctx) {
   formCtx = Object.assign({ editing: null, returnTo: 'scan', fromOFF: false }, ctx || {}); p = p || {};
   ui.formTitle.textContent = formCtx.editing ? 'تعديل منتج' : 'إضافة منتج';
-  ui.fName.value = p.name || ''; ui.fNameEn.value = p.name_en || ''; ui.fBrand.value = p.brand || ''; ui.fBarcode.value = p.barcode || currentCode || ''; ui.brandSuggest.hidden = true; state.photoFromLabel = false; state.category = p.category || null; ui.catSearch.value = ''; ui.catNew.hidden = true; renderCat(); renderCatGuide();
+  ui.fName.value = p.name || ''; ui.fNameEn.value = p.name_en || ''; ui.fBrand.value = p.brand || ''; ui.fBarcode.value = p.barcode || currentCode || ''; ui.brandSuggest.hidden = true; state.photoFromLabel = false; state.category = p.category || null; ui.catNew.hidden = true; renderCat(); renderCatGuide();
   ui.fPkg.value = ''; setUnit(p.package_unit || p.unit || 'g');
   setPkgBase(p.package_size); ui.fServ.value = fmtIn(p.serving_size); ui.fServN.value = fmtIn(p.servings_per_package);
   setBasis(p.basis || '100', false);
@@ -1193,8 +1200,7 @@ async function saveForm() {
   const name = ui.fName.value.trim(); if (!name) { toast('اكتب اسم المنتج'); ui.fName.focus(); return; }
   const nameEn = ui.fNameEn.value.trim() || null; const brandIn = matchBrand(ui.fBrand.value); if (brandIn) addBrand(brandIn);
   const barcode = latin(ui.fBarcode.value).replace(/\D/g, ''); if (barcode.length < 6) { toast('الباركود غير صحيح'); ui.fBarcode.focus(); return; }
-  const vals = readNutrients(); if (vals.kcal == null) { toast('السعرات مطلوبة'); $('#n_kcal').focus(); return; }
-  NUTRIENTS.forEach(n => { if (vals[n.key] == null) vals[n.key] = 0; });
+  const vals = readNutrients();
   const serving = num(ui.fServ.value), pkg = pkgBase(), servN = num(ui.fServN.value);
   const warns = sanityCheck(vals, state.basis === '100' ? 100 : serving);
   if (warns.length && !confirm('⚠️ فيه قيم تبدو غير منطقية:\n• ' + warns.join('\n• ') + '\n\nتبي تحفظ على كل حال؟')) { showSanity(); return; }
@@ -1239,7 +1245,7 @@ function rowHTML(p) {
   const v = p.per_100 || p.nutrients || {}; const img = ownPhoto(p);
   return '<button class="row-item" data-code="' + esc(p.barcode) + '">'
     + (img ? '<img class="thumb" src="' + esc(img) + '" alt="">' : '<div class="thumb">بدون صورة</div>')
-    + '<div class="row-main"><div class="row-name">' + esc(p.name) + '</div><div class="row-sub">' + (p.brand ? esc(p.brand) + ' · ' : '') + '<span class="mono">' + esc(p.barcode) + '</span></div>' + (() => { const b = []; if (p.category && catLabel(p.category)) b.push('<span class="pill ok">' + esc(catLabel(p.category)) + '</span>'); if (p.sizes && p.sizes.length) b.push('<span class="pill">' + countSizes(p.sizes.length) + '</span>'); if (!ownPhoto(p)) b.push('<span class="pill bad">بدون صورة</span>'); else if (!p.photo_ok) b.push('<span class="pill warn">صورة تحتاج تأكيد</span>'); return b.length ? '<div class="row-badges">' + b.join('') + '</div>' : ''; })() + strip(p.nutrients) + '</div>'
+    + '<div class="row-main"><div class="row-name">' + esc(p.name) + '</div><div class="row-sub">' + (p.brand ? esc(p.brand) + ' · ' : '') + '<span class="mono">' + esc(p.barcode) + '</span></div>' + (() => { const b = []; if (p.category && catLabel(p.category)) b.push('<span class="pill ok">' + catIcon(catById(p.category)) + ' ' + esc(catLabel(p.category)) + '</span>'); if (p.sizes && p.sizes.length) b.push('<span class="pill">' + countSizes(p.sizes.length) + '</span>'); if (!ownPhoto(p)) b.push('<span class="pill bad">بدون صورة</span>'); else if (!p.photo_ok) b.push('<span class="pill warn">صورة تحتاج تأكيد</span>'); return b.length ? '<div class="row-badges">' + b.join('') + '</div>' : ''; })() + strip(p.nutrients) + '</div>'
     + '<div class="row-kcal"><b>' + fmt(v.kcal) + '</b><span>kcal</span><span>' + (p.per_100 ? '/100' : '/حصة') + '</span></div></button>';
 }
 async function renderList() {
@@ -1250,6 +1256,7 @@ async function renderList() {
   const cf = ui.catFilter.value; if (cf) items = items.filter(p => p.category === cf);
   if (listFilterMode === 'photo') items = items.filter(p => ownPhoto(p) && !p.photo_ok);
   else if (listFilterMode === 'nophoto') items = items.filter(p => !ownPhoto(p));
+  else if (listFilterMode === 'incomplete') items = items.filter(p => !p.complete);
   ui.list.innerHTML = items.map(rowHTML).join('');
   ui.listCount.textContent = all.length ? '(' + all.length + ')' : '';
   ui.listEmpty.hidden = items.length > 0;
@@ -1727,13 +1734,12 @@ function wire() {
       aiStatus('err', 'تعذر التحليل: ' + esc(err.message || err) + '<br>جرّب صور أوضح، أو غيّر المزوّد أو الموديل من تبويب "الإعدادات".');
     } finally { ui.btnAnalyze.disabled = false; ui.aiBtnTitle.textContent = 'حلّل الصور وعبّي كل شي'; }
   };
-  ui.catSearch.addEventListener('input', renderCatChips);
   ui.catChips.addEventListener('click', e => {
-    const c = e.target.closest('.chip'); if (!c) return;
-    if (c.dataset.new) { ui.catNew.hidden = false; ui.catNewAr.value = ui.catSearch.value.trim(); ui.catNewEn.value = ''; (ui.catNewAr.value ? ui.catNewEn : ui.catNewAr).focus(); return; }
-    state.category = (state.category === c.dataset.id) ? null : c.dataset.id; ui.catSearch.value = ''; renderCat();
+    const c = e.target.closest('.cat-tile'); if (!c) return;
+    if (c.dataset.new) { ui.catNew.hidden = false; ui.catNewAr.value = ''; ui.catNewEn.value = ''; ui.catNewIcon.value = ''; ui.catNewAr.focus(); return; }
+    state.category = (state.category === c.dataset.id) ? null : c.dataset.id; renderCat();
   });
-  ui.catNewSave.onclick = () => { const c = addCategory(ui.catNewAr.value, ui.catNewEn.value, ui.catNewDesc.value); if (!c) { toast('اكتب اسم الصنف بالعربي'); return; } state.category = c.id; ui.catNew.hidden = true; ui.catSearch.value = ''; ui.catNewDesc.value = ''; renderCat(); renderCatGuide(); toast('تمت إضافة الصنف: ' + c.name_ar); syncCategories().catch(() => {}); };
+  ui.catNewSave.onclick = () => { const c = addCategory(ui.catNewAr.value, ui.catNewEn.value, ui.catNewDesc.value, ui.catNewIcon.value); if (!c) { toast('اكتب اسم الصنف بالعربي'); return; } state.category = c.id; ui.catNew.hidden = true; ui.catNewDesc.value = ''; renderCat(); renderCatGuide(); toast('تمت إضافة الصنف: ' + c.name_ar); syncCategories().catch(() => {}); };
   ui.catFilter.addEventListener('change', renderList);
   ui.catsBody.addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (b) deleteCategory(b.dataset.del); });
   ui.fBrand.addEventListener('focus', renderBrandSuggest); ui.fBrand.addEventListener('input', renderBrandSuggest);
