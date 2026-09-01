@@ -1761,6 +1761,15 @@ function wire() {
     if (i > -1 && i < ins.length - 1) ins[i + 1].focus(); else e.target.blur();
   });
   document.addEventListener('visibilitychange', () => { if (document.hidden && scanning) stopScanner(); });
+  // أي أرقام عربية (٠١٢) تتحوّل فورًا لأرقام إنجليزية في كل الخانات الرقمية
+  document.addEventListener('input', e => {
+    const el = e.target; if (!(el instanceof HTMLInputElement)) return;
+    const im = el.getAttribute('inputmode');
+    if (!(im === 'numeric' || im === 'decimal' || el.id === 'search' || el.id === 'manualCode')) return;
+    const v = el.value; if (!/[٠-٩۰-۹٫،]/.test(v)) return;
+    const nv = v.replace(/[٠-٩]/g, d => AR.indexOf(d)).replace(/[۰-۹]/g, d => FA.indexOf(d)).replace(/[٫،]/g, im === 'decimal' ? '.' : '');
+    const pos = el.selectionStart; el.value = nv; try { if (pos != null) el.setSelectionRange(pos, pos); } catch (x) {}
+  }, true);
 }
 
 /* ---------- init ---------- */
