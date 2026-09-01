@@ -483,6 +483,7 @@ const NUTRIENTS = [
   { key:'protein_g',     label:'البروتين',     unit:'غ',    core:true },
   { key:'carbs_g',       label:'الكارب',       unit:'غ',    core:true },
   { key:'fat_g',         label:'الدهون الكلية', unit:'غ',    core:true },
+  { key:'sat_fat_g',       label:'الدهون المشبعة', unit:'غ' },
   { key:'sugar_g',         label:'السكر الكلي',  unit:'غ' },
   { key:'added_sugar_g',   label:'السكر المضاف', unit:'غ' },
   { key:'fiber_g',         label:'الألياف',      unit:'غ' },
@@ -815,7 +816,7 @@ function mapOFF(p, code) {
   if (kcal == null) { const kj = g('energy-kj_100g') ?? g('energy_100g'); if (kj != null) kcal = kj / 4.184; }
   let sod = g('sodium_100g'); if (sod == null) { const salt = g('salt_100g'); if (salt != null) sod = salt / 2.5; }
   const per100 = {
-    kcal: r2(kcal), protein_g: r2(g('proteins_100g')), carbs_g: r2(g('carbohydrates_100g')), fat_g: r2(g('fat_100g')),
+    kcal: r2(kcal), protein_g: r2(g('proteins_100g')), carbs_g: r2(g('carbohydrates_100g')), fat_g: r2(g('fat_100g')), sat_fat_g: r2(g('saturated-fat_100g')),
     sugar_g: r2(g('sugars_100g')), added_sugar_g: r2(g('added-sugars_100g')), fiber_g: r2(g('fiber_100g')), sodium_mg: mg(sod),
     cholesterol_mg: mg(g('cholesterol_100g')), potassium_mg: mg(g('potassium_100g')), iron_mg: mg(g('iron_100g')),
     vitamin_d_mcg: mcg(g('vitamin-d_100g')), vitamin_b12_mcg: mcg(g('vitamin-b12_100g')), caffeine_mg: mg(g('caffeine_100g'))
@@ -1492,12 +1493,12 @@ function loadAi() { try { const o = JSON.parse(localStorage.getItem(AI_CONFIG_KE
 const aiReady = () => !!(ai.key && AI_PROVIDERS[ai.provider]);
 const LABEL_PROMPT = 'You analyze photos of ONE packaged food product (Arabic and/or English text; digits may be Arabic-Indic ٠١٢٣٤٥٦٧٨٩). You may get a FRONT-of-package photo and/or a NUTRITION FACTS label photo. Extract what is visible and return ONLY one JSON object, no prose, no markdown.\n'
   + 'Schema: {"basis":"100"|"serving","unit":"g"|"ml","serving_size":number|null,"servings_per_package":number|null,"package_size":number|null,"name_ar":string|null,"name_en":string|null,"name_en_source":"printed"|"translated"|null,"brand":string|null,"category":string|null,'
-  + '"nutrients":{"kcal":number|null,"protein_g":number|null,"carbs_g":number|null,"fat_g":number|null,"sugar_g":number|null,"added_sugar_g":number|null,"fiber_g":number|null,"sodium_mg":number|null,"cholesterol_mg":number|null,"potassium_mg":number|null,"iron_mg":number|null,"vitamin_d_mcg":number|null,"vitamin_b12_mcg":number|null,"caffeine_mg":number|null}}\n'
+  + '"nutrients":{"kcal":number|null,"protein_g":number|null,"carbs_g":number|null,"fat_g":number|null,"sat_fat_g":number|null,"sugar_g":number|null,"added_sugar_g":number|null,"fiber_g":number|null,"sodium_mg":number|null,"cholesterol_mg":number|null,"potassium_mg":number|null,"iron_mg":number|null,"vitamin_d_mcg":number|null,"vitamin_b12_mcg":number|null,"caffeine_mg":number|null}}\n'
   + 'Rules:\n- If the label has a per 100 g / 100 ml column, use it and set basis "100". Otherwise use the per-serving column and set basis "serving".\n'
   + '- unit is "ml" for liquids/beverages, otherwise "g". serving_size in g or ml as a number. servings_per_package as printed. package_size (net weight/volume) in g or ml if printed.\n'
   + '- Energy: if only kJ is printed, kcal = kJ / 4.184.\n- Sodium in mg. If only salt is printed: sodium_mg = salt_g * 400.\n'
   + '- Cholesterol, potassium, iron, caffeine in mg (convert g to mg by x1000). Vitamin D and B12 in mcg; if vitamin D is in IU, mcg = IU / 40.\n'
-  + '- Keep decimals exactly as printed (0.03 is not 0.3). Any value not printed must be null; never guess. Ignore trans fat and saturated fat.\n'
+  + '- Keep decimals exactly as printed (0.03 is not 0.3). Any value not printed must be null; never guess. sat_fat_g is saturated fat in g; ignore trans fat.\n'
   + '- name_ar: the product name in ARABIC as printed; if only a non-Arabic name is visible, write a short natural Arabic version. name_en: the product name in ENGLISH as printed (name_en_source "printed"); if only Arabic is printed, translate it to natural English and set name_en_source "translated". Both null if no product name is visible.\n- brand: the brand/company name in ENGLISH (Latin letters) as printed; if only Arabic is visible, transliterate it. null if not visible.\n- If a photo is not what its description says (e.g. the "front" photo actually shows the nutrition table), still extract whatever is visible. Do not search or guess; only use what is visible.';
 class AiError extends Error { constructor(msg, status, retryable) { super(msg); this.status = status; this.retryable = !!retryable; } }
 async function aiRequest(model, dataUrls, prompt) {
@@ -1603,6 +1604,7 @@ function sanityCheck(vals, basisAmt) {
     if (exp > 0 && Math.abs(K - exp) > Math.max(30, exp * 0.35)) w.push('السعرات (' + fmt(K) + ') بعيدة عن المتوقع من الماكروز (تقريبًا ' + Math.round(exp) + ')');
     else if (K > 25 && P + C + F === 0) w.push('فيه سعرات (' + fmt(K) + ') بدون أي ماكروز');
   }
+  if (vals.sat_fat_g != null && vals.fat_g != null && vals.sat_fat_g > vals.fat_g + 0.6) w.push('الدهون المشبعة أكبر من الدهون الكلية');
   if (vals.sugar_g != null && vals.carbs_g != null && vals.sugar_g > vals.carbs_g + 0.6) w.push('السكر أكبر من الكربوهيدرات الكلية');
   if (vals.added_sugar_g != null && vals.sugar_g != null && vals.added_sugar_g > vals.sugar_g + 0.6) w.push('السكر المضاف أكبر من السكر الكلي');
   if (vals.fiber_g != null && vals.carbs_g != null && vals.fiber_g > vals.carbs_g + 0.6) w.push('الألياف أكبر من الكربوهيدرات');
