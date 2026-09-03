@@ -207,7 +207,9 @@ input::placeholder{color:var(--faint)}
 .pick{display:flex;align-items:center;gap:10px;background:var(--card-2);border-radius:14px;padding:10px 12px;text-align:right;width:100%}
 .pick .thumb{width:40px;height:40px;border-radius:10px}
 .sizes-head{display:flex;align-items:center;justify-content:space-between;margin-top:18px;font-weight:800;font-size:14px;color:var(--muted)}
-.size-row{display:grid;grid-template-columns:1fr 108px 38px;gap:8px;margin-top:14px;align-items:center;padding-top:12px;border-top:1px dashed var(--line)}
+.size-row{display:grid;grid-template-columns:1fr 96px 74px 38px;gap:8px;margin-top:14px;align-items:center;padding-top:12px;border-top:1px dashed var(--line)}
+.size-row .s-name{grid-column:1/-1}
+.size-row select.s-unit{padding:12px 30px 12px 10px;background-position:left 10px center;font-size:14px;font-weight:700}
 .size-row:first-child{border-top:0;padding-top:0;margin-top:10px}
 .size-row .field{margin-top:0}
 .size-row .code-row{grid-column:1/-1}
@@ -221,7 +223,10 @@ input::placeholder{color:var(--faint)}
 .mini-scan{position:fixed;inset:0;z-index:400;background:#000;display:flex;align-items:center;justify-content:center}
 .mini-scan video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .mini-frame{position:relative;width:78%;max-width:340px;height:150px;border:3px solid rgba(52,199,133,.9);border-radius:18px;box-shadow:0 0 0 2000px rgba(0,0,0,.45)}
-.mini-hint{position:absolute;bottom:calc(120px + var(--sab));left:0;right:0;text-align:center;color:#fff;font-weight:700}
+.mini-hint{position:absolute;bottom:calc(120px + var(--sab));left:0;right:0;text-align:center;color:#fff;font-weight:700;padding:0 24px;line-height:1.6}
+.mini-count{position:absolute;top:calc(78px + var(--sat));left:50%;transform:translateX(-50%);background:var(--green);color:var(--green-ink);font-weight:800;font-size:15px;padding:8px 18px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.mini-list{position:absolute;bottom:calc(96px + var(--sab));left:0;right:0;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:0 20px;max-height:96px;overflow:hidden}
+.mini-list span{background:rgba(255,255,255,.16);color:#fff;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:700;direction:ltr}
 .mini-scan .btn{position:absolute;bottom:calc(40px + var(--sab));left:50%;transform:translateX(-50%);background:rgba(255,255,255,.14);color:#fff;border-color:transparent;min-width:120px}
 .mini-tools{position:absolute;top:calc(18px + var(--sat));left:0;right:0;display:flex;gap:14px;align-items:center;justify-content:center;padding:0 20px}
 .mt-btn{width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;font-size:20px;border:0}
@@ -470,7 +475,7 @@ input::placeholder{color:var(--faint)}
       </details>
       <div class="sizes-head"><span>الباركودات والأحجام</span><button class="link" id="btnAddSize">+ أضف حجم</button></div>
       <button type="button" class="btn primary wide" id="btnScanMain" style="margin-top:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 9v6M11 9v6M15 9v6"/></svg> امسح الباركودات — امسح وكرّر</button>
-      <p class="note" style="margin:8px 0 0">كل مربع = باركود منتج. أول باركود هو الأساسي تلقائيًا. لو المنتج حجم واحد يكفي المربع الأول، ولو أكثر: امسح البقية واكتب اسم وكمية كل حجم إضافي.</p>
+      <p class="note" style="margin:8px 0 0">كل مربع = باركود حجم. امسح كل الأحجام ورا بعض — العدّاد يزيد مع كل مسحة — ثم اكتب اسم ووزن كل حجم (تقدر تختار غ / كغ / مل / لتر لكل حجم). أول باركود يُستخدم للبحث التلقائي في Open Food Facts.</p>
       <div id="sizeRows"></div>
       <div class="chips" id="sizeChips">
         <button class="chip" data-name="علبة كبيرة">علبة كبيرة</button><button class="chip" data-name="علبة صغيرة">علبة صغيرة</button><button class="chip" data-name="علبة">علبة</button><button class="chip" data-name="كوب">كوب</button><button class="chip" data-name="ملعقة كبيرة">ملعقة كبيرة</button><button class="chip" data-name="ملعقة صغيرة">ملعقة صغيرة</button><button class="chip" data-name="قطعة">قطعة</button><button class="chip" data-name="حبة">حبة</button><button class="chip" data-name="كيس">كيس</button><button class="chip" data-name="شريحة">شريحة</button>
@@ -498,7 +503,9 @@ input::placeholder{color:var(--faint)}
 <div id="miniScan" class="mini-scan" hidden>
   <video id="miniVideo" playsinline muted autoplay></video>
   <div class="mini-tools"><button type="button" id="miniTorch" class="mt-btn" hidden>🔦</button><input id="miniZoom" type="range" hidden></div>
+  <div class="mini-count" id="miniCount" hidden>0</div>
   <div class="mini-frame" id="miniFrame"></div>
+  <div class="mini-list" id="miniList" hidden></div>
   <div class="mini-hint" id="miniHint">وجّه الكاميرا على الباركود</div>
   <button type="button" id="miniCancel" class="btn">إلغاء</button>
 </div>
@@ -667,7 +674,7 @@ const LS = {
 const DB = { get: b => (useLS ? LS : IDB).get(b), all: () => (useLS ? LS : IDB).all(), put: p => (useLS ? LS : IDB).put(p), del: b => (useLS ? LS : IDB).del(b), count: () => (useLS ? LS : IDB).count() };
 
 /* ---------- UI refs ---------- */
-const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','catFilter','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','filePhoto','fName','fNameEn','fBrand','brandSuggest','btnScanMain','catToggle','catHeadIcon','catHeadName','catBody','catDesc','catChips','catNew','catNewIcon','catNewAr','catNewEn','catNewDesc','catNewSave','catGuide','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody','brandsCard','brandsCount','brandsBody','catsCard','catsCount','catsBody','aiCard','aiState','aiBody','btnAiLabel','btnAnalyze','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelThumb','labelPrevImg','labelEmpty','offRef','btnUseOff','offRefBody','lightbox','lightboxImg','lightboxClose','miniScan','miniVideo','miniTorch','miniZoom','miniFrame','miniHint','miniCancel','detail','detailBack','detailEdit','detailBody'];
+const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','catFilter','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','filePhoto','fName','fNameEn','fBrand','brandSuggest','btnScanMain','catToggle','catHeadIcon','catHeadName','catBody','catDesc','catChips','catNew','catNewIcon','catNewAr','catNewEn','catNewDesc','catNewSave','catGuide','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','sizeChips','syncCard','syncState','syncBody','brandsCard','brandsCount','brandsBody','catsCard','catsCount','catsBody','aiCard','aiState','aiBody','btnAiLabel','btnAnalyze','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelThumb','labelPrevImg','labelEmpty','offRef','btnUseOff','offRefBody','lightbox','lightboxImg','lightboxClose','miniScan','miniVideo','miniTorch','miniZoom','miniCount','miniList','miniFrame','miniHint','miniCancel','detail','detailBack','detailEdit','detailBody'];
 const ui = {}; ids.forEach(id => { ui[id] = document.getElementById(id); });
 ui.viewScan = $('#view-scan'); ui.viewList = $('#view-list'); ui.viewSettings = $('#view-settings'); ui.tabs = [...document.querySelectorAll('.tab')];
 
@@ -752,6 +759,7 @@ async function openMiniScan(cb, opts) {
   try { await loadEngine(); } catch (e) { toast('تعذر تحميل محرك القراءة — تأكد من الإنترنت'); return; }
   ui.miniScan.hidden = false; miniActive = true; miniOnDone = opts.onDone || null;
   ui.miniCancel.textContent = opts.multi ? 'تم ✓' : 'إلغاء';
+  ui.miniCount.hidden = !opts.multi; ui.miniList.hidden = !opts.multi; ui.miniCount.textContent = String(opts.startCount || 0); ui.miniList.innerHTML = '';
   ui.miniHint.textContent = opts.hint || 'وجّه الكاميرا على الباركود';
   try {
     miniStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } } });
@@ -767,6 +775,7 @@ async function openMiniScan(cb, opts) {
         if (!opts.multi) { closeMiniScan(); if (navigator.vibrate) navigator.vibrate(60); cb(code); return; }
         const r = cb(code) || {};
         if (navigator.vibrate) navigator.vibrate(r.dup ? [30, 50, 30] : 70);
+        if (!r.dup && r.count != null) { ui.miniCount.textContent = String(r.count); ui.miniList.insertAdjacentHTML('afterbegin', '<span>' + esc(code) + '</span>'); }
         ui.miniHint.textContent = r.txt || '';
         ui.miniFrame.style.borderColor = r.dup ? 'rgba(255,179,64,.95)' : 'rgba(52,199,133,.95)';
         await new Promise(res => setTimeout(res, r.dup ? 600 : 850));
@@ -1065,13 +1074,22 @@ function addSizeRow(sz) {
   sz = sz || {};
   const row = document.createElement('div'); row.className = 'size-row';
   row.innerHTML = '<div class="code-row"><input class="s-code mono" inputmode="numeric" placeholder="باركود المنتج — امسحه أو اكتبه" enterkeyhint="next" autocomplete="off"></div>'
-    + '<input class="s-name" placeholder="اسم الحجم (اختياري لو حجم واحد)" enterkeyhint="next" autocomplete="off">'
-    + '<label class="field num"><input class="s-amt" inputmode="decimal" placeholder="الكمية" enterkeyhint="next"><em class="unit u-unit">' + unitLabel(state.unit) + '</em></label>'
+    + '<input class="s-name" placeholder="اسم الحجم (مثال: علبة كبيرة)" enterkeyhint="next" autocomplete="off">'
+    + '<label class="field num"><input class="s-amt" inputmode="decimal" placeholder="الوزن" enterkeyhint="next"></label>'
+    + '<select class="s-unit">' + Object.keys(PKG_UNITS).map(u => '<option value="' + u + '">' + PKG_UNITS[u].label + '</option>').join('') + '</select>'
     + '<button type="button" class="s-del" aria-label="حذف">×</button>';
   row.querySelector('.s-name').value = sz.name || '';
-  row.querySelector('.s-amt').value = fmtIn(sz.amount);
+  const su = row.querySelector('.s-unit');
+  const defU = state.unit === 'ml' ? 'ml' : 'g';
+  let u = PKG_UNITS[sz.unit] ? sz.unit : defU;
+  if (sz.amount != null && !sz.unit) { if (PKG_UNITS[defU].base === 'g' && sz.amount >= 1000) u = 'kg'; else if (PKG_UNITS[defU].base === 'ml' && sz.amount >= 1000) u = 'l'; }
+  su.value = u;
+  row.querySelector('.s-amt').value = sz.amount == null ? '' : fmtIn(r2(sz.amount / PKG_UNITS[u].factor));
   row.querySelector('.s-code').value = sz.barcode || '';
+  su.onchange = () => { const a = num(row.querySelector('.s-amt').value); if (a != null && su.dataset.prev && PKG_UNITS[su.dataset.prev] && PKG_UNITS[su.dataset.prev].base === PKG_UNITS[su.value].base) row.querySelector('.s-amt').value = fmtIn(r2(a * PKG_UNITS[su.dataset.prev].factor / PKG_UNITS[su.value].factor)); su.dataset.prev = su.value; };
+  su.dataset.prev = u;
   row.querySelector('.s-del').onclick = () => { row.remove(); if (!ui.sizeRows.querySelector('.size-row')) addSizeRow(); };
+  row.querySelector('.s-code').addEventListener('change', e => { const c = latin(e.target.value).replace(/\D/g, ''); if (c.length >= 8 && sizeRowsAll().find(r => rowCode(r)) === row) tryOffFill(c); });
   ui.sizeRows.appendChild(row);
   return row;
 }
@@ -1080,21 +1098,21 @@ const rowCode = r => latin(r.querySelector('.s-code').value).replace(/\D/g, '');
 function readSizes() {
   const rows = sizeRowsAll(); const entries = []; const codes = new Set();
   for (const r of rows) {
-    const name = r.querySelector('.s-name').value.trim(), amount = num(r.querySelector('.s-amt').value), code = rowCode(r);
+    const name = r.querySelector('.s-name').value.trim(), rawAmt = num(r.querySelector('.s-amt').value), su = r.querySelector('.s-unit').value, amount = rawAmt == null ? null : r2(rawAmt * PKG_UNITS[su].factor), code = rowCode(r);
     if (!name && amount == null && !code) continue;
     if (code) {
       if (code.length < 6) return { error: 'فيه باركود قصير أو غير صحيح — راجعه' };
       if (codes.has(code)) return { error: 'فيه باركود مكرر بين المربعات' };
       codes.add(code);
     }
-    entries.push({ name, amount, code });
+    entries.push({ name, amount, su, code });
   }
   const primary = (entries.find(e => e.code) || {}).code || '';
   for (const e of entries) {
     if (e.code === primary && e.code) { if ((e.name && !(e.amount > 0)) || (!e.name && e.amount != null)) return { error: 'الحجم الأول: أكمل الاسم والكمية معًا أو خلّهما فاضيين' }; }
     else if (!e.name || !(e.amount > 0)) return { error: 'كل حجم إضافي يحتاج اسم وكمية (أو احذف صفه)' };
   }
-  const sizes = entries.filter(e => e.name && e.amount > 0).map(e => ({ name: e.name, amount: e.amount, barcode: e.code || null }));
+  const sizes = entries.filter(e => e.name && e.amount > 0).map(e => ({ name: e.name, amount: e.amount, unit: PKG_UNITS[e.su].base, barcode: e.code || null }));
   return { sizes, primary };
 }
 const pkgBase = () => { const v = num(ui.fPkg.value); return v == null ? null : v * PKG_UNITS[state.pkgUnit].factor; };
@@ -1272,6 +1290,7 @@ function renderBrandSuggest() {
   ui.brandSuggest.innerHTML = list.map(x => '<button type="button" class="chip" data-b="' + esc(x) + '">' + esc(x) + '</button>').join('');
   ui.brandSuggest.hidden = !list.length;
 }
+function aiStatusSet(cls, html) { ui.aiStatus.className = 'ai-status ' + cls; ui.aiStatus.innerHTML = html; ui.aiStatus.hidden = false; }
 function showLabelThumb() {
   const src = state.labelPhoto || state.labelUrl;
   ui.labelPrevImg.onload = null; ui.labelPrevImg.onerror = null; ui.labelPrevImg.removeAttribute('src'); ui.labelPrevImg.hidden = true;
@@ -1778,7 +1797,7 @@ function renderAi() {
 /* ---------- form draft protection (survives a page reload) ---------- */
 const DRAFT_KEY = 'alyaf-form-draft';
 function formSnapshot() {
-  const raw = sizeRowsAll().map(r => ({ name: r.querySelector('.s-name').value.trim() || null, amount: num(r.querySelector('.s-amt').value), barcode: rowCode(r) || null })).filter(x => x.name || x.amount != null || x.barcode);
+  const raw = sizeRowsAll().map(r => { const a = num(r.querySelector('.s-amt').value), u = r.querySelector('.s-unit').value; return { name: r.querySelector('.s-name').value.trim() || null, amount: a == null ? null : r2(a * PKG_UNITS[u].factor), unit: PKG_UNITS[u].base, barcode: rowCode(r) || null }; }).filter(x => x.name || x.amount != null || x.barcode);
   const pc = (raw.find(x => x.barcode) || {}).barcode || '';
   return { name: ui.fName.value, name_en: ui.fNameEn.value, brand: ui.fBrand.value, barcode: pc, package_unit: state.pkgUnit, unit: state.unit, package_size: pkgBase(), serving_size: num(ui.fServ.value), servings_per_package: num(ui.fServN.value), basis: state.basis, nutrients: readNutrients(), sizes: raw.filter(x => x.barcode !== pc || (x.name && x.amount != null)), photo: state.photo, photo_url: state.photoUrl, photo_ok: state.photoOk, label_photo: state.labelPhoto, label_photo_url: state.labelUrl, label_photo_uploaded: state.labelUploaded, off_ref: state.off };
 }
@@ -1789,6 +1808,28 @@ function restoreDraft() {
 }
 
 /* ---------- navigation ---------- */
+async function tryOffFill(code) {
+  if (!code) return;
+  const skipName = !!ui.fName.value.trim(), skipVals = NUTRIENTS.some(n => num($('#n_' + n.key).value) != null);
+  aiStatusSet('busy', 'جاري البحث عن المنتج في Open Food Facts…');
+  let m = null; try { m = await lookupOFF(code); } catch (e) {}
+  if (!m) { aiStatusSet('warn', 'ما لقيته في Open Food Facts — عبّي البيانات بنفسك أو صوّر الملصق واضغط "حلّل الصور".'); return; }
+  state.off = m; renderOffRef();
+  const mark = el => { const f = el.closest('.field'); if (f) { f.classList.add('ai'); f.classList.remove('missing'); } };
+  const bits = [];
+  if (!skipName && m.name) { ui.fName.value = m.name; mark(ui.fName); bits.push('الاسم'); }
+  if (!ui.fBrand.value.trim() && m.brand) { ui.fBrand.value = matchBrand(m.brand); mark(ui.fBrand); bits.push('العلامة'); }
+  const v = m.per_100 || m.nutrients || {};
+  let n = 0;
+  if (!skipVals) { setBasis('100', false); NUTRIENTS.forEach(x => { if (v[x.key] != null) { const el = $('#n_' + x.key); el.value = fmtIn(r2(v[x.key])); mark(el); n++; } }); if (n) bits.push(n + ' قيمة'); }
+  if (m.unit && m.unit !== state.unit) setUnit(m.unit === 'ml' ? 'ml' : 'g');
+  if (m.serving_size && !num(ui.fServ.value)) { ui.fServ.value = fmtIn(m.serving_size); mark(ui.fServ); }
+  if (m.package_size && pkgBase() == null) { setPkgBase(m.package_size); mark(ui.fPkg); }
+  aiStatusSet(bits.length ? 'ok' : 'warn', bits.length
+    ? '✓ من Open Food Facts: ' + bits.join(' · ') + '. راجع المظلل بالأخضر — والأفضل تصوّر الملصق وتضغط "حلّل الصور" للتأكد.'
+    : 'المنتج موجود في Open Food Facts لكن بياناته ناقصة — صوّر الملصق واضغط "حلّل الصور".');
+  showSanity();
+}
 function openEntry() {
   if (ui.form && !ui.form.hidden) return;
   openForm({ source: 'manual' }, { editing: null, returnTo: currentView === 'settings' ? 'list' : currentView });
@@ -1843,14 +1884,21 @@ function wire() {
   ui.miniCancel.onclick = closeMiniScan;
   ui.btnScanMain.onclick = () => {
     const seen = new Set(); sizeRowsAll().forEach(r => { const c = rowCode(r); if (c) seen.add(c); });
+    const fresh = [];
     openMiniScan(code => {
-      if (seen.has(code)) return { dup: true, txt: 'هذا الباركود مضاف — امسح باركود ثاني أو اضغط تم' };
-      seen.add(code);
+      if (seen.has(code)) return { dup: true, txt: 'هذا الباركود مضاف — امسح باركود ثاني أو اضغط "تم"' };
+      seen.add(code); fresh.push(code);
       let row = sizeRowsAll().find(r => !rowCode(r)); if (!row) row = addSizeRow();
       row.querySelector('.s-code').value = code;
-      const idx = sizeRowsAll().indexOf(row) + 1;
-      return { txt: idx === 1 ? ('✓ باركود المنتج (' + code + ') — امسح باركود الحجم الثاني أو اضغط تم') : ('✓ باركود ' + idx + ' (' + code + ') — كمّل أو اضغط تم') };
-    }, { multi: true, hint: 'وجّه الكاميرا على باركود المنتج', onDone: () => { try { ui.sizeRows.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {} } });
+      return { count: seen.size, txt: fresh.length === 1 ? 'امسح باركود الحجم التالي، أو اضغط "تم" لو خلصت' : 'كمّل مسح الأحجام، أو اضغط "تم"' };
+    }, {
+      multi: true, startCount: seen.size, hint: 'وجّه الكاميرا على باركود المنتج',
+      onDone: async () => {
+        try { ui.sizeRows.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+        if (fresh.length > 1) toast('امسحت ' + fresh.length + ' باركود — اكتب اسم ووزن كل حجم');
+        if (fresh.length) await tryOffFill(fresh[0]);
+      }
+    });
   };
   ui.detailBody.addEventListener('click', e => { const im = e.target.closest('img.res-photo'); if (im) { ui.lightboxImg.src = im.src; ui.lightbox.hidden = false; } });
   ui.btnExport.onclick = () => exportJSON(true);
@@ -1874,7 +1922,7 @@ function wire() {
   ui.btnUseOff.onclick = useOffValues;
   ui.result.addEventListener('click', e => { const im = e.target.closest('img.res-photo, img.res-img'); if (im) openLightbox(im.src); });
   ui.btnAiLabel.onclick = () => { saveDraft(); ui.fileLabel.click(); };
-  const aiStatus = (cls, html) => { ui.aiStatus.className = 'ai-status ' + cls; ui.aiStatus.innerHTML = html; ui.aiStatus.hidden = false; };
+  const aiStatus = aiStatusSet;
   ui.fileLabel.onchange = async e => {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
     try {
