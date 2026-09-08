@@ -113,7 +113,7 @@ select option{color:#0C1117}
 .unit-row .seg button{flex:1;padding:8px 0}
 .field.ai input{border-color:var(--green);background:var(--green-tint)}
 .field.translated input{border-color:rgba(255,179,64,.75);background:rgba(255,179,64,.06)}
-.field.translated>span::after{content:" · مترجم آليًا — راجعه";color:var(--amber)}
+.field.translated>span::after{content:"مترجم";color:var(--amber);font-size:11px;margin-right:6px;background:rgba(255,179,64,.12);padding:1px 6px;border-radius:6px}
 .suggest{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .chips.cats{max-height:168px;overflow:auto;margin-top:10px;padding-bottom:2px}
 .cat-new{margin-top:10px;display:flex;flex-direction:column;gap:8px;background:var(--card-2);border-radius:14px;padding:10px}
@@ -142,7 +142,7 @@ select option{color:#0C1117}
 .cat-row .btn{padding:8px 12px;font-size:13px}
 .filter-row select{flex:1}
 .label-row .btn{flex:1;white-space:normal;line-height:1.25}
-.field.ai>span::after{content:" · من الصورة";color:var(--green)}
+.field.ai>span::after{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:6px;vertical-align:middle}
 input::placeholder{color:var(--faint)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:var(--r-btn);padding:12px 18px;font-weight:700;font-size:16px;white-space:nowrap}
 .btn.primary{background:var(--green);color:var(--green-ink)}
@@ -215,6 +215,8 @@ input::placeholder{color:var(--faint)}
 .size-row .code-row{grid-column:1/-1}
 .code-row{display:flex;gap:8px;align-items:stretch}
 .code-row input{flex:1;min-width:0}
+.s-num{flex:none;width:36px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:var(--card-2);border:1px solid var(--line);color:var(--faint);font-weight:800;font-size:15px}
+.s-num.on{background:var(--green-tint);border-color:var(--green);color:var(--green)}
 .scan-mini{flex:none;display:inline-flex;align-items:center;gap:6px;padding:0 14px;font-size:13px;white-space:nowrap}
 .size-row .s-code{font-size:15px;padding:10px 12px}
 .field{position:relative}
@@ -252,16 +254,18 @@ input::placeholder{color:var(--faint)}
 .photo-btn.has{padding:12px}
 .field{display:block;margin-top:10px}
 .field:first-child{margin-top:0}
-.field>span{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:700}
+.field>span{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .field.num{position:relative}
 .field.num input{padding-left:46px;font-weight:700;font-variant-numeric:tabular-nums}
 .field.num .unit{position:absolute;left:12px;bottom:13px;color:var(--faint);font-style:normal;font-size:13px;pointer-events:none}
 .field.missing input{border-color:rgba(255,179,64,.75);background:rgba(255,179,64,.06)}
-.field.missing>span::after{content:" · ناقص";color:var(--amber)}
+.field.missing>span::after{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--amber);margin-right:6px;vertical-align:middle}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .grid2 .field{margin-top:0}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-.grid3 .field{margin-top:0}
+.grid3 .field{margin-top:0;min-width:0}
+.grid3 .field>span{font-size:12px}
+.grid2 .field{min-width:0}
 .grid3 .field.num input{padding-left:34px;padding-right:10px}
 .seg{display:inline-flex;background:var(--card-2);border:1px solid var(--line);border-radius:999px;padding:3px}
 .seg button{padding:8px 14px;border-radius:999px;font-weight:700;font-size:14px;color:var(--muted)}
@@ -1073,7 +1077,7 @@ const readNutrients = () => Object.fromEntries(NUTRIENTS.map(n => [n.key, num($(
 function addSizeRow(sz) {
   sz = sz || {};
   const row = document.createElement('div'); row.className = 'size-row';
-  row.innerHTML = '<div class="code-row"><input class="s-code mono" inputmode="numeric" placeholder="باركود المنتج — امسحه أو اكتبه" enterkeyhint="next" autocomplete="off"></div>'
+  row.innerHTML = '<div class="code-row"><span class="s-num">1</span><input class="s-code mono" inputmode="numeric" placeholder="باركود المنتج — امسحه أو اكتبه" enterkeyhint="next" autocomplete="off"></div>'
     + '<input class="s-name" placeholder="اسم الحجم (مثال: علبة كبيرة)" enterkeyhint="next" autocomplete="off">'
     + '<label class="field num"><input class="s-amt" inputmode="decimal" placeholder="الوزن" enterkeyhint="next"></label>'
     + '<select class="s-unit">' + Object.keys(PKG_UNITS).map(u => '<option value="' + u + '">' + PKG_UNITS[u].label + '</option>').join('') + '</select>'
@@ -1088,10 +1092,14 @@ function addSizeRow(sz) {
   row.querySelector('.s-code').value = sz.barcode || '';
   su.onchange = () => { const a = num(row.querySelector('.s-amt').value); if (a != null && su.dataset.prev && PKG_UNITS[su.dataset.prev] && PKG_UNITS[su.dataset.prev].base === PKG_UNITS[su.value].base) row.querySelector('.s-amt').value = fmtIn(r2(a * PKG_UNITS[su.dataset.prev].factor / PKG_UNITS[su.value].factor)); su.dataset.prev = su.value; };
   su.dataset.prev = u;
-  row.querySelector('.s-del').onclick = () => { row.remove(); if (!ui.sizeRows.querySelector('.size-row')) addSizeRow(); };
+  row.querySelector('.s-del').onclick = () => { row.remove(); if (!ui.sizeRows.querySelector('.size-row')) addSizeRow(); else renumberSizes(); };
   row.querySelector('.s-code').addEventListener('change', e => { const c = latin(e.target.value).replace(/\D/g, ''); if (c.length >= 8 && sizeRowsAll().find(r => rowCode(r)) === row) tryOffFill(c); });
-  ui.sizeRows.appendChild(row);
+  row.querySelector('.s-code').addEventListener('input', renumberSizes);
+  ui.sizeRows.appendChild(row); renumberSizes();
   return row;
+}
+function renumberSizes() {
+  sizeRowsAll().forEach((r, i) => { const n = r.querySelector('.s-num'); n.textContent = String(i + 1); n.classList.toggle('on', !!rowCode(r)); });
 }
 const sizeRowsAll = () => [...ui.sizeRows.querySelectorAll('.size-row')];
 const rowCode = r => latin(r.querySelector('.s-code').value).replace(/\D/g, '');
@@ -1257,7 +1265,7 @@ async function syncCategories() {
     saveCats(); renderCatFilter(); if (currentView === 'settings') renderCats();
   } catch (e) { if (/categor|relation|does not exist|not find|404/i.test(String(e.message || e))) catsTableMissing = true; }
 }
-const BRANDS_KEY = 'alyaf-brands'; let brands = [];
+const BRANDS_KEY = 'alyaf-brands'; let brands = [], pendingBrand = null;
 function addBrand(b, persist) { b = String(b || '').trim(); if (!b) return; if (!brands.some(x => x.toLowerCase() === b.toLowerCase())) { brands.push(b); if (persist !== false) { try { localStorage.setItem(BRANDS_KEY, JSON.stringify(brands)); } catch (e) {} } } }
 const normBrand = x => String(x || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, '');
 function lev(a, b) {
@@ -1287,8 +1295,10 @@ function loadBrands() { try { brands = JSON.parse(localStorage.getItem(BRANDS_KE
 function renderBrandSuggest() {
   const q = ui.fBrand.value.trim().toLowerCase();
   const list = (q ? brands.filter(x => x.toLowerCase().includes(q)) : brands.slice(-8).reverse()).filter(x => x.toLowerCase() !== q).slice(0, 8);
-  ui.brandSuggest.innerHTML = list.map(x => '<button type="button" class="chip" data-b="' + esc(x) + '">' + esc(x) + '</button>').join('');
-  ui.brandSuggest.hidden = !list.length;
+  let html = list.map(x => '<button type="button" class="chip" dir="ltr" data-b="' + esc(x) + '">' + esc(x) + '</button>').join('');
+  if (pendingBrand && !ui.fBrand.value.trim()) html = '<button type="button" class="chip" dir="ltr" data-b="' + esc(pendingBrand) + '" style="color:var(--amber);border-color:var(--amber)">+ ' + esc(pendingBrand) + ' (جديدة من الصورة)</button>' + html;
+  ui.brandSuggest.innerHTML = html;
+  ui.brandSuggest.hidden = !html;
 }
 function aiStatusSet(cls, html) { ui.aiStatus.className = 'ai-status ' + cls; ui.aiStatus.innerHTML = html; ui.aiStatus.hidden = false; }
 function showLabelThumb() {
@@ -1318,7 +1328,7 @@ function useOffValues() {
 function openForm(p, ctx) {
   formCtx = Object.assign({ editing: null, returnTo: 'scan', fromOFF: false }, ctx || {}); p = p || {};
   ui.formTitle.textContent = formCtx.editing ? 'تعديل منتج' : 'إضافة منتج';
-  ui.fName.value = p.name || ''; ui.fNameEn.value = p.name_en || ''; ui.fBrand.value = p.brand || ''; ui.brandSuggest.hidden = true; state.photoFromLabel = false; state.category = p.category || null; ui.catNew.hidden = true; ui.catBody.hidden = true; ui.catToggle.classList.remove('open'); renderCat(); renderCatGuide();
+  ui.fName.value = p.name || ''; ui.fNameEn.value = p.name_en || ''; ui.fBrand.value = p.brand || ''; ui.brandSuggest.hidden = true; pendingBrand = null; state.photoFromLabel = false; state.category = p.category || null; ui.catNew.hidden = true; ui.catBody.hidden = true; ui.catToggle.classList.remove('open'); renderCat(); renderCatGuide();
   ui.fPkg.value = ''; setUnit(p.package_unit || p.unit || 'g');
   setPkgBase(p.package_size); ui.fServ.value = fmtIn(p.serving_size); ui.fServN.value = fmtIn(p.servings_per_package);
   setBasis(p.basis || '100', false);
@@ -1333,8 +1343,8 @@ function openForm(p, ctx) {
   const sizesIn = (p.sizes || []).filter(Boolean);
   const pcode = String(p.barcode || currentCode || '');
   const prim = sizesIn.find(sz => sz.barcode && String(sz.barcode) === pcode) || null;
-  addSizeRow(prim ? { name: prim.name, amount: prim.amount, barcode: pcode } : { barcode: pcode });
-  sizesIn.filter(sz => sz !== prim).forEach(addSizeRow);
+  addSizeRow(prim ? { name: prim.name, amount: prim.amount, unit: prim.unit, barcode: pcode } : { barcode: pcode });
+  sizesIn.filter(sz => sz !== prim).forEach(addSizeRow); renumberSizes();
   ui.form.querySelectorAll('.field.ai, .field.translated').forEach(f => f.classList.remove('ai', 'translated')); ui.aiStatus.hidden = true; ui.sanityBox.hidden = true;
   ui.btnDelete.hidden = !formCtx.editing;
   ui.form.hidden = false; ui.formBody.scrollTop = 0;
@@ -1646,8 +1656,8 @@ const LABEL_PROMPT = 'You analyze photos of ONE packaged food product (Arabic an
   + '"nutrients":{"kcal":number|null,"protein_g":number|null,"carbs_g":number|null,"fat_g":number|null,"sat_fat_g":number|null,"sugar_g":number|null,"added_sugar_g":number|null,"fiber_g":number|null,"sodium_mg":number|null,"cholesterol_mg":number|null,"potassium_mg":number|null,"iron_mg":number|null,"vitamin_d_mcg":number|null,"vitamin_b12_mcg":number|null,"caffeine_mg":number|null}}\n'
   + 'Rules:\n- If the label has a per 100 g / 100 ml column, use it and set basis "100". Otherwise use the per-serving column and set basis "serving".\n'
   + '- unit is "ml" for liquids/beverages, otherwise "g". serving_size in g or ml as a number. servings_per_package as printed. package_size (net weight/volume) in g or ml if printed.\n'
-  + '- Energy: if only kJ is printed, kcal = kJ / 4.184.\n- Sodium in mg. If only salt is printed: sodium_mg = salt_g * 400.\n'
-  + '- Cholesterol, potassium, iron, caffeine in mg (convert g to mg by x1000). Vitamin D and B12 in mcg; if vitamin D is in IU, mcg = IU / 40.\n'
+  + '- ALWAYS convert to the units in the schema, never copy a value in a different unit. Energy: if only kJ is printed, kcal = kJ / 4.184.\n- Sodium in mg. If only salt is printed: sodium_mg = salt_g * 400.\n'
+  + '- Cholesterol, potassium, iron, caffeine in mg (convert g to mg by x1000). Vitamin D and B12 in mcg; if vitamin D is printed in IU, convert: mcg = IU / 40 (e.g. 200 IU -> 5). If B12 is in IU or %DV with a stated mcg value, use the mcg value.\n'
   + '- Keep decimals exactly as printed (0.03 is not 0.3). Any value not printed must be null; never guess. sat_fat_g is saturated fat in g; ignore trans fat.\n'
   + '- name_ar: the product name in ARABIC as printed; if only a non-Arabic name is visible, write a short natural Arabic version. name_en: the product name in ENGLISH as printed (name_en_source "printed"); if only Arabic is printed, translate it to natural English and set name_en_source "translated". Both null if no product name is visible.\n- brand: the brand/company name in ENGLISH (Latin letters) as printed; if only Arabic is visible, transliterate it. null if not visible.\n- If a photo is not what its description says (e.g. the "front" photo actually shows the nutrition table), still extract whatever is visible. Do not search or guess; only use what is visible.';
 class AiError extends Error { constructor(msg, status, retryable) { super(msg); this.status = status; this.retryable = !!retryable; } }
@@ -1733,7 +1743,11 @@ function applyLabel(r) {
   NUTRIENTS.forEach(x => { const v = val(r.nutrients ? r.nutrients[x.key] : null); if (v != null && v >= 0) { const el = $('#n_' + x.key); el.value = fmtIn(r2(v)); mark(el); count++; } });
   const nameAr = r.name_ar || r.name; if (nameAr && String(nameAr).trim()) { ui.fName.value = String(nameAr).trim(); mark(ui.fName); }
   if (r.name_en && String(r.name_en).trim()) { ui.fNameEn.value = String(r.name_en).trim(); mark(ui.fNameEn); if (r.name_en_source === 'translated') ui.fNameEn.closest('.field').classList.add('translated'); }
-  if (r.brand && String(r.brand).trim()) { ui.fBrand.value = matchBrand(r.brand); mark(ui.fBrand); }
+  if (r.brand && String(r.brand).trim()) {
+    const raw = String(r.brand).trim(), hit = matchBrand(raw);
+    if (brands.some(x => x === hit)) { ui.fBrand.value = hit; mark(ui.fBrand); }
+    else { pendingBrand = raw; renderBrandSuggest(); }
+  }
   if (r.category && catById(r.category) && !state.category) { state.category = r.category; renderCat(); }
   return count;
 }
@@ -1850,9 +1864,9 @@ async function go(v) {
 function addConverters() {
   const ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13M13 3l4 4-4 4"/><path d="M20 17H7M11 21l-4-4 4-4"/></svg>';
   const CONV = [
-    ['kcal', 'kJ', 'سعرات', v => v / 4.184, 'اكتب رقم الكيلوجول (kJ) ثم اضغط السهمين للتحويل إلى سعرات'],
-    ['vitamin_d_mcg', 'IU', 'مكغ', v => v / 40, 'اكتب رقم IU ثم اضغط السهمين للتحويل إلى مكغ'],
-    ['sodium_mg', 'ملح غ', 'صوديوم ملغ', v => v * 400, 'اكتب غرامات الملح (Salt) ثم اضغط السهمين لتحويلها إلى صوديوم']
+    ['kcal', 'kJ', 'سعرات', v => v / 4.184, 'التحويل اليدوي: اكتب رقم الكيلوجول (kJ) ثم اضغط السهمين. (الذكاء الاصطناعي يحوّلها تلقائيًا وقت التحليل)'],
+    ['vitamin_d_mcg', 'IU', 'مكغ', v => v / 40, 'التحويل اليدوي: اكتب رقم IU ثم اضغط السهمين. (الذكاء الاصطناعي يحوّلها تلقائيًا وقت التحليل)'],
+    ['sodium_mg', 'ملح غ', 'صوديوم ملغ', v => v * 400, 'التحويل اليدوي: اكتب غرامات الملح (Salt) ثم اضغط السهمين. (الذكاء الاصطناعي يحوّلها تلقائيًا وقت التحليل)']
   ];
   CONV.forEach(([k, fromU, toU, f, help]) => {
     const el = $('#n_' + k); if (!el) return; const fd = el.closest('.field');
@@ -1862,7 +1876,7 @@ function addConverters() {
       const v = num(el.value);
       if (v == null) { toast(help); el.focus(); return; }
       if (el.value === last) { toast('تم تحويل هذا الرقم قبل قليل'); return; }
-      el.value = fmtIn(r2(f(v))); last = el.value; fd.classList.add('ai');
+      el.value = fmtIn(r2(f(v))); last = el.value; fd.classList.remove('missing');
       toast(fmt(v) + ' ' + fromU + ' ← ' + el.value + ' ' + toU + ' ✓');
     };
     fd.appendChild(b);
@@ -1889,8 +1903,9 @@ function wire() {
       if (seen.has(code)) return { dup: true, txt: 'هذا الباركود مضاف — امسح باركود ثاني أو اضغط "تم"' };
       seen.add(code); fresh.push(code);
       let row = sizeRowsAll().find(r => !rowCode(r)); if (!row) row = addSizeRow();
-      row.querySelector('.s-code').value = code;
-      return { count: seen.size, txt: fresh.length === 1 ? 'امسح باركود الحجم التالي، أو اضغط "تم" لو خلصت' : 'كمّل مسح الأحجام، أو اضغط "تم"' };
+      row.querySelector('.s-code').value = code; renumberSizes();
+      const idx = sizeRowsAll().indexOf(row) + 1;
+      return { count: seen.size, idx, txt: 'انحفظ في المربع رقم ' + idx + ' — امسح التالي أو اضغط "تم"' };
     }, {
       multi: true, startCount: seen.size, hint: 'وجّه الكاميرا على باركود المنتج',
       onDone: async () => {
@@ -1927,13 +1942,12 @@ function wire() {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
     try {
       state.labelPhoto = await compressImage(f, 1200, 0.8); state.labelUrl = null; state.labelUploaded = false; showLabelThumb();
-      if (!state.photo && !state.photoUrl) { try { state.photo = await enhanceImage(await compressImage(f, 800, 0.85)); state.photoOk = true; state.photoBackup = null; state.photoFromLabel = true; renderPhoto(); } catch (x) {} }
       saveDraft(); toast('تم حفظ صورة الملصق — اضغط "حلّل الصور" لتعبئة القيم');
     } catch (err) { toast('تعذر قراءة الصورة'); }
   };
   ui.btnAnalyze.onclick = async () => {
     if (!aiReady()) { toast('فعّل الذكاء الاصطناعي أولًا من تبويب الإعدادات (المزوّد والمفتاح)'); return; }
-    const front = (state.photo && !state.photoFromLabel) ? state.photo : null; const label = state.labelPhoto;
+    const front = state.photo || null; const label = state.labelPhoto;
     if (!front && !label) { toast('صوّر المنتج من الأمام والملصق الغذائي أولًا'); return; }
     ui.btnAnalyze.disabled = true; ui.aiBtnTitle.textContent = 'جاري التحليل…';
     aiStatus('busy', 'جاري تحليل ' + (front && label ? 'الصورتين' : 'الصورة') + ' عبر ' + esc(AI_PROVIDERS[ai.provider].label) + '…');
@@ -1942,7 +1956,8 @@ function wire() {
       const images = [], notes = [];
       if (front) { images.push(front); notes.push('Photo ' + images.length + ' is the FRONT of the package.'); }
       if (label) { images.push(label); notes.push('Photo ' + images.length + ' is the NUTRITION FACTS label.'); }
-      const catHint = '\n- category: choose the best matching id from this list (or null): ' + cats.map(c => c.id + '=' + (c.name_en || c.name_ar) + (c.desc_ar ? ' (' + c.desc_ar.slice(0, 50) + ')' : '')).join('; ') + '.';
+      const brandHint = brands.length ? '\n- brand: the product brand MUST be chosen from this exact list when it matches one of them (copy the spelling exactly): ' + brands.join(', ') + '. If the brand on the package is clearly none of these, return it as printed.' : '';
+      const catHint = brandHint + '\n- category: choose the best matching id from this list (or null): ' + cats.map(c => c.id + '=' + (c.name_en || c.name_ar) + (c.desc_ar ? ' (' + c.desc_ar.slice(0, 50) + ')' : '')).join('; ') + '.';
       const res = await aiAnalyze(images, notes.join(' ') + '\n' + LABEL_PROMPT + catHint);
       const n = applyLabel(res.data); const secs = Math.round((Date.now() - t0) / 100) / 10;
       const bits = []; if (ui.fName.value.trim()) bits.push('الاسم'); if (ui.fBrand.value.trim()) bits.push('العلامة'); if (n) bits.push(n + ' قيمة');
@@ -1971,8 +1986,8 @@ function wire() {
     renderBrands(); toast('تم حذف العلامة من الاقتراحات');
   });
   ui.fBrand.addEventListener('focus', renderBrandSuggest); ui.fBrand.addEventListener('input', renderBrandSuggest);
-  ui.fBrand.addEventListener('blur', () => setTimeout(() => { ui.brandSuggest.hidden = true; }, 200));
-  ui.brandSuggest.addEventListener('pointerdown', e => { const c = e.target.closest('.chip'); if (!c) return; e.preventDefault(); ui.fBrand.value = c.dataset.b; ui.brandSuggest.hidden = true; ui.fBrand.closest('.field').classList.remove('ai'); });
+  ui.fBrand.addEventListener('blur', () => setTimeout(() => { if (!pendingBrand) ui.brandSuggest.hidden = true; }, 200));
+  ui.brandSuggest.addEventListener('pointerdown', e => { const c = e.target.closest('.chip'); if (!c) return; e.preventDefault(); ui.fBrand.value = c.dataset.b; pendingBrand = null; ui.brandSuggest.hidden = true; ui.fBrand.closest('.field').classList.remove('ai'); });
   ui.unitSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setUnit(b.dataset.u); });
   ui.basisSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setBasis(b.dataset.b, true); });
   ui.fPkg.addEventListener('input', () => linkFields('pkg')); ui.fServ.addEventListener('input', () => linkFields('serving')); ui.fServN.addEventListener('input', () => linkFields('servings'));
