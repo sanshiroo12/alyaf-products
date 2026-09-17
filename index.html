@@ -554,11 +554,17 @@ const ZX_CDN = [
 const READ_OPTS = { formats: ['EAN13', 'EAN8', 'UPCA', 'UPCE', 'Code128', 'ITF'], maxNumberOfSymbols: 1, tryHarder: true, tryRotate: true, tryInvert: true };
 const NATIVE_FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'itf'];
 /* ===== ربط Supabase (اختياري): حط رابط مشروعك والمفتاح العام anon هنا ===== */
-const SB = { url: 'https://ysldvjskipelqzyhcmzb.supabase.co', key: 'sb_publishable_YfhZw7y97hKzFR-7_8fg-A_dfIwD6bv', bucket: 'product-photos' };
+const SB = { url: 'https://wtlhxcxmlhuftxrkpsxo.supabase.co', key: 'sb_publishable_SETjbe7_SInPyrSowvmPKQ_Z4qIfRSd', bucket: 'product-photos' };
 const SB_CONFIG_KEY = 'alyaf-sb-config';
 try { const o = JSON.parse(localStorage.getItem(SB_CONFIG_KEY) || 'null'); if (o && o.url) SB.url = o.url; if (o && o.key) SB.key = o.key; } catch (e) {}
 const sbConfigured = () => /^https?:\/\//.test(SB.url) && !/YOUR-PROJECT/.test(SB.url) && !!SB.key && !/YOUR_ANON/.test(SB.key);
-const SESSION_KEY = 'alyaf-sb-session', PULL_KEY = 'alyaf-sb-lastpull', DELQ_KEY = 'alyaf-sb-deletes', LASTSYNC_KEY = 'alyaf-sb-lastsync';
+SB.url = SB.url.replace(/\/+$/, '');
+const PROJECT_ID = SB.url;
+// Assign existing device data once; every other project gets separate storage.
+const LEGACY_OWNER_KEY = 'alyaf-legacy-project';
+if (!localStorage.getItem(LEGACY_OWNER_KEY)) localStorage.setItem(LEGACY_OWNER_KEY, PROJECT_ID);
+const projectKey = key => localStorage.getItem(LEGACY_OWNER_KEY) === PROJECT_ID ? key : key + ':' + encodeURIComponent(PROJECT_ID);
+const SESSION_KEY = projectKey('alyaf-sb-session'), PULL_KEY = projectKey('alyaf-sb-lastpull'), DELQ_KEY = projectKey('alyaf-sb-deletes'), LASTSYNC_KEY = projectKey('alyaf-sb-lastsync');
 const OFF_FIELDS = 'code,product_name,product_name_ar,product_name_en,brands,quantity,serving_size,serving_quantity,nutriments,image_front_small_url,image_front_url,image_url';
 
 /* ---------- helpers ---------- */
@@ -650,12 +656,12 @@ function enhanceImage(dataUrl) {
 
 /* ---------- storage (IndexedDB, localStorage fallback) ---------- */
 let idb = null, useLS = false;
-const LSKEY = 'alyaf-products';
+const LSKEY = projectKey('alyaf-products');
 function openDB() {
   return new Promise((res, rej) => {
     if (idb) return res(idb);
     if (!window.indexedDB) return rej(new Error('no-idb'));
-    const r = indexedDB.open('alyaf-products', 1);
+    const r = indexedDB.open(LSKEY, 1);
     r.onupgradeneeded = e => { const d = e.target.result; if (!d.objectStoreNames.contains('products')) d.createObjectStore('products', { keyPath: 'barcode' }); };
     r.onsuccess = e => { idb = e.target.result; res(idb); };
     r.onerror = () => rej(r.error); r.onblocked = () => rej(new Error('blocked'));
@@ -663,7 +669,7 @@ function openDB() {
 }
 async function op(mode, fn) {
   const d = await openDB();
-  return new Promise((res, rej) => { const t = d.transaction('products', mode); const req = fn(t.objectStore('products')); req.onsuccess = () => res(req.result); req.onerror = () => rej(req.error); });
+  return new Promise((res, rej) => { const t = d.transaction('products', mode); const req = fn(t.objectStore('products')); t.oncomplete = () => res(req.result); t.onabort = () => rej(t.error || new Error('تعذر حفظ البيانات')); t.onerror = () => rej(t.error); });
 }
 const IDB = { get: b => op('readonly', s => s.get(b)), all: () => op('readonly', s => s.getAll()), put: p => op('readwrite', s => s.put(p)), del: b => op('readwrite', s => s.delete(b)), count: () => op('readonly', s => s.count()) };
 const LS = {
@@ -1181,7 +1187,7 @@ const DEFAULT_CATS = [
 ];
 const CATS_VERSION = 2;
 const CAT_MIGRATE = { milk:'dairy', cheese:'dairy', eggs:'other', meat:'other', poultry:'frozen', seafood:'canned', vegetables:'other', fruits:'other', rice_pasta:'pantry', legumes:'pantry', oils:'condiments', spices:'condiments', sauces:'condiments', chips:'snacks', nuts_dates:'snacks', biscuits:'sweets', chocolate:'sweets', ice_cream:'sweets', desserts:'sweets', juice:'drinks', water:'drinks', energy:'drinks', plant_drinks:'drinks', ready_meals:'ready', diet:'other' };
-const CATS_KEY = 'alyaf-cats', CATS_DEL_KEY = 'alyaf-cats-deleted'; let cats = [], catsTableMissing = false;
+const CATS_KEY = projectKey('alyaf-cats'), CATS_DEL_KEY = projectKey('alyaf-cats-deleted'); let cats = [], catsTableMissing = false;
 const deletedCats = () => { try { return JSON.parse(localStorage.getItem(CATS_DEL_KEY) || '[]'); } catch (e) { return []; } };
 function saveCats() { try { localStorage.setItem(CATS_KEY, JSON.stringify(cats)); } catch (e) {} }
 function loadCats() {
@@ -1262,7 +1268,7 @@ async function syncCategories() {
     saveCats(); renderCatFilter(); if (currentView === 'settings') renderCats();
   } catch (e) { if (/categor|relation|does not exist|not find|404/i.test(String(e.message || e))) catsTableMissing = true; }
 }
-const BRANDS_KEY = 'alyaf-brands'; let brands = [], pendingBrand = null;
+const BRANDS_KEY = projectKey('alyaf-brands'); let brands = [], pendingBrand = null;
 function addBrand(b, persist) { b = String(b || '').trim(); if (!b) return; if (!brands.some(x => x.toLowerCase() === b.toLowerCase())) { brands.push(b); if (persist !== false) { try { localStorage.setItem(BRANDS_KEY, JSON.stringify(brands)); } catch (e) {} } } }
 const normBrand = x => String(x || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, '');
 function lev(a, b) {
@@ -1391,19 +1397,24 @@ async function saveForm() {
   closeForm(); syncNow(true);
 }
 async function deleteByCode(code) {
+  if (syncing) { toast('انتظر اكتمال المزامنة ثم احذف المنتج'); return; }
   const p = await DB.get(code); if (!p) return;
   const n = codesOf(p);
   if (!confirm('حذف "' + (p.name || code) + '" نهائيًا من قاعدتك؟' + (n > 1 ? '\nبينحذف معه ' + n + ' باركود (كل أحجامه).' : ''))) return;
-  try { await DB.del(code); } catch (e) { toast('تعذر الحذف'); return; }
-  if (sbConfigured()) { const q = JSON.parse(localStorage.getItem(DELQ_KEY) || '[]'); if (!q.includes(code)) q.push(code); localStorage.setItem(DELQ_KEY, JSON.stringify(q)); }
-  await refreshCount(); renderList(); toast('تم حذف المنتج'); syncNow(true);
+  try { await queueProductDelete(code); } catch (e) { toast('تعذر الحذف: ' + e.message); return; }
+  await refreshCount(); renderList(); toast(sbConfigured() ? 'حُذف محليًا — بانتظار تأكيد الحذف من السحابة' : 'تم حذف المنتج'); syncNow(false);
 }
 async function deleteCurrent() {
+  if (syncing) { toast('انتظر اكتمال المزامنة ثم احذف المنتج'); return; }
   if (!formCtx || !formCtx.editing) return;
   if (!confirm('حذف هذا المنتج نهائيًا من قاعدتك؟')) return;
-  try { await DB.del(formCtx.editing); } catch (e) { toast('تعذر الحذف'); return; }
-  if (sbConfigured()) { const q = JSON.parse(localStorage.getItem(DELQ_KEY) || '[]'); if (!q.includes(formCtx.editing)) q.push(formCtx.editing); localStorage.setItem(DELQ_KEY, JSON.stringify(q)); }
-  await refreshCount(); toast('تم حذف المنتج'); closeForm(); syncNow(true);
+  try { await queueProductDelete(formCtx.editing); } catch (e) { toast('تعذر الحذف: ' + e.message); return; }
+  await refreshCount(); toast(sbConfigured() ? 'حُذف محليًا — بانتظار تأكيد الحذف من السحابة' : 'تم حذف المنتج'); closeForm(); syncNow(false);
+}
+async function queueProductDelete(code) {
+  // Persist the remote intent before removing the only local copy.
+  if (sbConfigured()) { const q = JSON.parse(localStorage.getItem(DELQ_KEY) || '[]'); if (!q.includes(code)) q.push(code); localStorage.setItem(DELQ_KEY, JSON.stringify(q)); }
+  await DB.del(code);
 }
 
 /* ---------- list ---------- */
@@ -1559,6 +1570,7 @@ async function sbPull() {
     const rows = await sbFetch('/rest/v1/products?select=*&updated_at=gt.' + encodeURIComponent(since) + '&order=updated_at.asc&limit=500');
     if (!Array.isArray(rows) || !rows.length) break;
     for (const r of rows) {
+      if (JSON.parse(localStorage.getItem(DELQ_KEY) || '[]').includes(r.barcode)) continue;
       const local = await DB.get(r.barcode);
       if (local && local.synced === false) continue;
       if (!local || tms(r.updated_at) > tms(local.updated_at)) { await DB.put(Object.assign({}, local || {}, r, { synced: true, photo: local ? (local.photo || null) : null, photo_uploaded: true, label_photo: local ? (local.label_photo || null) : null, label_photo_uploaded: true })); n++; }
@@ -1568,14 +1580,36 @@ async function sbPull() {
   }
   return n;
 }
+async function flushProductDeletes() {
+  const q = JSON.parse(localStorage.getItem(DELQ_KEY) || '[]');
+  while (q.length) {
+    const code = q[0], filter = 'barcode=eq.' + encodeURIComponent(code);
+    await sbFetch('/rest/v1/products?' + filter, { method: 'DELETE', headers: { Prefer: 'return=representation' } });
+    const remaining = await sbFetch('/rest/v1/products?select=barcode&' + filter);
+    if (!Array.isArray(remaining) || remaining.length) throw new Error('لم يتأكد حذف المنتج من Supabase — تحقق من صلاحية الحذف للحساب في product_editors');
+    await DB.del(code);
+    q.shift(); localStorage.setItem(DELQ_KEY, JSON.stringify(q));
+  }
+}
+async function reconcileProductCache() {
+  // Also removes stale cached rows left by older versions or other devices.
+  const remote = new Set();
+  for (let offset = 0; ; ) {
+    const rows = await sbFetch('/rest/v1/products?select=barcode&order=barcode.asc&limit=500&offset=' + offset);
+    if (!Array.isArray(rows)) throw new Error('تعذر التحقق من قائمة المنتجات');
+    if (!rows.length) break;
+    rows.forEach(p => remote.add(p.barcode)); offset += rows.length;
+  }
+  for (const p of await DB.all()) if (p.synced === true && !remote.has(p.barcode)) await DB.del(p.barcode);
+}
 async function syncNow(silent) {
   if (!sbConfigured() || !session || syncing) return;
   if (!navigator.onLine) { if (!silent) toast('ما فيه إنترنت — محفوظ محليًا وبيتزامن لما يرجع الاتصال'); return; }
   syncing = true; renderSync('جاري المزامنة…');
   try {
+    await flushProductDeletes();
+    await reconcileProductCache();
     await syncCategories();
-    const delq = JSON.parse(localStorage.getItem(DELQ_KEY) || '[]');
-    while (delq.length) { await sbFetch('/rest/v1/products?barcode=eq.' + encodeURIComponent(delq[0]), { method: 'DELETE', headers: { Prefer: 'return=minimal' } }); delq.shift(); localStorage.setItem(DELQ_KEY, JSON.stringify(delq)); }
     const all = await DB.all(); let upFail = 0, upErr = '';
     for (const p of all) {
       const needPhoto = p.photo && (!p.photo_uploaded || !isOwnUrl(p.photo_url));
@@ -1602,12 +1636,13 @@ async function syncNow(silent) {
     if (upFail) toast('⚠️ ' + upFail + ' صورة ما قدرت ترتفع للسحابة: ' + upErr.slice(0, 120));
     else if (!silent) toast('تمت المزامنة · رفع ' + dirty.length + ' · سحب ' + pulled);
     if (currentView === 'list') renderList(); refreshCount(); if (currentView === 'settings') renderSync();
-  } catch (e) { if (!silent) toast('فشلت المزامنة: ' + (e.message || e)); }
+  } catch (e) { toast('فشلت المزامنة: ' + (e.message || e)); }
   finally { syncing = false; renderSync(); }
 }
 function resetSbConfig() {
+  if (syncing || refreshing) { toast('انتظر اكتمال المزامنة قبل تغيير المشروع'); return; }
   if (!confirm('تغيير رابط المشروع أو المفتاح؟ بتحتاج تسجّل الدخول من جديد.')) return;
-  localStorage.removeItem(SB_CONFIG_KEY); SB.key = 'YOUR_ANON_KEY'; clearSession(); renderSync();
+  SB.key = 'YOUR_ANON_KEY'; clearSession(); renderSync();
 }
 function renderSync(statusText) {
   if (!sbConfigured()) {
@@ -1619,8 +1654,8 @@ function renderSync(statusText) {
     $('#sbCfgBtn').onclick = () => {
       const url = $('#sbUrl').value.trim().replace(/\/+$/, ''), key = $('#sbKey').value.trim();
       if (!/^https?:\/\//.test(url) || key.length < 20) { toast('تأكد من الرابط والمفتاح (انسخ المفتاح بزر النسخ)'); return; }
-      SB.url = url; SB.key = key; localStorage.setItem(SB_CONFIG_KEY, JSON.stringify({ url, key }));
-      toast('تم حفظ الإعدادات'); renderSync();
+      localStorage.setItem(SB_CONFIG_KEY, JSON.stringify({ url, key }));
+      location.reload();
     };
     return;
   }
@@ -1818,7 +1853,7 @@ function renderAi() {
 }
 
 /* ---------- form draft protection (survives a page reload) ---------- */
-const DRAFT_KEY = 'alyaf-form-draft';
+const DRAFT_KEY = projectKey('alyaf-form-draft');
 function formSnapshot() {
   const raw = sizeRowsAll().map(r => { const a = num(r.querySelector('.s-amt').value), u = r.querySelector('.s-unit').value; return { name: a == null ? null : fmt(a) + ' ' + PKG_UNITS[u].label, amount: a == null ? null : r2(a * PKG_UNITS[u].factor), unit: PKG_UNITS[u].base, barcode: rowCode(r) || null }; }).filter(x => x.amount != null || x.barcode);
   const pc = (raw.find(x => x.barcode) || {}).barcode || '';
