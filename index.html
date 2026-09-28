@@ -762,11 +762,12 @@ function enhanceImage(dataUrl) {
 }
 
 /* ---------- storage (IndexedDB, localStorage fallback) ---------- */
-let idb = null, useLS = false;
+let idb = null, useLS = false, idbOpening = null;
 const LSKEY = projectKey('alyaf-products');
 function openDB() {
-  return new Promise((res, rej) => {
-    if (idb) return res(idb);
+  if (idb) return Promise.resolve(idb);
+  if (idbOpening) return idbOpening; // اتصال واحد فقط حتى لو طلبته أكثر من دالة بنفس اللحظة
+  idbOpening = new Promise((res, rej) => {
     if (!window.indexedDB) return rej(new Error('no-idb'));
     // النسخة 2: أضفنا مخزن "drafts" (منتجات البقالة بانتظار التعبئة) و"kv" (مسودة النموذج مع الصور)
     const r = indexedDB.open(LSKEY, 2);
@@ -776,6 +777,8 @@ function openDB() {
     // نسخة قديمة من الأداة مفتوحة في تبويب ثاني تمنع التحديث — ننتظرها بدل ما نتحوّل لتخزين ثاني ونخفي المنتجات
     r.onblocked = () => { setTimeout(() => { if (!idb) toast('سكّر أي تبويب ثاني فاتح فيه الأداة، ثم حدّث الصفحة'); }, 1500); };
   });
+  idbOpening.then(() => { idbOpening = null; }, () => { idbOpening = null; });
+  return idbOpening;
 }
 async function op(mode, fn, store) {
   store = store || 'products';
@@ -790,7 +793,16 @@ const LS = {
   async put(p) { const o = this.load(); o[p.barcode] = p; this.save(o); }, async del(b) { const o = this.load(); delete o[b]; this.save(o); },
   async count() { return Object.keys(this.load()).length; }
 };
-const DB = { get: b => (useLS ? LS : IDB).get(b), all: () => (useLS ? LS : IDB).all(), put: p => (useLS ? LS : IDB).put(p), del: b => (useLS ? LS : IDB).del(b), count: () => (useLS ? LS : IDB).count() };
+const DB = { get: b => (useLS ? LS : IDB).get(b), all: () => (useLS ? LS : IDB).all(), put: p => { dbVer++; return (useLS ? LS : IDB).put(p); }, del: b => { dbVer++; return (useLS ? LS : IDB).del(b); }, count: () => (useLS ? LS : IDB).count() };
+// قراءة القائمة كاملة (مع الصور) كانت تتكرر مع كل حرف في البحث وكل تحديث — هذي نسخة مخزنة تتجدد بس لما يتغيّر شي
+// (للقراءة فقط: لا تعدّل عناصرها مباشرة)
+let dbVer = 0, allCache = null, allCacheVer = -1;
+async function allProducts() {
+  if (allCache && allCacheVer === dbVer) return allCache;
+  const v = dbVer; const all = await DB.all();
+  if (v === dbVer) { allCache = all; allCacheVer = v; }
+  return all;
+}
 /* منتجات البقالة المصوّرة بانتظار التعبئة — تنحفظ على الجهاز فور التصوير (ما تضيع لو انقفلت الصفحة) */
 const LSD = LSKEY + '-drafts';
 const LSDrafts = {
@@ -813,7 +825,7 @@ const ui = {}; ids.forEach(id => { ui[id] = document.getElementById(id); });
 ui.viewEntry = $('#view-entry'); ui.viewScan = $('#view-scan'); ui.viewList = $('#view-list'); ui.viewSettings = $('#view-settings'); ui.tabs = [...document.querySelectorAll('.tab')];
 
 /* ---------- state ---------- */
-const state = { unit: 'g', pkgUnit: 'g', basis: '100', photo: null, photoUrl: null, offPhotoUrl: null, off: null, labelPhoto: null, labelUploaded: false, labelUrl: null, photoOk: false, photoBackup: null, photoFromLabel: false, category: null };
+const state = { unit: 'g', pkgUnit: 'g', basis: '100', photo: null, photoUrl: null, off: null, labelPhoto: null, labelUploaded: false, labelUrl: null, photoOk: false, category: null };
 let listFilterMode = 'all', autoPulled = false;
 let scanning = false, starting = false, decoding = false, busy = false, formCtx = null, currentCode = null, currentView = 'entry', wasScanning = false;
 let lastCode = '', lastAt = 0, torchOn = false, curStream = null, loopTimer = null, engine = null, enginePromise = null;
@@ -933,8 +945,9 @@ async function focusAt(track, x, y) {
   return true;
 }
 function makeNudger(track) {
-  let last = Date.now();
-  return { hit() { last = Date.now(); }, tick() { if (Date.now() - last > 2800) { last = Date.now(); focusAt(track, 0.5, 0.5); } } };
+  let last = Date.now(), wait = 4500;
+  if (!(trackCaps(track).focusMode || []).includes('single-shot')) return { hit() {}, tick() {} }; // ما يدعم إعادة الفوكس — لا نلمسه
+  return { hit() { last = Date.now(); wait = 4500; }, tick() { if (Date.now() - last > wait) { last = Date.now(); wait = 7000; focusAt(track, 0.5, 0.5); } } };
 }
 function wireTapFocus(videoEl, getTrack, ringHost) {
   videoEl.onclick = e => {
@@ -955,11 +968,12 @@ async function decodeImageFile(file) {
   const bmp = await loadBitmap(file);
   const bw = bmp.naturalWidth || bmp.width, bh = bmp.naturalHeight || bmp.height;
   const sc = Math.min(1, 2200 / Math.max(bw, bh));
-  work.width = Math.round(bw * sc); work.height = Math.round(bh * sc);
-  wctx.drawImage(bmp, 0, 0, work.width, work.height);
+  const cv = document.createElement('canvas'), cx = cv.getContext('2d', { willReadFrequently: true });
+  cv.width = Math.round(bw * sc); cv.height = Math.round(bh * sc);
+  cx.drawImage(bmp, 0, 0, cv.width, cv.height);
   if (bmp.close) bmp.close();
-  if (engine.native) { try { const code = pickNative(await engine.native.detect(work)); if (code) return code; } catch (e) {} }
-  if (engine.wasm) { const img = wctx.getImageData(0, 0, work.width, work.height); return pickWasm(await window.ZXingWASM.readBarcodes(img, READ_OPTS)); }
+  if (engine.native) { try { const code = pickNative(await engine.native.detect(cv)); if (code) return code; } catch (e) {} }
+  if (engine.wasm) { const img = cx.getImageData(0, 0, cv.width, cv.height); return pickWasm(await window.ZXingWASM.readBarcodes(img, READ_OPTS)); }
   return null;
 }
 
@@ -1173,10 +1187,9 @@ function whenSaved(iso) {
   if (days <= 0) return 'اليوم'; if (days === 1) return 'أمس'; if (days === 2) return 'قبل يومين'; if (days < 11) return 'قبل ' + days + ' أيام';
   try { return d.toLocaleDateString('ar-SA-u-ca-gregory', { day: 'numeric', month: 'long', year: 'numeric' }); } catch (e) { return iso.slice(0, 10); }
 }
-const countSizes = n => n === 1 ? 'حجم واحد' : n === 2 ? 'حجمان' : n <= 10 ? n + ' أحجام' : n + ' حجم';
 async function findLocal(code) {
   const p = await DB.get(code); if (p) return { product: p, size: null };
-  const all = await DB.all();
+  const all = await allProducts();
   for (const q of all) { const sz = (q.sizes || []).find(x => x && x.barcode === code); if (sz) return { product: q, size: sz }; }
   return null;
 }
@@ -1196,7 +1209,6 @@ const strip = vals => '<div class="strip">' + NUTRIENTS.map(n => '<i class="' + 
   + '<div class="strip-cap"><span>' + (NUTRIENTS.length - missingOf(vals).length) + ' من ' + NUTRIENTS.length + ' قيمة</span><span>' + (missingOf(vals).length ? 'الناقص بالأصفر' : 'مكتمل') + '</span></div>';
 const head = (name, brand, code, img) => '<div class="res-head"><div><div class="res-name">' + esc(name || 'منتج بدون اسم') + '</div><div class="res-sub">' + (brand ? esc(brand) + ' · ' : '') + '<span class="mono">' + esc(code) + '</span></div></div>' + (img ? '<img class="res-img" src="' + esc(img) + '" alt="">' : '') + '</div>';
 const macros = (v, capt) => '<div class="macros">' + NUTRIENTS.filter(n => n.core).map(n => '<div class="macro"><b>' + fmt(v ? v[n.key] : null) + '</b><span>' + n.label + '</span></div>').join('') + '</div><div class="macros-cap">' + capt + '</div>';
-const captFor = p => p.per_100 ? 'لكل 100 ' + unitLabel(p.unit) : 'لكل حصة';
 
 function detailTable(p) {
   const a = p.per_100 || null, b = p.per_serving || null; if (!a && !b) return '';
@@ -1220,7 +1232,7 @@ function productDetailHTML(p, size, statusText) {
     + '<div class="status ok">' + statusText + ' · ' + whenSaved(p.updated_at || p.created_at)
     + (size ? '<small>الباركود الممسوح هو حجم: ' + esc(size.name) + ' ' + fmt(size.amount) + ' ' + unitLabel(size.unit || p.unit) + '</small>' : '')
     + (p.complete ? '' : '<small>البيانات ناقصة — تقدر تكملها من "تعديل"</small>') + '</div>'
-    + strip(p.nutrients) + (meta.length ? '<div class="meta">' + meta.join('') + '</div>' : '') + detailTable(p) + sizesList(p, size)
+    + (missingOf(p.nutrients).length ? strip(p.nutrients) : '') + (meta.length ? '<div class="meta">' + meta.join('') + '</div>' : '') + detailTable(p) + sizesList(p, size)
     + ((p.label_photo || p.label_photo_url) ? '<div class="sizes-title">الملصق الغذائي (داخلي — ما يظهر للمستخدمين)</div><img class="res-photo" style="margin-top:8px;object-fit:contain;background:#000" src="' + esc(p.label_photo || p.label_photo_url) + '" alt="">' : '');
 }
 function openDetail(p) {
@@ -1235,12 +1247,12 @@ function resultLocal(p, size) {
   ui.result.querySelector('[data-a=next]').onclick = nextScan;
 }
 async function pickProductForSize(code) {
-  let all = []; try { all = await DB.all(); } catch (e) {}
+  let all = []; try { all = (await allProducts()).slice(); } catch (e) {}
   if (!all.length) { toast('ما عندك منتجات محفوظة بعد'); return; }
   all.sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
   const render = q => {
     const items = q ? all.filter(p => (p.name || '').toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q) || String(p.barcode).includes(q)) : all;
-    return items.slice(0, 60).map(p => '<button class="pick" data-code="' + esc(p.barcode) + '">' + (ownPhoto(p) ? '<img class="thumb" src="' + esc(ownPhoto(p)) + '" alt="">' : '<div class="thumb"></div>')
+    return items.slice(0, 60).map(p => '<button class="pick" data-code="' + esc(p.barcode) + '">' + (thumbOf(p) ? '<img class="thumb" src="' + esc(thumbOf(p)) + '" alt="" loading="lazy">' : '<div class="thumb"></div>')
       + '<div class="row-main"><div class="row-name">' + esc(p.name) + '</div><div class="row-sub">' + (p.brand ? esc(p.brand) + ' · ' : '') + '<span class="mono">' + esc(p.barcode) + '</span></div></div></button>').join('') || '<div class="empty">ما فيه نتائج</div>';
   };
   ui.result.innerHTML = '<div class="card"><div class="res-name">هذا الباركود حجم من أي منتج؟</div><div class="res-sub">بيُضاف كحجم جديد بوزنه، وباركوده <span class="mono">' + esc(code) + '</span></div>'
@@ -1431,7 +1443,7 @@ function loadCats() {
   saveCats(); renderCatFilter();
 }
 const catById = id => cats.find(c => c.id === id) || null;
-const catIcon = c => (c && c.icon) ? c.icon : '🏷️';
+const catIcon = c => (c && c.icon) ? esc(c.icon) : '🏷️';
 const catLabel = id => { const c = catById(id); return c ? c.name_ar : ''; };
 function addCategory(ar, en, desc, icon) {
   ar = String(ar || '').trim(); en = String(en || '').trim(); desc = String(desc || '').trim(); if (!ar) return null;
@@ -1442,7 +1454,7 @@ function addCategory(ar, en, desc, icon) {
 }
 function renderCat() {
   const c = catById(state.category);
-  ui.catHeadIcon.textContent = c ? catIcon(c) : '🏷️';
+  ui.catHeadIcon.textContent = (c && c.icon) ? c.icon : '🏷️';
   ui.catHeadName.textContent = c ? c.name_ar : 'اضغط للاختيار';
   ui.catHeadName.classList.toggle('on', !!c);
   ui.catDesc.hidden = !(c && c.desc_ar); if (c && c.desc_ar) ui.catDesc.innerHTML = catIcon(c) + ' <b>' + esc(c.name_ar) + ':</b> ' + esc(c.desc_ar);
@@ -1462,7 +1474,7 @@ function renderCatFilter() {
   ui.catFilter.value = cur;
 }
 async function renderCats() {
-  let all = []; try { all = await DB.all(); } catch (e) {}
+  let all = []; try { all = await allProducts(); } catch (e) {}
   const counts = {}; all.forEach(p => { if (p.category) counts[p.category] = (counts[p.category] || 0) + 1; });
   const list = cats.slice().sort((a, b) => (a.sort ?? 100) - (b.sort ?? 100));
   ui.catsCount.textContent = list.length + ' صنف';
@@ -1496,7 +1508,8 @@ async function syncCategories() {
     saveCats(); renderCatFilter(); if (currentView === 'settings') renderCats();
   } catch (e) { if (/categor|relation|does not exist|not find|404/i.test(String(e.message || e))) catsTableMissing = true; }
 }
-const BRANDS_KEY = projectKey('alyaf-brands'); let brands = [], pendingBrand = null;
+const BRANDS_KEY = projectKey('alyaf-brands'), BRANDS_HIDE_KEY = projectKey('alyaf-brands-hidden'); let brands = [], pendingBrand = null;
+const hiddenBrands = () => { try { return JSON.parse(localStorage.getItem(BRANDS_HIDE_KEY) || '[]'); } catch (e) { return []; } };
 function addBrand(b, persist) { b = String(b || '').trim(); if (!b) return; if (!brands.some(x => x.toLowerCase() === b.toLowerCase())) { brands.push(b); if (persist !== false) { try { localStorage.setItem(BRANDS_KEY, JSON.stringify(brands)); } catch (e) {} } } }
 const normBrand = x => String(x || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, '');
 function lev(a, b) {
@@ -1522,7 +1535,11 @@ function renderBrands() {
     ? brands.slice().sort((a, b2) => a.localeCompare(b2)).map(x => '<button type="button" class="chip" dir="ltr" data-b="' + esc(x) + '">' + esc(x) + ' ✕</button>').join('')
     : '<p class="note">ما فيه علامات محفوظة بعد — تنضاف تلقائيًا مع كل منتج تحفظه.</p>';
 }
-function loadBrands() { try { brands = JSON.parse(localStorage.getItem(BRANDS_KEY) || '[]'); } catch (e) { brands = []; } DB.all().then(all => all.forEach(p => addBrand(p.brand, false))).catch(() => {}); }
+function loadBrands() {
+  try { brands = JSON.parse(localStorage.getItem(BRANDS_KEY) || '[]'); } catch (e) { brands = []; }
+  const hide = hiddenBrands().map(x => x.toLowerCase());
+  allProducts().then(all => all.forEach(p => { if (p.brand && !hide.includes(String(p.brand).toLowerCase())) addBrand(p.brand, false); })).catch(() => {});
+}
 function renderBrandSuggest() {
   const q = ui.fBrand.value.trim().toLowerCase();
   const list = (q ? brands.filter(x => x.toLowerCase().includes(q)) : brands.slice(-8).reverse()).filter(x => x.toLowerCase() !== q).slice(0, 8);
@@ -1584,7 +1601,7 @@ function useOffValues() {
   setBasis('100', false); let n = 0;
   NUTRIENTS.forEach(x => { const el = $('#n_' + x.key); if (v[x.key] != null) { el.value = fmtIn(r2(v[x.key])); el.closest('.field').classList.add('ai'); el.closest('.field').classList.remove('missing'); n++; } });
   if (o.name && !ui.fName.value.trim()) ui.fName.value = o.name; if (o.brand && !ui.fBrand.value.trim()) ui.fBrand.value = o.brand;
-  toast('تم نقل ' + n + ' قيمة من Open Food Facts — راجعها'); showSanity();
+  toast('تم نقل ' + n + ' قيمة من Open Food Facts — راجعها'); showSanity(); queueSaveDraft();
 }
 function openForm(p, ctx) {
   formCtx = Object.assign({ editing: null, returnTo: 'scan', fromOFF: false, draftId: null }, ctx || {}); p = p || {}; formToken++;
@@ -1594,7 +1611,7 @@ function openForm(p, ctx) {
   ui.formSave.textContent = isDraft ? 'تم — أضفه لمنتجاتي' : 'حفظ المنتج'; ui.formSaveTop.textContent = isDraft ? 'تم' : 'حفظ';
   ui.draftBar.hidden = !isDraft;
   if (isDraft) ui.draftBar.innerHTML = '<span>📸</span><span>' + (formCtx.draftPos ? '<b>' + esc(formCtx.draftPos) + '</b> · ' : '') + 'اكتب القيم من صورة الملصق (أو اضغط «حلّل الصور») ثم اضغط <b>تم</b>.' + (formCtx.note ? '<br>ملاحظتك: <b>' + esc(formCtx.note) + '</b>' : '') + '</span>';
-  ui.fName.value = p.name || ''; ui.fNameEn.value = p.name_en || ''; ui.fBrand.value = p.brand || ''; ui.brandSuggest.hidden = true; pendingBrand = null; state.photoFromLabel = false; state.category = p.category || null; ui.catNew.hidden = true; ui.catBody.hidden = true; ui.catToggle.classList.remove('open'); renderCat(); renderCatGuide();
+  ui.fName.value = p.name || ''; ui.fNameEn.value = p.name_en || ''; ui.fBrand.value = p.brand || ''; ui.brandSuggest.hidden = true; pendingBrand = null; state.category = p.category || null; ui.catNew.hidden = true; ui.catBody.hidden = true; ui.catToggle.classList.remove('open'); renderCat(); renderCatGuide();
   ui.fPkg.value = ''; setUnit(p.package_unit || p.unit || 'g');
   setPkgBase(p.package_size); ui.fServ.value = fmtIn(p.serving_size); ui.fServN.value = fmtIn(p.servings_per_package);
   setBasis(p.basis || '100', false);
@@ -1602,8 +1619,7 @@ function openForm(p, ctx) {
   NUTRIENTS.forEach(n => { const el = $('#n_' + n.key); el.value = fmtIn(src[n.key]); el.closest('.field').classList.toggle('missing', !!formCtx.fromOFF && src[n.key] == null); });
   state.off = (formCtx.off) || p.off_ref || null;
   state.photo = p.photo || null; state.photoUrl = isOwnUrl(p.photo_url) ? p.photo_url : null;
-  state.offPhotoUrl = (state.off && state.off.photo_url) || (!isOwnUrl(p.photo_url) ? p.photo_url : null) || null;
-  state.photoOk = !!p.photo_ok; state.photoBackup = null; renderPhoto(); renderOffRef();
+  state.photoOk = !!p.photo_ok; renderPhoto(); renderOffRef();
   state.labelPhoto = p.label_photo || null; state.labelUrl = p.label_photo_url || null; state.labelUploaded = !!p.label_photo_uploaded; showLabelThumb();
   // منتج قديم بدون رابط ملصق: نجرّب المسار الثابت في السحابة (labels/الباركود.jpg) ونرجّعه لو كان موجود
   if (!state.labelPhoto && !state.labelUrl && formCtx.editing && p.barcode) probeLabel(String(p.barcode));
@@ -1627,12 +1643,21 @@ function closeForm() {
   const rt = formCtx ? formCtx.returnTo : 'scan'; formCtx = null; ui.form.hidden = true; clearDraft();
   if (rt === 'list') renderList(); else if (rt === 'entry') renderEntry(); else nextScan();
 }
+let savingForm = false;
 async function saveForm() {
+  if (savingForm || !formCtx) return; // ضغطتين ورا بعض كانت تحفظ مرتين وتطلع خطأ
+  savingForm = true;
+  try { await saveFormInner(); } finally { savingForm = false; }
+}
+async function saveFormInner() {
   const name = ui.fName.value.trim(); if (!name) { toast('اكتب اسم المنتج'); ui.fName.focus(); return; }
-  const nameEn = ui.fNameEn.value.trim() || null; const brandIn = matchBrand(ui.fBrand.value); if (brandIn) addBrand(brandIn);
+  const nameEn = ui.fNameEn.value.trim() || null; const brandIn = matchBrand(ui.fBrand.value);
+  if (brandIn) { try { const h = hiddenBrands().filter(x => x.toLowerCase() !== brandIn.toLowerCase()); localStorage.setItem(BRANDS_HIDE_KEY, JSON.stringify(h)); } catch (e) {} addBrand(brandIn); }
   const rsz = readSizes(); if (rsz.error) { toast(rsz.error); return; }
   const barcode = rsz.primary; if (!barcode || barcode.length < 6) { toast('امسح أو اكتب باركود المنتج في المربع الأول'); return; }
   const vals = readNutrients();
+  // "مكتمل" = الأساسيات الأربع مكتوبة فعلًا (قبل: كان دايم "مكتمل" لأن الفاضي يتحوّل صفر)
+  const coreDone = NUTRIENTS.filter(n => n.core).every(n => vals[n.key] != null);
   NUTRIENTS.forEach(n => { if (vals[n.key] == null) vals[n.key] = 0; });
   const serving = num(ui.fServ.value), pkg = pkgBase(), servN = num(ui.fServN.value);
   const warns = sanityCheck(vals, state.basis === '100' ? 100 : serving);
@@ -1642,12 +1667,16 @@ async function saveForm() {
   else { per_serving = vals; if (serving > 0) per_100 = scale(vals, 100 / serving); }
   const sizes = rsz.sizes.map(sz => ({ name: sz.name, amount: sz.amount, unit: state.unit, barcode: sz.barcode === barcode ? null : sz.barcode, nutrients: per_100 ? scale(per_100, sz.amount / 100) : null }));
   let existing = null; try { existing = await DB.get(formCtx.editing || barcode); } catch (e) {}
+  // منتج جديد بباركود محفوظ من قبل: قبل كان يستبدل المنتج القديم بصمت
+  if (!formCtx.editing && !formCtx.draftId && existing && !confirm('هذا الباركود محفوظ من قبل باسم «' + (existing.name || barcode) + '».\nتبي تستبدل بياناته بالبيانات الجديدة؟')) return;
+  // عدّلت منتج وغيّرت باركوده الأساسي وفيه منتج ثاني بنفس الباركود الجديد
+  if (formCtx.editing && formCtx.editing !== barcode) { let other = null; try { other = await DB.get(barcode); } catch (e) {} if (other && !confirm('الباركود ' + barcode + ' محفوظ لمنتج ثاني «' + (other.name || '') + '». تبي تستبدله؟')) return; }
   const source = existing ? (existing.source === 'off' ? 'off+manual' : (existing.source || 'manual')) : (formCtx.fromOFF ? 'off+manual' : 'manual');
   const rec = {
     barcode, name, name_en: nameEn, brand: brandIn || null, category: state.category || null, source,
     package_size: pkg, package_unit: state.pkgUnit, unit: state.unit, serving_size: serving, servings_per_package: servN,
     basis: state.basis, nutrients: vals, per_100, per_serving,
-    complete: NUTRIENTS.every(n => vals[n.key] != null), sizes,
+    complete: coreDone, sizes,
     photo: state.photo || null, photo_url: state.photoUrl || null, photo_ok: !!state.photoOk,
     off_ref: state.off ? { name: state.off.name || null, brand: state.off.brand || null, photo_url: state.off.photo_url || null, unit: state.off.unit || null, per_100: state.off.per_100 || state.off.nutrients || null } : ((existing && existing.off_ref) || null),
     // إصلاح حذف الملصق: كان الرابط ينمسح لما يكون الملصق محفوظ في السحابة فقط (مثل فتح المنتج من الكمبيوتر)
@@ -1658,12 +1687,13 @@ async function saveForm() {
   };
   try {
     await DB.put(rec);
-    if (formCtx.editing && formCtx.editing !== barcode) await DB.del(formCtx.editing);
+    // غيّرت الباركود: نحذف القديم من الجهاز ومن السحابة (قبل كان يبقى في السحابة ويرجع كمنتج مكرر)
+    if (formCtx.editing && formCtx.editing !== barcode) await queueProductDelete(formCtx.editing);
   } catch (e) { toast('تعذر الحفظ — مساحة التخزين ممتلئة أو المتصفح يمنع التخزين'); return; }
   const c = await refreshCount();
   const draftId = formCtx.draftId || null;
   closeForm(); syncNow(true);
-  if (!draftId) { toast('تم الحفظ · ' + c + ' باركود في قاعدتك'); return; }
+  if (!draftId) { toast('تم الحفظ · عندك ' + c + ' منتج'); return; }
   await finishDraft(draftId);
   const rest = readyDrafts();
   if (rest.length) { toast('✓ انضاف لمنتجاتك — باقي ' + rest.length + '، هذا التالي'); openDraft(rest[0].id); }
@@ -1693,26 +1723,29 @@ async function queueProductDelete(code) {
 /* ---------- list ---------- */
 const codesOf = p => 1 + ((p && p.sizes) || []).filter(sz => sz && sz.barcode && String(sz.barcode) !== String(p.barcode)).length;
 const countCodes = all => all.reduce((n, p) => n + codesOf(p), 0);
-async function refreshCount() { let all = []; try { all = await DB.all(); } catch (e) {} const c = countCodes(all); ui.countNum.textContent = c; return c; }
+async function refreshCount() { let all = []; try { all = await allProducts(); } catch (e) {} ui.countNum.textContent = all.length; return all.length; }
+// صورة القائمة: نستخدم رابط السحابة إذا انرفعت (أخف بكثير من الصورة المخزّنة كنص طويل) — هذا اللي كان يثقّل القائمة مع كثرة المنتجات
+const thumbOf = p => (p && p.photo_uploaded !== false && p.photo_url && isOwnUrl(p.photo_url) && navigator.onLine) ? p.photo_url : ownPhoto(p);
 function rowHTML(p) {
-  const v = p.per_100 || p.nutrients || {}; const img = ownPhoto(p);
-  const codes = 1 + (p.sizes || []).filter(sz => sz && sz.barcode && String(sz.barcode) !== String(p.barcode)).length;
+  const v = p.per_100 || p.nutrients || {}; const img = thumbOf(p);
+  const codes = codesOf(p);
   return '<div class="row-wrap"><button class="row-item" data-code="' + esc(p.barcode) + '">'
-    + (img ? '<img class="thumb" src="' + esc(img) + '" alt="">' : '<div class="thumb">بدون صورة</div>')
-    + '<div class="row-main"><div class="row-name">' + esc(p.name) + '</div><div class="row-sub">' + (p.brand ? esc(p.brand) + ' · ' : '') + '<span class="mono">' + esc(p.barcode) + '</span></div>' + (() => { const b = []; if (p.category && catLabel(p.category)) b.push('<span class="pill ok">' + catIcon(catById(p.category)) + ' ' + esc(catLabel(p.category)) + '</span>'); if (codes > 1) b.push('<span class="pill">' + codes + ' باركود</span>'); if (!ownPhoto(p)) b.push('<span class="pill bad">بدون صورة</span>'); else if (!p.photo_ok) b.push('<span class="pill warn">صورة تحتاج تأكيد</span>'); return b.length ? '<div class="row-badges">' + b.join('') + '</div>' : ''; })() + strip(p.nutrients) + '</div>'
+    + (img ? '<img class="thumb" src="' + esc(img) + '" alt="" loading="lazy" decoding="async">' : '<div class="thumb">بدون صورة</div>')
+    + '<div class="row-main"><div class="row-name">' + esc(p.name) + '</div><div class="row-sub">' + (p.brand ? esc(p.brand) + ' · ' : '') + '<span class="mono">' + esc(p.barcode) + '</span></div>' + (() => { const b = []; if (p.category && catLabel(p.category)) b.push('<span class="pill ok">' + catIcon(catById(p.category)) + ' ' + esc(catLabel(p.category)) + '</span>'); if (codes > 1) b.push('<span class="pill">' + codes + ' باركود</span>'); if (p.complete === false) b.push('<span class="pill warn">ناقص الأساسيات</span>'); if (!ownPhoto(p)) b.push('<span class="pill bad">بدون صورة</span>'); else if (!p.photo_ok) b.push('<span class="pill warn">صورة تحتاج تأكيد</span>'); return b.length ? '<div class="row-badges">' + b.join('') + '</div>' : ''; })() + (missingOf(p.nutrients).length ? strip(p.nutrients) : '') + '</div>'
     + '<div class="row-kcal"><b>' + fmt(v.kcal) + '</b><span>kcal</span><span>' + (p.per_100 ? '/100' : '/حصة') + '</span></div></button>'
     + '<button class="row-del" data-del-code="' + esc(p.barcode) + '" aria-label="حذف"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button></div>';
 }
 async function renderList() {
-  let all = []; try { all = await DB.all(); } catch (e) {}
+  let all = []; try { all = (await allProducts()).slice(); } catch (e) {}
   all.sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
-  const q = ui.search.value.trim().toLowerCase();
-  let items = q ? all.filter(p => (p.name || '').toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q) || String(p.barcode).includes(q)) : all;
+  const q = latin(ui.search.value).trim().toLowerCase();
+  const hit = p => (p.name || '').toLowerCase().includes(q) || (p.name_en || '').toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q) || String(p.barcode).includes(q) || (p.sizes || []).some(sz => sz && sz.barcode && String(sz.barcode).includes(q));
+  let items = q ? all.filter(hit) : all;
   const cf = ui.catFilter.value; if (cf) items = items.filter(p => p.category === cf);
   if (listFilterMode === 'photo') items = items.filter(p => ownPhoto(p) && !p.photo_ok);
   else if (listFilterMode === 'nophoto') items = items.filter(p => !ownPhoto(p));
   ui.list.innerHTML = items.map(rowHTML).join('');
-  const totalCodes = countCodes(all); ui.listCount.textContent = all.length ? '(' + totalCodes + ')' : '';
+  const totalCodes = countCodes(all); ui.listCount.textContent = all.length ? '(' + all.length + ' منتج' + (totalCodes > all.length ? ' · ' + totalCodes + ' باركود' : '') + ')' : '';
   ui.listEmpty.hidden = items.length > 0;
   if (items.length) return;
   if (all.length) { ui.listEmpty.innerHTML = 'ما فيه منتجات تطابق البحث أو الفلتر الحالي.'; return; }
@@ -1736,7 +1769,7 @@ const stamp = () => new Date().toISOString().slice(0, 10);
 async function buildExport(withPhotos) {
   let all = []; try { all = await DB.all(); } catch (e) {}
   all.sort((a, b) => String(a.barcode).localeCompare(String(b.barcode)));
-  const products = all.map(p => { const q = Object.assign({}, p); delete q.synced; delete q.photo_uploaded; delete q.label_photo_uploaded; if (!withPhotos) q.photo = null; return q; });
+  const products = all.map(p => { const q = Object.assign({}, p); delete q.synced; delete q.photo_uploaded; delete q.label_photo_uploaded; if (!withPhotos) { q.photo = null; q.label_photo = null; } return q; });
   return {
     app: 'alyaf-products', version: 1, exported_at: now(), count: products.length,
     categories: cats.map(c => ({ id: c.id, name_ar: c.name_ar, name_en: c.name_en })),
@@ -1783,8 +1816,13 @@ async function importFile(file) {
     for (const p of arr) {
       if (!p || !p.barcode) { skipped++; continue; }
       const b = String(p.barcode); const ex = await DB.get(b);
-      if (!ex) { await DB.put(Object.assign({}, p, { barcode: b, synced: false, photo_uploaded: !p.photo })); added++; }
-      else if (String(p.updated_at || '') > String(ex.updated_at || '')) { await DB.put(Object.assign({}, ex, p, { barcode: b, synced: false, photo_uploaded: !p.photo })); updated++; }
+      const flags = { barcode: b, synced: false, photo_uploaded: !p.photo, label_photo_uploaded: !p.label_photo };
+      if (!ex) { await DB.put(Object.assign({}, p, flags)); added++; }
+      else if (String(p.updated_at || '') > String(ex.updated_at || '')) {
+        // ملف "بدون صور": لا نمسح الصور الموجودة عندك
+        const keep = {}; if (!p.photo && ex.photo) { keep.photo = ex.photo; keep.photo_uploaded = ex.photo_uploaded; } if (!p.label_photo && ex.label_photo) { keep.label_photo = ex.label_photo; keep.label_photo_uploaded = ex.label_photo_uploaded; }
+        await DB.put(Object.assign({}, ex, p, flags, keep)); updated++;
+      }
       else skipped++;
     }
     toast('استيراد: ' + added + ' جديد · ' + updated + ' محدّث · ' + skipped + ' متجاهل');
@@ -1800,7 +1838,7 @@ function setSession(j) {
 }
 function clearSession() { session = null; localStorage.removeItem(SESSION_KEY); }
 async function sbLogin(email, password) {
-  const r = await fetch(SB.url + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: SB.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+  const r = await fetchT(SB.url + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: SB.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(j.error_description || j.msg || j.message || ('HTTP ' + r.status));
   setSession(j);
@@ -1810,17 +1848,23 @@ async function sbRefresh(force) {
   if (!force && session.expires_at - Date.now() > 0) return session.access_token;
   if (refreshing) return refreshing;
   refreshing = (async () => {
-    const r = await fetch(SB.url + '/auth/v1/token?grant_type=refresh_token', { method: 'POST', headers: { apikey: SB.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: session.refresh_token }) });
-    if (!r.ok) { clearSession(); throw new Error('انتهت الجلسة — سجّل الدخول مرة ثانية'); }
+    const r = await fetchT(SB.url + '/auth/v1/token?grant_type=refresh_token', { method: 'POST', headers: { apikey: SB.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: session.refresh_token }) });
+    if (r.status === 400 || r.status === 401 || r.status === 403) { clearSession(); throw new Error('انتهت الجلسة — سجّل الدخول مرة ثانية'); }
+    if (!r.ok) throw new Error('تعذر تجديد الدخول (HTTP ' + r.status + ') — بنحاول بعدين');
     setSession(await r.json()); return session.access_token;
   })();
   try { return await refreshing; } finally { refreshing = null; }
+}
+// كل طلب له مهلة: قبل كان أي طلب يعلّق (نت ضعيف) يوقف المزامنة للأبد لين تحدّث الصفحة
+function fetchT(url, init, ms) {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), ms || 30000);
+  return fetch(url, Object.assign({}, init, { signal: ctl.signal })).catch(e => { throw (e && e.name === 'AbortError') ? new Error('انتهت مهلة الاتصال — النت ضعيف') : e; }).finally(() => clearTimeout(t));
 }
 async function sbFetch(path, opts) {
   opts = opts || {};
   const tok = await sbRefresh(false); if (!tok) throw new Error('nosession');
   const headers = Object.assign({ apikey: SB.key, 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, opts.headers || {});
-  const r = await fetch(SB.url + path, { method: opts.method || 'GET', headers, body: opts.body });
+  const r = await fetchT(SB.url + path, { method: opts.method || 'GET', headers, body: opts.body }, opts.timeout || (opts.body instanceof Blob ? 90000 : 30000));
   if (r.status === 401 && !opts._retried) { await sbRefresh(true); return sbFetch(path, Object.assign({}, opts, { _retried: true })); }
   if (!r.ok) { let msg = ''; try { const j = await r.json(); msg = j.message || j.msg || j.error_description || j.error || j.hint || JSON.stringify(j); } catch (e) {} throw new Error(msg || ('HTTP ' + r.status)); }
   if (r.status === 204) return null;
@@ -1832,7 +1876,7 @@ const tms = v => { const d = new Date(v || 0); return isNaN(d) ? 0 : d.getTime()
 async function sbUploadPhoto(barcode, dataUrl) {
   const blob = await (await fetch(dataUrl)).blob();
   const path = SB.bucket + '/' + barcode + '.jpg';
-  await sbFetch('/storage/v1/object/' + path, { method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'x-upsert': 'true', 'Cache-Control': '3600' }, body: blob });
+  await sbFetch('/storage/v1/object/' + path, { method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'x-upsert': 'true', 'cache-control': 'max-age=3600' }, body: blob });
   return SB.url + '/storage/v1/object/public/' + path + '?v=' + Date.now();
 }
 async function sbPull() {
@@ -1859,16 +1903,21 @@ async function sbPull() {
   }
   return n;
 }
+// قبل: لو فشل حذف منتج واحد من السحابة، توقفت المزامنة كلها (ولا شي يرتفع) — الحين نكمل ونعيد المحاولة بعدين
 async function flushProductDeletes() {
-  const q = JSON.parse(localStorage.getItem(DELQ_KEY) || '[]');
-  while (q.length) {
-    const code = q[0], filter = 'barcode=eq.' + encodeURIComponent(code);
-    await sbFetch('/rest/v1/products?' + filter, { method: 'DELETE', headers: { Prefer: 'return=representation' } });
-    const remaining = await sbFetch('/rest/v1/products?select=barcode&' + filter);
-    if (!Array.isArray(remaining) || remaining.length) throw new Error('لم يتأكد حذف المنتج من Supabase — تحقق من صلاحية الحذف للحساب في product_editors');
-    await DB.del(code);
-    q.shift(); localStorage.setItem(DELQ_KEY, JSON.stringify(q));
+  let q = []; try { q = JSON.parse(localStorage.getItem(DELQ_KEY) || '[]'); } catch (e) {}
+  const left = []; let err = '';
+  for (const code of q) {
+    try {
+      const filter = 'barcode=eq.' + encodeURIComponent(code);
+      await sbFetch('/rest/v1/products?' + filter, { method: 'DELETE', headers: { Prefer: 'return=representation' } });
+      const remaining = await sbFetch('/rest/v1/products?select=barcode&' + filter);
+      if (!Array.isArray(remaining) || remaining.length) throw new Error('ما تأكد الحذف من السحابة — تحقق إن حسابك له صلاحية الحذف');
+      await DB.del(code);
+    } catch (e) { left.push(code); err = String(e.message || e); }
   }
+  localStorage.setItem(DELQ_KEY, JSON.stringify(left));
+  return left.length ? err : '';
 }
 async function reconcileProductCache() {
   // Also removes stale cached rows left by older versions or other devices.
@@ -1881,12 +1930,15 @@ async function reconcileProductCache() {
   }
   for (const p of await DB.all()) if (p.synced === true && !remote.has(p.barcode)) await DB.del(p.barcode);
 }
+let syncAgain = false;
 async function syncNow(silent) {
-  if (!sbConfigured() || !session || syncing) return;
+  if (!sbConfigured() || !session) return;
+  if (syncing) { syncAgain = true; return; } // انطلب وهو شغّال: نعيدها بعد ما يخلص عشان آخر تعديل يرتفع
   if (!navigator.onLine) { if (!silent) toast('ما فيه إنترنت — محفوظ محليًا وبيتزامن لما يرجع الاتصال'); return; }
   syncing = true; renderSync('جاري المزامنة…');
   try {
-    await flushProductDeletes();
+    const delErr = await flushProductDeletes();
+    if (delErr && !silent) toast('⚠️ فيه منتج محذوف ما انحذف من السحابة: ' + delErr.slice(0, 100));
     await reconcileProductCache();
     await syncCategories();
     const all = await DB.all(); let upFail = 0, upErr = '';
@@ -1894,9 +1946,15 @@ async function syncNow(silent) {
       const needPhoto = p.photo && (!p.photo_uploaded || !isOwnUrl(p.photo_url));
       const needLabel = p.label_photo && (!p.label_photo_uploaded || !p.label_photo_url);
       if (!needPhoto && !needLabel) continue;
-      if (needPhoto) { try { p.photo_url = await sbUploadPhoto(p.barcode, p.photo); p.photo_uploaded = true; p.synced = false; } catch (e) { upFail++; upErr = String(e.message || e); } }
-      if (needLabel) { try { p.label_photo_url = await sbUploadPhoto('labels/' + p.barcode, p.label_photo); p.label_photo_uploaded = true; p.synced = false; } catch (e) { upFail++; upErr = String(e.message || e); } }
-      await DB.put(p);
+      let photoUrl = null, labelUrl = null;
+      if (needPhoto) { try { photoUrl = await sbUploadPhoto(p.barcode, p.photo); } catch (e) { upFail++; upErr = String(e.message || e); } }
+      if (needLabel) { try { labelUrl = await sbUploadPhoto('labels/' + p.barcode, p.label_photo); } catch (e) { upFail++; upErr = String(e.message || e); } }
+      if (!photoUrl && !labelUrl) continue;
+      // نقرأ النسخة الحالية من الجهاز: لو عدّلت المنتج وقت الرفع ما نرجّع النسخة القديمة فوق تعديلك
+      const cur = await DB.get(p.barcode); if (!cur) continue;
+      if (photoUrl && cur.photo === p.photo) { cur.photo_url = photoUrl; cur.photo_uploaded = true; cur.synced = false; }
+      if (labelUrl && cur.label_photo === p.label_photo) { cur.label_photo_url = labelUrl; cur.label_photo_uploaded = true; cur.synced = false; }
+      await DB.put(cur);
     }
     const dirty = (await DB.all()).filter(p => p.synced === false);
     const rows = dirty.map(toRow);
@@ -1915,8 +1973,8 @@ async function syncNow(silent) {
     if (upFail) toast('⚠️ ' + upFail + ' صورة ما قدرت ترتفع للسحابة: ' + upErr.slice(0, 120));
     else if (!silent) toast('تمت المزامنة · رفع ' + dirty.length + ' · سحب ' + pulled);
     if (currentView === 'list') renderList(); refreshCount(); if (currentView === 'settings') renderSync();
-  } catch (e) { toast('فشلت المزامنة: ' + (e.message || e)); }
-  finally { syncing = false; renderSync(); }
+  } catch (e) { if (!silent || !/nosession/.test(String(e.message || e))) toast('فشلت المزامنة: ' + (e.message || e)); }
+  finally { syncing = false; renderSync(); if (syncAgain) { syncAgain = false; setTimeout(() => syncNow(true), 300); } }
 }
 function resetSbConfig() {
   if (syncing || refreshing) { toast('انتظر اكتمال المزامنة قبل تغيير المشروع'); return; }
@@ -1965,7 +2023,7 @@ function renderSync(statusText) {
 const AI_CONFIG_KEY = 'alyaf-ai-config';
 const AI_PROVIDERS = {
   openai:     { label: 'OpenAI (GPT)',       models: ['gpt-4o-mini', 'gpt-4.1-mini', 'gpt-5-mini'],                                                   hint: 'مفتاح يبدأ بـ sk-' },
-  anthropic:  { label: 'Anthropic (Claude)', models: ['claude-haiku-4-5', 'claude-sonnet-4-5'],                                                        hint: 'مفتاح يبدأ بـ sk-ant-' },
+  anthropic:  { label: 'Anthropic (Claude)', models: ['claude-haiku-4-5', 'claude-sonnet-5'],                                                        hint: 'مفتاح يبدأ بـ sk-ant-' },
   gemini:     { label: 'Google Gemini',      models: ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'], fast: ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-2.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash'], hint: 'مفتاح يبدأ بـ AIza أو AQ.' },
   groq:       { label: 'Groq (مجاني)',       models: ['qwen/qwen3.8-27b', 'qwen/qwen3.6-27b', 'meta-llama/llama-4-scout-17b-16e-instruct'], hint: 'مفتاح يبدأ بـ gsk_' },
   openrouter: { label: 'OpenRouter',         models: ['google/gemini-2.5-flash', 'openai/gpt-4o-mini'],                                              hint: 'مفتاح يبدأ بـ sk-or-' }
@@ -2043,7 +2101,8 @@ async function aiRequest(model, dataUrls, prompt, signal) {
 /* كل موديل له مهلة: لو علّق (Groq أحيانًا) نقطعه وننتقل للموديل اللي بعده تلقائيًا، وزر "إيقاف" يقطع كل شي فورًا */
 const AI_TIMEOUT = { fast: 25000, accurate: 50000 };
 async function aiAnalyze(images, prompt, signal, onTry) {
-  const pr = AI_PROVIDERS[ai.provider]; const models = ai.model ? [ai.model] : ((ai.speed === 'fast' && pr.fast) ? pr.fast : pr.models);
+  const pr = AI_PROVIDERS[ai.provider]; const base = (ai.speed === 'fast' && pr.fast) ? pr.fast : pr.models;
+  const models = ai.model ? [ai.model].concat(base.filter(m => m !== ai.model)) : base;
   const limit = AI_TIMEOUT[ai.speed] || AI_TIMEOUT.fast;
   let last = null;
   for (let i = 0; i < models.length; i++) {
@@ -2082,7 +2141,10 @@ function applyLabel(r) {
   const val = v => (typeof v === 'string') ? num(v) : ((typeof v === 'number' && isFinite(v)) ? v : null);
   const mark = el => { const f = el.closest('.field'); if (f) { f.classList.add('ai'); f.classList.remove('missing'); } };
   let count = 0;
-  NUTRIENTS.forEach(x => { const el = $('#n_' + x.key); el.value = ''; const fd = el.closest('.field'); if (fd) fd.classList.remove('ai', 'missing'); });
+  const got = {}; NUTRIENTS.forEach(x => { const v = val(r.nutrients ? r.nutrients[x.key] : null); if (v != null && v >= 0) got[x.key] = v; });
+  const hasVals = Object.keys(got).length > 0;
+  // قبل: كان يمسح كل القيم اللي كتبتها حتى لو التحليل ما رجّع شي
+  if (hasVals) NUTRIENTS.forEach(x => { const el = $('#n_' + x.key); el.value = ''; const fd = el.closest('.field'); if (fd) fd.classList.remove('ai', 'missing'); });
   if (r.unit === 'ml' && state.unit !== 'ml') setUnit('ml'); else if (r.unit === 'g' && state.unit !== 'g') setUnit('g');
   let serv = val(r.serving_size), n = val(r.servings_per_package), pkg = val(r.package_size);
   if (serv > 0 && n > 0) pkg = r2(serv * n);
@@ -2091,8 +2153,8 @@ function applyLabel(r) {
   if (serv > 0) { ui.fServ.value = fmtIn(r2(serv)); mark(ui.fServ); }
   if (n > 0) { ui.fServN.value = fmtIn(r2(n)); mark(ui.fServN); }
   if (pkg > 0) { setPkgBase(pkg); mark(ui.fPkg); }
-  setBasis(r.basis === 'serving' ? 'serving' : '100', false);
-  NUTRIENTS.forEach(x => { const v = val(r.nutrients ? r.nutrients[x.key] : null); if (v != null && v >= 0) { const el = $('#n_' + x.key); el.value = fmtIn(r2(v)); mark(el); count++; } });
+  if (hasVals) setBasis(r.basis === 'serving' ? 'serving' : '100', false);
+  NUTRIENTS.forEach(x => { if (got[x.key] != null) { const el = $('#n_' + x.key); el.value = fmtIn(r2(got[x.key])); mark(el); count++; } });
   const nameAr = r.name_ar || r.name; if (nameAr && String(nameAr).trim()) { ui.fName.value = String(nameAr).trim(); mark(ui.fName); }
   if (r.name_en && String(r.name_en).trim()) { ui.fNameEn.value = String(r.name_en).trim(); mark(ui.fNameEn); if (r.name_en_source === 'translated') ui.fNameEn.closest('.field').classList.add('translated'); }
   if (r.brand && String(r.brand).trim()) {
@@ -2101,6 +2163,7 @@ function applyLabel(r) {
     else { pendingBrand = raw; renderBrandSuggest(); }
   }
   if (r.category && catById(r.category) && !state.category) { state.category = r.category; renderCat(); }
+  queueSaveDraft();
   return count;
 }
 function sanityCheck(vals, basisAmt) {
@@ -2188,7 +2251,7 @@ function queueSaveDraft() { clearTimeout(draftSaveT); draftSaveT = setTimeout(sa
 // كل منتج مصوّر = "مسودة" تنحفظ فورًا على الجهاز، وترتفع للسحابة (Supabase Storage في مجلد drafts/) لما يكون فيه دخول وإنترنت،
 // فتظهر على الكمبيوتر في "بانتظار التعبئة". لما تضغط "تم" ينحفظ كمنتج عادي وتنحذف المسودة من كل الأجهزة.
 const DRAFT_DELQ_KEY = projectKey('alyaf-draft-deletes');
-let cap = null, draftsCache = [], draftsSyncing = false, queueErr = '';
+let cap = null, capBusy = 0, draftsCache = [], draftsSyncing = false, queueErr = '';
 const newDraftId = () => 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const draftDelQ = () => { try { return JSON.parse(localStorage.getItem(DRAFT_DELQ_KEY) || '[]'); } catch (e) { return []; } };
 const setDraftDelQ = q => { try { localStorage.setItem(DRAFT_DELQ_KEY, JSON.stringify(q)); } catch (e) {} };
@@ -2203,13 +2266,14 @@ async function capPersist() {
   try { await Drafts.put(cap); return true; } catch (e) { toast('تعذر حفظ الصورة على الجهاز — مساحة المتصفح ممتلئة؟'); return false; }
 }
 async function capPhoto(kind, file) {
-  capEnsure(); const id = cap.id;
-  try {
-    if (kind === 'front') cap.front = await enhanceImage(await compressImage(file, 900, 0.85));
-    else cap.label = await compressImage(file, 1600, 0.82);
-  } catch (e) { toast('تعذر قراءة الصورة'); return; }
-  await capPersist(); renderCapture();
-  if (!cap.codes.length) findCodeInPhoto(file, id);
+  const c = capEnsure(); capBusy++; renderCapture();
+  let img = null;
+  try { img = kind === 'front' ? await enhanceImage(await compressImage(file, 900, 0.85)) : await compressImage(file, 1600, 0.82); }
+  catch (e) { toast('تعذر قراءة الصورة — جرّب تصوّرها مرة ثانية'); }
+  finally { capBusy--; }
+  if (img && cap === c) { if (kind === 'front') c.front = img; else c.label = img; await capPersist(); }
+  renderCapture();
+  if (img && cap === c && !c.codes.length) findCodeInPhoto(file, c.id);
 }
 async function findCodeInPhoto(file, id) {
   try {
@@ -2227,6 +2291,7 @@ function capScan() {
   }, { multi: true, startCount: seen.size, hint: 'وجّه الكاميرا على باركود المنتج', onDone: () => renderCapture() });
 }
 async function capSave() {
+  if (capBusy) { toast('لحظة… الصورة للحين تتجهّز'); return; }
   if (!cap || (!cap.front && !cap.label)) { toast('صوّر المنتج أو الملصق أولًا'); return; }
   cap.note = ui.capNote.value.trim(); cap.status = 'ready'; cap.uploaded = false;
   if (!(await capPersist())) return;
@@ -2261,7 +2326,8 @@ async function renderCapture() {
   html += '<button type="button" class="btn ' + (codes.length ? 'ghost' : 'primary') + '" id="capScanBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 9v6M11 9v6M15 9v6"/></svg>' + (codes.length ? 'امسح حجم ثاني' : 'امسح الباركود') + '</button>';
   ui.capCodes.innerHTML = html + '<div class="code-note" id="capDupNote" hidden></div>';
   $('#capScanBtn').onclick = capScan;
-  ui.capSave.disabled = !(c.front || c.label);
+  ui.capSave.disabled = !(c.front || c.label) || capBusy > 0;
+  ui.capSave.textContent = capBusy > 0 ? 'لحظة… تجهيز الصورة' : 'احفظ وصوّر التالي';
   ui.capDiscard.hidden = !cap;
   if (cap && ui.capNote.value !== (cap.note || '') && document.activeElement !== ui.capNote) ui.capNote.value = cap.note || '';
   const today = new Date().toDateString();
@@ -2340,29 +2406,41 @@ async function sbUploadJSON(path, obj) {
   await sbFetch('/storage/v1/object/' + SB.bucket + '/' + path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-upsert': 'true', 'cache-control': 'max-age=0' }, body: JSON.stringify(obj) });
 }
 const draftInfo = d => ({ id: d.id, v: 1, codes: d.codes || [], note: d.note || '', front_url: d.front_url || null, label_url: d.label_url || null, created_at: d.created_at, by: (session && session.email) || '', done: false });
+// نقرأ قائمة الملفات صفحة صفحة (قبل: أول 1000 ملف فقط — ومع الوقت كانت المنتجات الجديدة تختفي من القائمة وتنحذف من الجهاز)
 async function listCloudDrafts() {
-  const items = await sbFetch('/storage/v1/object/list/' + SB.bucket, { method: 'POST', body: JSON.stringify({ prefix: 'drafts', limit: 1000, offset: 0, sortBy: { column: 'name', order: 'asc' } }) });
-  if (!Array.isArray(items)) throw new Error('رد غير متوقع من التخزين');
-  const names = items.map(o => o && o.name).filter(n => n && /\.json$/.test(n));
-  const ids = new Set(names.map(n => n.replace(/\.json$/, ''))), done = new Set(), infos = [];
-  await Promise.all(names.map(async n => {
-    try {
-      let j = await sbFetch('/storage/v1/object/' + SB.bucket + '/drafts/' + n);
-      if (typeof j === 'string') j = JSON.parse(j);
-      if (!j || !j.id) return;
-      if (j.done) done.add(j.id); else infos.push(j);
-    } catch (e) {}
-  }));
+  const names = [];
+  for (let offset = 0; offset < 50000; offset += 1000) {
+    const items = await sbFetch('/storage/v1/object/list/' + SB.bucket, { method: 'POST', body: JSON.stringify({ prefix: 'drafts', limit: 1000, offset, sortBy: { column: 'name', order: 'asc' } }) });
+    if (!Array.isArray(items)) throw new Error('رد غير متوقع من التخزين');
+    items.forEach(o => { if (o && o.name) names.push(o.name); });
+    if (items.length < 1000) break;
+  }
+  const ids = new Set(names.filter(n => /\.json$/.test(n)).map(n => n.replace(/\.json$/, '')));
+  const done = new Set(names.filter(n => /\.done$/.test(n)).map(n => n.replace(/\.done$/, '')));
+  const infos = [], known = new Set(draftsCache.map(d => d.id));
+  // نفتح ملف المعلومات بس للمنتجات اللي ما عندنا (أو علامات "خلصت" القديمة داخل الملف نفسه)
+  const need = [...ids].filter(id => !done.has(id) && (!known.has(id) || draftsCache.some(d => d.id === id && d.uploaded && !d.checked)));
+  for (let i = 0; i < need.length; i += 6) {
+    await Promise.all(need.slice(i, i + 6).map(async id => {
+      try {
+        let j = await sbFetch('/storage/v1/object/' + SB.bucket + '/drafts/' + id + '.json');
+        if (typeof j === 'string') j = JSON.parse(j);
+        if (!j || !j.id) return;
+        if (j.done) { done.add(id); sbUploadJSON('drafts/' + id + '.done', { done: true }).catch(() => {}); }
+        else infos.push(j);
+      } catch (e) {}
+    }));
+  }
   return { ids, done, infos };
 }
 async function flushDraftDeletes() {
   const q = draftDelQ(); const left = [];
   for (const id of q) {
-    const paths = ['drafts/' + id + '.json', 'drafts/' + id + '-front.jpg', 'drafts/' + id + '-label.jpg'];
+    const paths = ['drafts/' + id + '.json', 'drafts/' + id + '-front.jpg', 'drafts/' + id + '-label.jpg', 'drafts/' + id + '.done'];
     try {
       let gone = false;
       try { const r = await sbFetch('/storage/v1/object/' + SB.bucket, { method: 'DELETE', body: JSON.stringify({ prefixes: paths }) }); gone = Array.isArray(r) && r.some(x => x && /\.json$/.test(String(x.name || ''))); } catch (e) {}
-      if (!gone) await sbUploadJSON('drafts/' + id + '.json', { id, done: true, done_at: now() }); // لو الحساب ما له صلاحية حذف: نعلّمها "خلصت"
+      if (!gone) await sbUploadJSON('drafts/' + id + '.done', { done: true, done_at: now() }); // الحساب ما له صلاحية حذف: نحط علامة "خلصت"
     } catch (e) { left.push(id); }
   }
   setDraftDelQ(left);
@@ -2400,6 +2478,7 @@ async function syncDrafts(silent) {
       if (d.status !== 'ready' || !d.uploaded) continue;
       if (formCtx && formCtx.draftId === d.id) continue; // لا نحذف اللي مفتوح الحين
       if (!cloud.ids.has(d.id) || cloud.done.has(d.id)) await Drafts.del(d.id);
+      else if (!d.checked) { const cur = await Drafts.get(d.id).catch(() => null); if (cur) { cur.checked = true; await Drafts.put(cur).catch(() => {}); } }
     }
   } catch (e) { queueErr = String(e.message || e); if (!silent) toast('تعذر تحديث القائمة: ' + queueErr.slice(0, 120)); }
   finally { draftsSyncing = false; await loadDrafts(); updateDraftBadge(); if (currentView === 'entry') { renderQueue(); renderCapture(); } }
@@ -2426,7 +2505,7 @@ async function tryOffFill(code) {
   aiStatusSet(bits.length ? 'ok' : 'warn', bits.length
     ? '✓ من Open Food Facts: ' + bits.join(' · ') + '. راجع المظلل بالأخضر — والأفضل تصوّر الملصق وتضغط "حلّل الصور" للتأكد.'
     : 'المنتج موجود في Open Food Facts لكن بياناته ناقصة — صوّر الملصق واضغط "حلّل الصور".');
-  showSanity();
+  showSanity(); queueSaveDraft();
 }
 function openEntry() {
   if (ui.form && !ui.form.hidden) return;
@@ -2439,7 +2518,7 @@ async function go(v) {
   ui.tabs.forEach(t => t.classList.toggle('active', t.dataset.go === v));
   ui.viewEntry.classList.toggle('active', v === 'entry'); ui.viewScan.classList.toggle('active', v === 'scan'); ui.viewList.classList.toggle('active', v === 'list'); ui.viewSettings.classList.toggle('active', v === 'settings');
   window.scrollTo(0, 0);
-  if (v === 'list') renderList();
+  if (v === 'list') { dbVer++; renderList(); } // نقرأ من جديد عند فتح القائمة (لو فيه تبويب ثاني عدّل شي)
   else if (v === 'settings') { renderSync(); renderAi(); renderCats(); renderBrands(); }
   else if (v === 'entry') { renderEntry(); syncDrafts(true); }
   else if (v === 'scan' && wasScanning) { wasScanning = false; startScanner(); }
@@ -2495,8 +2574,9 @@ function wire() {
   const toggleRefZoom = () => { const z = ui.refStage.classList.toggle('zoomed'); ui.refZoom.textContent = z ? 'تصغير' : 'تكبير'; };
   ui.refZoom.onclick = toggleRefZoom; ui.refImg.onclick = toggleRefZoom;
   ui.form.addEventListener('input', () => { if (formCtx) queueSaveDraft(); });
+  ui.form.addEventListener('click', e => { if (formCtx && e.target.closest('.seg button, .cat-tile, .s-del, .chip')) queueSaveDraft(); });
   ui.countPill.onclick = () => go('list');
-  ui.search.addEventListener('input', renderList);
+  let searchT = null; ui.search.addEventListener('input', () => { clearTimeout(searchT); searchT = setTimeout(renderList, 180); });
   ui.listFilter.addEventListener('click', e => { const c = e.target.closest('.chip'); if (!c) return; listFilterMode = c.dataset.f; ui.listFilter.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === c)); renderList(); });
   ui.list.addEventListener('click', async e => {
     const d = e.target.closest('.row-del');
@@ -2537,11 +2617,11 @@ function wire() {
   ui.formSave.onclick = saveForm; ui.formSaveTop.onclick = saveForm;
   ui.btnDelete.onclick = deleteCurrent;
   ui.btnPhoto.onclick = () => { saveDraft(); ui.filePhoto.click(); };
-  ui.filePhoto.onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { state.photo = await enhanceImage(await compressImage(f, 800, 0.85)); state.photoOk = true; state.photoBackup = null; state.photoFromLabel = false; renderPhoto(); saveDraft(); } catch (err) { toast('تعذر قراءة الصورة: ' + (err.message || err)); } };
-  ui.btnPhotoRemove.onclick = () => { state.photo = null; state.photoUrl = null; state.photoOk = false; state.photoBackup = null; renderPhoto(); };
+  ui.filePhoto.onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { state.photo = await enhanceImage(await compressImage(f, 800, 0.85)); state.photoOk = true; renderPhoto(); saveDraft(); } catch (err) { toast('تعذر قراءة الصورة: ' + (err.message || err)); } };
+  ui.btnPhotoRemove.onclick = () => { state.photo = null; state.photoUrl = null; state.photoOk = false; renderPhoto(); };
   ui.btnPhotoOk.onclick = () => { state.photoOk = true; renderPhoto(); toast('تم تأكيد صورة المنتج'); };
   const openLightbox = src => { if (!src) return; ui.lightboxImg.src = src; ui.lightbox.hidden = false; };
-  ui.lightbox.onclick = () => { ui.lightbox.hidden = true; ui.lightboxImg.src = ''; };
+  ui.lightbox.onclick = () => { ui.lightbox.hidden = true; ui.lightboxImg.removeAttribute('src'); };
   ui.photoPreview.onclick = () => openLightbox(ui.photoPreview.src);
   ui.labelThumb.onclick = () => openLightbox(state.labelPhoto || state.labelUrl);
   ui.btnUseOff.onclick = useOffValues;
@@ -2606,7 +2686,7 @@ function wire() {
     const c = e.target.closest('[data-b]'); if (!c) return;
     const name = c.dataset.b;
     if (!confirm('حذف العلامة "' + name + '" من الاقتراحات؟ (المنتجات المسجلة عليها ما تتأثر)')) return;
-    brands = brands.filter(x => x !== name); try { localStorage.setItem(BRANDS_KEY, JSON.stringify(brands)); } catch (x) {}
+    brands = brands.filter(x => x !== name); try { localStorage.setItem(BRANDS_KEY, JSON.stringify(brands)); const h = hiddenBrands(); if (!h.includes(name)) h.push(name); localStorage.setItem(BRANDS_HIDE_KEY, JSON.stringify(h)); } catch (x) {}
     renderBrands(); toast('تم حذف العلامة من الاقتراحات');
   });
   ui.fBrand.addEventListener('focus', renderBrandSuggest); ui.fBrand.addEventListener('input', renderBrandSuggest);
@@ -2624,7 +2704,7 @@ function wire() {
     const i = ins.indexOf(e.target);
     if (i > -1 && i < ins.length - 1) ins[i + 1].focus(); else e.target.blur();
   });
-  document.addEventListener('visibilitychange', () => { if (document.hidden && scanning) stopScanner(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) return; if (scanning) stopScanner(); if (miniActive) closeMiniScan(); });
   // أي أرقام عربية (٠١٢) تتحوّل فورًا لأرقام إنجليزية في كل الخانات الرقمية
   document.addEventListener('input', e => {
     const el = e.target; if (!(el instanceof HTMLInputElement)) return;
@@ -2642,11 +2722,15 @@ function wire() {
   try { await openDB(); } catch (e) { useLS = true; }
   await refreshCount(); loadBrands(); loadCats();
   window.addEventListener('online', () => { syncNow(true); syncDrafts(true); });
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && currentView === 'entry' && (!ui.form || ui.form.hidden)) syncDrafts(true); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) return; dbVer++; refreshCount(); if (currentView === 'entry' && (!ui.form || ui.form.hidden)) syncDrafts(true); });
   // نكمل آخر منتج كنت تصوّره لو انقفلت الصفحة
   await loadDrafts();
   const capturing = draftsCache.filter(d => d.status === 'capturing').sort((a, b) => String(b.updated_at || b.created_at).localeCompare(String(a.updated_at || a.created_at)));
-  if (capturing.length) { cap = capturing[0]; for (const d of capturing.slice(1)) if (!d.front && !d.label) Drafts.del(d.id).catch(() => {}); }
+  if (capturing.length) {
+    cap = capturing[0];
+    for (const d of capturing.slice(1)) { if (!d.front && !d.label) await Drafts.del(d.id).catch(() => {}); else { d.status = 'ready'; d.uploaded = false; await Drafts.put(d).catch(() => {}); } }
+    await loadDrafts();
+  }
   renderEntry();
   await restoreDraft();
   syncNow(true); syncDrafts(true);
