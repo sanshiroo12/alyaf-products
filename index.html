@@ -52,6 +52,33 @@ button:active{transform:scale(.97)}
 main{padding:0 16px}
 .view{display:none}.view.active{display:block}
 
+/* ---------- barcode intake ---------- */
+.intake-code-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:14px}
+.intake-code-row input{direction:ltr;text-align:center;font-variant-numeric:tabular-nums}
+.intake-code-row .btn{white-space:nowrap}
+.intake-check{margin-top:10px;line-height:1.55}
+.intake-check button{display:block;margin-top:8px;color:var(--green);font-weight:800;text-decoration:underline;text-underline-offset:3px}
+.intake-size-box{margin-top:12px;padding:12px;background:var(--card-2);border:1px solid var(--line);border-radius:16px}
+.intake-size-title{display:block;margin-bottom:8px;font-weight:800}
+.intake-size-input{display:grid;grid-template-columns:minmax(0,1fr) 98px auto;gap:8px}
+.intake-size-input input{min-width:0;text-align:center}
+.intake-size-input select{width:98px}
+.intake-sizes-title{margin:18px 0 8px;font-size:16px;font-weight:800}
+.intake-sizes{display:flex;flex-direction:column;gap:8px}
+.intake-size-row{display:grid;grid-template-columns:34px minmax(0,1fr) minmax(82px,100px) 84px 38px;align-items:center;gap:7px;padding:9px;background:var(--card-2);border:1px solid var(--line);border-radius:14px}
+.intake-index{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:var(--green-tint);color:var(--green);font-weight:800}
+.intake-size-row .mono{direction:ltr;text-align:center;font-size:12px;overflow:hidden;text-overflow:ellipsis}
+.intake-size-row input{min-width:0;text-align:center;padding:8px 6px!important;font-size:15px!important}
+.intake-size-row select{min-width:0;padding:8px 28px 8px 8px;font-size:14px}
+.intake-size-row .s-del{width:34px;height:34px}
+.intake-actions{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.intake-actions .btn{width:100%}
+.intake-mark{width:46px;height:58px;border-radius:10px;background:var(--green-tint);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:23px;flex:none}
+.intake-queue-msg{margin-top:10px}
+.requests{max-width:980px;margin:0 auto}
+.intake-card .shots{margin-top:18px}
+@media(max-width:380px){.intake-size-row{grid-template-columns:28px minmax(0,1fr) 74px 72px 34px;gap:5px;padding:7px}.intake-size-row .s-del{width:30px;height:30px}.intake-size-input{grid-template-columns:minmax(0,1fr) 84px auto;gap:6px}.intake-size-input select{width:84px}}
+
 /* ---------- scanner ---------- */
 .reader-wrap{position:relative;background:#000;border-radius:var(--r-card);overflow:hidden;height:min(58vh,520px);min-height:260px;border:1px solid var(--line);box-shadow:0 18px 36px rgba(0,0,0,.18)}
 #video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;background:#000}
@@ -390,12 +417,18 @@ input::placeholder{color:var(--faint)}
 
 /* لوحة الصورة الكبيرة جنب النموذج — على الكمبيوتر فقط */
 .ref-pane{display:none}
+.request-photo-stack{display:none}
+.request-photo{display:flex;flex-direction:column;gap:7px;min-height:0;margin:0;padding:9px;border:1px solid var(--line);border-radius:16px;background:var(--card)}
+.request-photo figcaption{flex:none;color:var(--muted);font-size:13px;font-weight:800}
+.request-photo img{width:100%;height:100%;min-height:0;flex:1;object-fit:contain;border-radius:10px;background:#000}
 @media (min-width:980px){
   .form.has-ref{max-width:1240px;display:grid;grid-template-columns:520px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"top top" "body ref" "foot ref"}
   .form.has-ref .form-top{grid-area:top}
   .form.has-ref .form-body{grid-area:body}
   .form.has-ref .form-foot{grid-area:foot}
   .form.has-ref .ref-pane{grid-area:ref;display:flex;flex-direction:column;gap:10px;padding:12px 16px 16px;border-inline-start:1px solid var(--line);background:var(--surface);min-height:0}
+  .form.has-request-photos .ref-bar,.form.has-request-photos .ref-stage{display:none}
+  .form.has-request-photos .request-photo-stack{display:grid;grid-template-rows:1fr 1fr;gap:10px;flex:1;min-height:0}
 }
 .ref-bar{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .ref-tools{display:flex;gap:6px}
@@ -429,32 +462,52 @@ input::placeholder{color:var(--faint)}
   </header>
 
   <main>
-    <!-- ================= تسجيل: صوّر في البقالة ثم عبّي من الكمبيوتر ================= -->
-    <section id="view-entry" class="view active">
+    <!-- ================= تسجيل المنتج ================= -->
+    <section id="view-intake" class="view active">
       <div class="entry">
-        <div class="card cap" id="capCard">
-          <div class="cap-head"><h2>صوّر منتج</h2><small id="capToday"></small></div>
-          <p class="cap-sub">في البقالة: صورة للمنتج وصورة للملصق وامسح الباركود، ثم «احفظ وصوّر التالي». التعبئة بعدين من الكمبيوتر.</p>
+        <div class="card intake-card cap" id="capCard">
+          <div class="cap-head"><h2>تسجيل منتج</h2><small id="capToday"></small></div>
+          <p class="cap-sub">امسح باركود كل حجم واعتمده، ثم صوّر واجهة المنتج والملصق الغذائي وأرسله إلى الطلبات.</p>
+          <div class="intake-code-row">
+            <input id="intakeCode" inputmode="numeric" placeholder="امسح الباركود أو اكتبه" enterkeyhint="done" autocomplete="off">
+            <button type="button" class="btn ghost" id="intakeScan">مسح بالكاميرا</button>
+          </div>
+          <div id="intakeStatus" class="status info intake-check" role="status" hidden></div>
+          <div id="intakeSizeBox" class="intake-size-box" hidden>
+            <label class="intake-size-title" for="intakeAmount">حجم العبوة لهذا الباركود</label>
+            <div class="intake-size-input">
+              <input id="intakeAmount" inputmode="decimal" placeholder="مثال: 500" autocomplete="off">
+              <select id="intakeUnit" aria-label="وحدة حجم العبوة"><option value="g">غرام</option><option value="l">لتر</option></select>
+              <button type="button" class="btn primary" id="intakeApprove">اعتماد</button>
+            </div>
+          </div>
+          <h3 id="intakeSizesTitle" class="intake-sizes-title" hidden>الأحجام والباركودات المعتمدة</h3>
+          <div id="intakeSizes" class="intake-sizes"></div>
           <div class="shots">
             <button type="button" class="shot" id="shotFront"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>صورة المنتج</span><small>الواجهة الأمامية</small></button>
             <button type="button" class="shot" id="shotLabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h5"/></svg><span>الملصق الغذائي</span><small>جدول القيم كامل وواضح</small></button>
           </div>
           <input type="file" id="fileCapFront" accept="image/*" capture="environment" hidden>
           <input type="file" id="fileCapLabel" accept="image/*" capture="environment" hidden>
-          <div class="cap-codes" id="capCodes"></div>
-          <input class="cap-note" id="capNote" placeholder="ملاحظة (اختياري) مثل: له حجمين" autocomplete="off">
+          <div class="cap-codes" id="capCodes" hidden></div>
+          <input class="cap-note" id="capNote" type="hidden" autocomplete="off">
           <div class="cap-actions">
-            <button type="button" class="btn primary big" id="capSave">احفظ وصوّر التالي</button>
-            <button type="button" class="link danger" id="capDiscard" hidden>إلغاء هذا المنتج</button>
+            <button type="button" class="btn primary big" id="capSave" disabled>إرسال إلى الطلبات</button>
+            <button type="button" class="link danger" id="capDiscard" hidden>إلغاء التسجيل الجاري</button>
           </div>
         </div>
+      </div>
+    </section>
 
+    <!-- ================= الطلبات ================= -->
+    <section id="view-requests" class="view">
+      <div class="requests">
         <div class="card queue" id="queueCard">
-          <div class="queue-head"><h2>بانتظار التعبئة <span class="muted" id="queueCount"></span></h2><button type="button" class="tool" id="queueRefresh">تحديث</button></div>
+          <div class="queue-head"><h2>طلبات توثيق المنتجات <span class="muted" id="queueCount"></span></h2><button type="button" class="tool" id="queueRefresh">تحديث</button></div>
+          <p class="cap-sub">افتح الطلب، راجع صور المنتج والملصق، وأدخل القيم الغذائية ثم اعتمده لإضافته إلى المنتجات.</p>
           <div id="queueMsg" class="status info queue-msg" hidden></div>
           <div id="queueList" class="q-list"></div>
-          <div id="queueEmpty" class="empty" hidden>ما فيه منتجات بانتظار التعبئة.<br>صوّر المنتج والملصق في البقالة، وبتلقاها هنا على الكمبيوتر.</div>
-          <button type="button" class="link wide" id="btnManualEntry">إضافة منتج يدويًا بدون صور</button>
+          <div id="queueEmpty" class="empty" hidden>ما فيه طلبات بانتظار التوثيق.<br>سجّل منتجًا جديدًا من صفحة التسجيل وسيظهر هنا.</div>
         </div>
       </div>
     </section>
@@ -547,9 +600,9 @@ input::placeholder{color:var(--faint)}
   </main>
 
   <nav class="tabs">
-    <button class="tab active" data-go="entry">تسجيل<span class="badge" id="draftBadge" hidden>0</span></button>
+    <button class="tab active" data-go="intake">تسجيل</button>
+    <button class="tab" data-go="requests">الطلبات<span class="badge" id="draftBadge" hidden>0</span></button>
     <button class="tab" data-go="list">المنتجات</button>
-    <button class="tab" data-go="scan">مسح</button>
     <button class="tab" data-go="settings">الإعدادات</button>
   </nav>
 </div>
@@ -654,6 +707,10 @@ input::placeholder{color:var(--faint)}
       <div class="ref-tools"><button type="button" class="tool" id="refRotate">تدوير</button><button type="button" class="tool" id="refZoom">تكبير</button></div>
     </div>
     <div class="ref-stage" id="refStage"><img id="refImg" alt="" hidden><div class="ref-empty" id="refEmpty">ما فيه صورة</div></div>
+    <div class="request-photo-stack" id="requestPhotoStack">
+      <figure class="request-photo"><figcaption>واجهة المنتج</figcaption><img id="requestFrontImage" alt="صورة واجهة المنتج" hidden></figure>
+      <figure class="request-photo"><figcaption>الملصق الغذائي</figcaption><img id="requestLabelImage" alt="صورة الملصق الغذائي" hidden></figure>
+    </div>
   </aside>
 </div>
 
@@ -868,9 +925,9 @@ const KV = {
 };
 
 /* ---------- UI refs ---------- */
-const ids = ['countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','catFilter','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','filePhoto','fName','fNameEn','fBrand','brandSuggest','btnScanMain','catToggle','catHeadIcon','catHeadName','catBody','catDesc','catChips','catNew','catNewIcon','catNewAr','catNewEn','catNewDesc','catNewSave','catGuide','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','syncCard','syncState','syncBody','brandsCard','brandsCount','brandsBody','catsCard','catsCount','catsBody','aiCard','aiState','aiBody','btnAiLabel','btnAnalyze','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelThumb','labelPrevImg','labelEmpty','offRef','btnUseOff','offRefBody','lightbox','lightboxImg','lightboxClose','miniScan','miniVideo','miniTorch','miniZoom','miniCount','miniList','miniFrame','miniHint','miniCancel','miniSwitch','btnSwitchCam','detail','detailBack','detailEdit','detailBody','capCard','capToday','shotFront','shotLabel','fileCapFront','fileCapLabel','capCodes','capNote','capSave','capDiscard','queueCard','queueCount','queueRefresh','queueMsg','queueList','queueEmpty','btnManualEntry','draftBadge','draftBar','refPane','refSeg','refRotate','refZoom','refStage','refImg','refEmpty','themeOptions','themeState'];
+const ids = ['intakeCode','intakeScan','intakeStatus','intakeSizeBox','intakeAmount','intakeUnit','intakeApprove','intakeSizesTitle','intakeSizes','countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','catFilter','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','filePhoto','fName','fNameEn','fBrand','brandSuggest','btnScanMain','catToggle','catHeadIcon','catHeadName','catBody','catDesc','catChips','catNew','catNewIcon','catNewAr','catNewEn','catNewDesc','catNewSave','catGuide','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','syncCard','syncState','syncBody','brandsCard','brandsCount','brandsBody','catsCard','catsCount','catsBody','aiCard','aiState','aiBody','btnAiLabel','btnAnalyze','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelThumb','labelPrevImg','labelEmpty','offRef','btnUseOff','offRefBody','lightbox','lightboxImg','lightboxClose','miniScan','miniVideo','miniTorch','miniZoom','miniCount','miniList','miniFrame','miniHint','miniCancel','miniSwitch','btnSwitchCam','detail','detailBack','detailEdit','detailBody','capCard','capToday','shotFront','shotLabel','fileCapFront','fileCapLabel','capCodes','capNote','capSave','capDiscard','queueCard','queueCount','queueRefresh','queueMsg','queueList','queueEmpty','draftBadge','draftBar','refPane','refSeg','refRotate','refZoom','refStage','refImg','refEmpty','requestPhotoStack','requestFrontImage','requestLabelImage','themeOptions','themeState'];
 const ui = {}; ids.forEach(id => { ui[id] = document.getElementById(id); });
-ui.viewEntry = $('#view-entry'); ui.viewScan = $('#view-scan'); ui.viewList = $('#view-list'); ui.viewSettings = $('#view-settings'); ui.tabs = [...document.querySelectorAll('.tab')];
+ui.viewIntake = $('#view-intake'); ui.viewRequests = $('#view-requests'); ui.viewScan = $('#view-scan'); ui.viewList = $('#view-list'); ui.viewSettings = $('#view-settings'); ui.tabs = [...document.querySelectorAll('.tab')];
 
 /* ---------- appearance (واجهة فقط) ---------- */
 const THEME_KEY = 'alyaf-theme';
@@ -892,7 +949,10 @@ applyTheme(localStorage.getItem(THEME_KEY));
 /* ---------- state ---------- */
 const state = { unit: 'g', pkgUnit: 'g', basis: '100', photo: null, photoUrl: null, off: null, labelPhoto: null, labelUploaded: false, labelUrl: null, photoOk: false, category: null };
 let listFilterMode = 'all', autoPulled = false;
-let scanning = false, starting = false, decoding = false, busy = false, formCtx = null, currentCode = null, currentView = 'entry', wasScanning = false;
+let scanning = false, starting = false, decoding = false, busy = false, formCtx = null, currentCode = null, currentView = 'intake', wasScanning = false;
+const BARCODE_INTAKE_KEY = projectKey('alyaf-barcode-intake');
+let barcodeIntake = (() => { try { const v = JSON.parse(localStorage.getItem(BARCODE_INTAKE_KEY) || 'null'); return v && Array.isArray(v.packages) ? v : { packages: [], currentCode: '' }; } catch (e) { return { packages: [], currentCode: '' }; } })();
+let intakeCheckToken = 0;
 let lastCode = '', lastAt = 0, torchOn = false, curStream = null, loopTimer = null, engine = null, enginePromise = null;
 let session = null, refreshing = null, syncing = false;
 
@@ -1646,6 +1706,10 @@ async function rotatedSrc(src, deg) {
 async function renderRef() {
   const has = !!(refSrc('label') || refSrc('front'));
   ui.form.classList.toggle('has-ref', has);
+  const requestPhotos = !!(formCtx && formCtx.draftId && (state.photo || state.photoUrl || state.labelPhoto || state.labelUrl));
+  ui.form.classList.toggle('has-request-photos', requestPhotos);
+  if (ui.requestFrontImage) { const src = state.photo || state.photoUrl; ui.requestFrontImage.hidden = !src; if (src && ui.requestFrontImage.src !== src) ui.requestFrontImage.src = src; }
+  if (ui.requestLabelImage) { const src = state.labelPhoto || state.labelUrl; ui.requestLabelImage.hidden = !src; if (src && ui.requestLabelImage.src !== src) ui.requestLabelImage.src = src; }
   if (!has) return;
   if (!refSrc(refView)) refView = refSrc('label') ? 'label' : 'front';
   ui.refSeg.querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.r === refView); b.disabled = !refSrc(b.dataset.r); });
@@ -1673,10 +1737,10 @@ function openForm(p, ctx) {
   formCtx = Object.assign({ editing: null, returnTo: 'scan', fromOFF: false, draftId: null }, ctx || {}); p = p || {}; formToken++;
   stopAi();
   const isDraft = !!formCtx.draftId;
-  ui.formTitle.textContent = isDraft ? 'تعبئة منتج من البقالة' : (formCtx.editing ? 'تعديل منتج' : 'إضافة منتج');
-  ui.formSave.textContent = isDraft ? 'تم — أضفه لمنتجاتي' : 'حفظ المنتج'; ui.formSaveTop.textContent = isDraft ? 'تم' : 'حفظ';
+  ui.formTitle.textContent = isDraft ? 'تعبئة طلب توثيق' : (formCtx.editing ? 'تعديل منتج' : 'إضافة منتج');
+  ui.formSave.textContent = isDraft ? 'اعتماد وإضافة إلى المنتجات' : 'حفظ المنتج'; ui.formSaveTop.textContent = isDraft ? 'اعتماد' : 'حفظ';
   ui.draftBar.hidden = !isDraft;
-  if (isDraft) ui.draftBar.innerHTML = '<span>📸</span><span>' + (formCtx.draftPos ? '<b>' + esc(formCtx.draftPos) + '</b> · ' : '') + 'اكتب القيم من صورة الملصق (أو اضغط «حلّل الصور») ثم اضغط <b>تم</b>.' + (formCtx.note ? '<br>ملاحظتك: <b>' + esc(formCtx.note) + '</b>' : '') + '</span>';
+  if (isDraft) ui.draftBar.innerHTML = '<span>📋</span><span>' + (formCtx.draftPos ? '<b>' + esc(formCtx.draftPos) + '</b> · ' : '') + 'راجع الصور على اليسار، وأدخل العناصر الغذائية ثم اضغط <b>اعتماد</b>.' + (formCtx.note ? '<br>ملاحظتك: <b>' + esc(formCtx.note) + '</b>' : '') + '</span>';
   ui.fName.value = p.name || ''; ui.fNameEn.value = p.name_en || ''; ui.fBrand.value = p.brand || ''; ui.brandSuggest.hidden = true; pendingBrand = null; state.category = p.category || null; ui.catNew.hidden = true; ui.catBody.hidden = true; ui.catToggle.classList.remove('open'); renderCat(); renderCatGuide();
   ui.fPkg.value = ''; setUnit(p.package_unit || p.unit || 'g');
   setPkgBase(p.package_size); ui.fServ.value = fmtIn(p.serving_size); ui.fServN.value = fmtIn(p.servings_per_package);
@@ -1707,7 +1771,7 @@ function openForm(p, ctx) {
 function closeForm() {
   stopAi();
   const rt = formCtx ? formCtx.returnTo : 'scan'; formCtx = null; ui.form.hidden = true; clearDraft();
-  if (rt === 'list') renderList(); else if (rt === 'entry') renderEntry(); else nextScan();
+  if (rt === 'list') renderList(); else if (rt === 'requests' || rt === 'entry') renderQueue(); else if (rt === 'intake') { renderIntake(); renderCapture(); } else nextScan();
 }
 let savingForm = false;
 async function saveForm() {
@@ -1724,6 +1788,7 @@ async function saveFormInner() {
   const vals = readNutrients();
   // "مكتمل" = الأساسيات الأربع مكتوبة فعلًا (قبل: كان دايم "مكتمل" لأن الفاضي يتحوّل صفر)
   const coreDone = NUTRIENTS.filter(n => n.core).every(n => vals[n.key] != null);
+  const nutritionDone = NUTRIENTS.every(n => vals[n.key] != null);
   NUTRIENTS.forEach(n => { if (vals[n.key] == null) vals[n.key] = 0; });
   const serving = num(ui.fServ.value), pkg = pkgBase(), servN = num(ui.fServN.value);
   const warns = sanityCheck(vals, state.basis === '100' ? 100 : serving);
@@ -1742,7 +1807,7 @@ async function saveFormInner() {
     barcode, name, name_en: nameEn, brand: brandIn || null, category: state.category || null, source,
     package_size: pkg, package_unit: state.pkgUnit, unit: state.unit, serving_size: serving, servings_per_package: servN,
     basis: state.basis, nutrients: vals, per_100, per_serving,
-    complete: coreDone, sizes,
+    complete: coreDone, nutrition_complete: nutritionDone, sizes,
     photo: state.photo || null, photo_url: state.photoUrl || null, photo_ok: !!state.photoOk,
     off_ref: state.off ? { name: state.off.name || null, brand: state.off.brand || null, photo_url: state.off.photo_url || null, unit: state.off.unit || null, per_100: state.off.per_100 || state.off.nutrients || null } : ((existing && existing.off_ref) || null),
     // إصلاح حذف الملصق: كان الرابط ينمسح لما يكون الملصق محفوظ في السحابة فقط (مثل فتح المنتج من الكمبيوتر)
@@ -1758,12 +1823,12 @@ async function saveFormInner() {
   } catch (e) { toast('تعذر الحفظ — مساحة التخزين ممتلئة أو المتصفح يمنع التخزين'); return; }
   const c = await refreshCount();
   const draftId = formCtx.draftId || null;
+  const returnTo = formCtx.returnTo || 'scan';
   closeForm(); syncNow(true);
   if (!draftId) { toast('تم الحفظ · عندك ' + c + ' منتج'); return; }
   await finishDraft(draftId);
-  const rest = readyDrafts();
-  if (rest.length) { toast('✓ انضاف لمنتجاتك — باقي ' + rest.length + '، هذا التالي'); openDraft(rest[0].id); }
-  else toast('✓ انضاف لمنتجاتك — خلّصت كل المنتجات المصوّرة');
+  if (returnTo === 'requests' || returnTo === 'intake') renderQueue();
+  toast('✓ تم اعتماد المنتج ونقله إلى قائمة المنتجات');
 }
 async function deleteByCode(code) {
   if (syncing) { toast('انتظر اكتمال المزامنة ثم احذف المنتج'); return; }
@@ -2326,9 +2391,10 @@ const clock = iso => { try { return new Date(iso).toLocaleTimeString('ar-SA-u-nu
 async function loadDrafts() { try { draftsCache = await Drafts.all(); } catch (e) { draftsCache = []; } return draftsCache; }
 
 /* --- التصوير --- */
-function capEnsure() { if (!cap) cap = { id: newDraftId(), status: 'capturing', front: null, label: null, front_url: null, label_url: null, codes: [], note: '', created_at: now(), uploaded: false }; return cap; }
+function capEnsure() { if (!cap) cap = { id: newDraftId(), kind: 'barcode', status: 'capturing', front: null, label: null, front_url: null, label_url: null, packages: (barcodeIntake.packages || []).map(p => Object.assign({}, p)), codes: (barcodeIntake.packages || []).map(p => p.barcode), note: '', created_at: now(), uploaded: false }; cap.kind = 'barcode'; if (!Array.isArray(cap.packages)) cap.packages = (barcodeIntake.packages || []).map(p => Object.assign({}, p)); return cap; }
 async function capPersist() {
   if (!cap) return true; cap.updated_at = now();
+  if (cap.kind === 'barcode') { cap.packages = (barcodeIntake.packages || cap.packages || []).map(p => Object.assign({}, p)); cap.codes = cap.packages.map(p => p.barcode); }
   try { await Drafts.put(cap); return true; } catch (e) { toast('تعذر حفظ الصورة على الجهاز — مساحة المتصفح ممتلئة؟'); return false; }
 }
 async function capPhoto(kind, file) {
@@ -2339,7 +2405,7 @@ async function capPhoto(kind, file) {
   finally { capBusy--; }
   if (img && cap === c) { if (kind === 'front') c.front = img; else c.label = img; await capPersist(); }
   renderCapture();
-  if (img && cap === c && !c.codes.length) findCodeInPhoto(file, c.id);
+  if (img && cap === c) renderCapture();
 }
 async function findCodeInPhoto(file, id) {
   try {
@@ -2356,23 +2422,15 @@ function capScan() {
     return { count: seen.size, txt: 'تمام ✓ — لو له حجم ثاني امسحه، أو اضغط "تم"' };
   }, { multi: true, startCount: seen.size, hint: 'وجّه الكاميرا على باركود المنتج', onDone: () => renderCapture() });
 }
-async function capSave() {
-  if (capBusy) { toast('لحظة… الصورة للحين تتجهّز'); return; }
-  if (!cap || (!cap.front && !cap.label)) { toast('صوّر المنتج أو الملصق أولًا'); return; }
-  cap.note = ui.capNote.value.trim(); cap.status = 'ready'; cap.uploaded = false;
-  if (!(await capPersist())) return;
-  const hadLabel = !!cap.label, hadCode = cap.codes.length > 0;
-  cap = null; ui.capNote.value = '';
-  await loadDrafts(); renderCapture(); renderQueue();
-  toast('انحفظ ✓' + (!hadLabel ? ' (بدون ملصق)' : '') + (!hadCode ? ' — بدون باركود، تكتبه من الكمبيوتر' : '') + ' — صوّر التالي');
-  try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
-  syncDrafts(true);
-}
+async function capSave() { return submitBarcodeRequest(); }
 async function capDiscard() {
-  if (!cap) return;
-  if ((cap.front || cap.label) && !confirm('تلغي هذا المنتج وتحذف صوره؟')) return;
-  try { await Drafts.del(cap.id); } catch (e) {}
-  cap = null; ui.capNote.value = ''; renderCapture();
+  const hasWork = !!(cap && ((cap.packages || []).length || cap.front || cap.label));
+  if (!hasWork && !barcodeIntake.packages.length) return;
+  if (!confirm('تلغي التسجيل الجاري وتحذف الصور والأحجام المعتمدة؟')) return;
+  if (cap) { try { await Drafts.del(cap.id); } catch (e) {} }
+  cap = null; barcodeIntake = { packages: [], currentCode: '' }; saveBarcodeIntakeState();
+  ui.capNote.value = ''; ui.intakeStatus.hidden = true; ui.intakeSizeBox.hidden = true;
+  renderIntake(); renderCapture();
 }
 async function renderCapture() {
   const c = cap || {};
@@ -2387,33 +2445,26 @@ async function renderCapture() {
     } else { if (im) im.remove(); if (tag) tag.remove(); }
   };
   shot(ui.shotFront, c.front, 'المنتج'); shot(ui.shotLabel, c.label, 'الملصق');
-  const codes = c.codes || [];
-  let html = codes.map((code, i) => '<span class="code-chip" data-code="' + esc(code) + '">' + esc(code) + '<button type="button" data-rm="' + i + '" aria-label="حذف">×</button></span>').join('');
-  html += '<button type="button" class="btn ' + (codes.length ? 'ghost' : 'primary') + '" id="capScanBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 9v6M11 9v6M15 9v6"/></svg>' + (codes.length ? 'امسح حجم ثاني' : 'امسح الباركود') + '</button>';
-  ui.capCodes.innerHTML = html + '<div class="code-note" id="capDupNote" hidden></div>';
-  $('#capScanBtn').onclick = capScan;
-  ui.capSave.disabled = !(c.front || c.label) || capBusy > 0;
-  ui.capSave.textContent = capBusy > 0 ? 'لحظة… تجهيز الصورة' : 'احفظ وصوّر التالي';
-  ui.capDiscard.hidden = !cap;
-  if (cap && ui.capNote.value !== (cap.note || '') && document.activeElement !== ui.capNote) ui.capNote.value = cap.note || '';
+  ui.capCodes.innerHTML = '';
+  const packages = barcodeIntake.packages || c.packages || [];
+  ui.capSave.disabled = capBusy > 0 || !packages.length || packages.some(p => !(num(p.amount) > 0)) || !c.front || !c.label || !!barcodeIntake.currentCode;
+  ui.capSave.textContent = capBusy > 0 ? 'لحظة… تجهيز الصورة' : 'إرسال إلى الطلبات';
+  ui.capDiscard.hidden = !cap && !packages.length;
   const today = new Date().toDateString();
-  const n = draftsCache.filter(d => d.status === 'ready' && new Date(d.created_at).toDateString() === today).length;
-  ui.capToday.textContent = n ? 'صوّرت اليوم ' + n : '';
-  // تنبيه لو الباركود محفوظ من قبل أو مصوّر في مسودة ثانية
-  const notes = [];
-  for (const code of codes) {
-    let hit = null; try { hit = await findLocal(code); } catch (e) {}
-    const chip = ui.capCodes.querySelector('.code-chip[data-code="' + code + '"]');
-    if (hit) { if (chip) chip.classList.add('dupe'); notes.push(code + ' محفوظ عندك باسم «' + hit.product.name + '»'); }
-    else if (draftsCache.some(d => d.status === 'ready' && (d.codes || []).includes(code))) { if (chip) chip.classList.add('dupe'); notes.push(code + ' مصوّر من قبل وبانتظار التعبئة'); }
-  }
-  const dn = $('#capDupNote'); if (dn && notes.length) { dn.textContent = '⚠️ ' + notes.join(' · '); dn.hidden = false; }
+  const n = readyDrafts().filter(d => new Date(d.created_at).toDateString() === today).length;
+  ui.capToday.textContent = n ? 'أرسلت اليوم ' + n + ' طلب' : '';
 }
 
 /* --- قائمة "بانتظار التعبئة" --- */
 function updateDraftBadge() { const n = readyDrafts().length; ui.draftBadge.textContent = String(n); ui.draftBadge.hidden = !n; }
 function queueRowHTML(d) {
   const f = d.front || d.front_url, l = d.label || d.label_url, codes = d.codes || [];
+  if (d.kind === 'barcode') {
+    const packages = d.packages || [];
+    const detail = packages.map((p, i) => (i + 1) + ') ' + fmt(p.amount) + ' ' + ((p.unit === 'l') ? 'لتر' : 'غرام')).join(' · ');
+    const pills = ['<span class="pill warn">بانتظار التعبئة</span>', '<span class="pill">' + packages.length + ' أحجام</span>', d.uploaded ? '<span class="pill ok">متزامن</span>' : '<span class="pill">على هذا الجهاز</span>'];
+    return '<div class="q-row"><button type="button" class="q-open" data-open="' + esc(d.id) + '"><span class="q-thumbs">' + (f ? '<img src="' + esc(f) + '" alt="" loading="lazy">' : '<i></i>') + (l ? '<img src="' + esc(l) + '" alt="" loading="lazy">' : '<i></i>') + '</span><span class="q-main"><span class="q-title" style="display:block">طلب جديد · ' + packages.length + ' أحجام</span><span class="q-sub" style="display:block">' + esc(codes[0] || '') + ' · ' + esc(whenSaved(d.created_at)) + '</span><span class="q-sub" style="display:block">' + esc(detail) + '</span><span class="row-badges">' + pills.join('') + '</span></span></button><button type="button" class="q-go" data-open="' + esc(d.id) + '">راجع</button><button type="button" class="q-del" data-del-draft="' + esc(d.id) + '" aria-label="حذف"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button></div>';
+  }
   const pills = [];
   if (!d.label && !d.label_url) pills.push('<span class="pill warn">بدون ملصق</span>');
   if (!codes.length) pills.push('<span class="pill warn">بدون باركود</span>');
@@ -2425,7 +2476,7 @@ function queueRowHTML(d) {
     + '<span class="q-main"><span class="q-title' + (codes.length ? ' mono' : '') + '" style="display:block">' + (codes.length ? esc(codes[0]) : 'بدون باركود') + '</span>'
     + '<span class="q-sub" style="display:block">' + esc(whenSaved(d.created_at)) + ' ' + esc(clock(d.created_at)) + (d.note ? ' · ' + esc(d.note) : '') + '</span>'
     + '<span class="row-badges">' + pills.join('') + '</span></span></button>'
-    + '<button type="button" class="q-go" data-open="' + esc(d.id) + '">عبّي</button>'
+    + '<button type="button" class="q-go" data-open="' + esc(d.id) + '">راجع</button>'
     + '<button type="button" class="q-del" data-del-draft="' + esc(d.id) + '" aria-label="حذف"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button></div>';
 }
 async function renderQueue() {
@@ -2434,27 +2485,37 @@ async function renderQueue() {
   ui.queueList.innerHTML = list.map(queueRowHTML).join('');
   ui.queueEmpty.hidden = list.length > 0;
   let msg = '';
-  if (!sbConfigured() || !session) msg = 'الصور محفوظة على هذا الجهاز فقط. عشان توصل للكمبيوتر: سجّل الدخول من تبويب «الإعدادات» على الجوال والكمبيوتر بنفس الحساب.';
-  else if (draftsSyncing) msg = '<span class="busy"><span class="spinner"></span><span>جاري تحديث القائمة من السحابة…</span></span>';
-  else if (queueErr) msg = 'تعذر جلب المنتجات المصوّرة من السحابة: ' + esc(queueErr.slice(0, 160));
+  if (!sbConfigured() || !session) msg = 'الطلبات محفوظة على هذا الجهاز فقط. لمزامنتها بين أجهزتك، سجّل الدخول من الإعدادات على الجهازين.';
+  else if (draftsSyncing) msg = '<span class="busy"><span class="spinner"></span><span>جاري تحديث الطلبات من السحابة…</span></span>';
+  else if (queueErr) msg = 'تعذر تحديث الطلبات من السحابة: ' + esc(queueErr.slice(0, 160));
   ui.queueMsg.innerHTML = msg; ui.queueMsg.hidden = !msg;
   ui.queueMsg.className = 'status queue-msg ' + (queueErr && !draftsSyncing ? 'warn' : 'info');
 }
 function renderEntry() { loadDrafts().then(() => { renderCapture(); renderQueue(); }); }
 async function openDraft(id) {
-  const d = await Drafts.get(id); if (!d) { toast('هذا المنتج انحذف أو تعبّى من جهاز ثاني'); renderQueue(); return; }
+  const d = await Drafts.get(id); if (!d) { toast('هذا الطلب حُذف أو اعتُمد من جهاز آخر'); renderQueue(); return; }
   let front = d.front || null, label = d.label || null;
   if ((!front && d.front_url) || (!label && d.label_url)) {
-    toast('جاري تحميل الصور…');
+    toast('جاري تحميل صور الطلب…');
     try { if (!front && d.front_url) front = await urlToData(d.front_url); } catch (e) {}
     try { if (!label && d.label_url) label = await urlToData(d.label_url); } catch (e) {}
     if (!front && !label) { toast('تعذر تحميل الصور من السحابة — تأكد من الإنترنت وجرّب مرة ثانية'); return; }
     d.front = front; d.label = label; try { await Drafts.put(d); } catch (e) {}
   }
-  const codes = d.codes || []; const list = readyDrafts(); const pos = list.findIndex(x => x.id === d.id);
-  openForm({ barcode: codes[0] || '', sizes: codes.slice(1).map(c => ({ barcode: c })), photo: front, photo_ok: !!front, label_photo: label, label_photo_uploaded: false, source: 'manual' },
-    { editing: null, returnTo: 'entry', draftId: d.id, note: d.note || '', draftPos: list.length > 1 && pos > -1 ? 'منتج ' + (pos + 1) + ' من ' + list.length : '' });
-  if (codes.length) { let hit = null; try { hit = await findLocal(codes[0]); } catch (e) {} if (hit && formCtx && formCtx.draftId === d.id) aiStatusSet('warn', 'هذا الباركود محفوظ من قبل باسم «' + esc(hit.product.name) + '» — لو ضغطت «تم» بيتحدّث بالقيم الجديدة.'); }
+  if (d.kind === 'barcode') {
+    const packages = d.packages || (d.codes || []).map(barcode => ({ barcode, amount: null, unit: 'g' }));
+    if (!packages.length || packages.some(p => !(num(p.amount) > 0))) { toast('بيانات حجم العبوة ناقصة — ارجع للتسجيل واكتب الأحجام'); return; }
+    const first = packages[0], firstUnit = PKG_UNITS[first.unit] ? first.unit : 'g', firstMeta = PKG_UNITS[firstUnit];
+    const sizes = packages.map((p, i) => { const u = PKG_UNITS[p.unit] ? p.unit : 'g', m = PKG_UNITS[u]; return { name: fmt(p.amount) + ' ' + m.label, amount: r2(Number(p.amount) * m.factor), unit: m.base, barcode: i ? p.barcode : null }; });
+    const off = d.off || null;
+    openForm({ barcode: first.barcode, name: off && off.name || '', name_en: off && off.name_en || '', brand: off && off.brand || '', package_size: r2(Number(first.amount) * firstMeta.factor), package_unit: firstUnit, unit: firstMeta.base, basis: '100', nutrients: off && off.nutrients || {}, per_100: off && off.nutrients || null, sizes, source: 'manual', off_ref: off, photo: front, photo_ok: !!(front || d.front_url), photo_url: d.front_url || null, label_photo: label, label_photo_uploaded: false, label_photo_url: d.label_url || null },
+      { editing: null, returnTo: 'requests', draftId: d.id, fromOFF: !!off, off, note: d.note || '' });
+    return;
+  }
+  const codes = d.codes || []; await loadDrafts(); const list = readyDrafts(); const pos = list.findIndex(x => x.id === d.id);
+  openForm({ barcode: codes[0] || '', sizes: codes.slice(1).map(c => ({ barcode: c })), photo: front, photo_ok: !!(front || d.front_url), photo_url: d.front_url || null, label_photo: label, label_photo_uploaded: false, label_photo_url: d.label_url || null, source: 'manual' },
+    { editing: null, returnTo: 'requests', draftId: d.id, note: d.note || '', draftPos: list.length > 1 && pos > -1 ? 'طلب ' + (pos + 1) + ' من ' + list.length : '' });
+  if (codes.length) { let hit = null; try { hit = await findLocal(codes[0]); } catch (e) {} if (hit && formCtx && formCtx.draftId === d.id) aiStatusSet('warn', 'هذا الباركود محفوظ من قبل باسم «' + esc(hit.product.name) + '» — راجع البيانات قبل الاعتماد.'); }
 }
 async function finishDraft(id) {
   const d = await Drafts.get(id).catch(() => null);
@@ -2463,7 +2524,9 @@ async function finishDraft(id) {
   await loadDrafts(); updateDraftBadge(); syncDrafts(true);
 }
 async function deleteDraft(id) {
-  if (!confirm('تحذف هذا المنتج المصوّر وصوره؟ (ما يأثر على منتجاتك المحفوظة)')) return;
+  const d = await Drafts.get(id).catch(() => null);
+  const question = d && d.kind === 'barcode' ? 'تحذف هذا المنتج من قائمة الطلبات؟ ما يأثر على المنتجات المحفوظة.' : 'تحذف هذا الطلب وصوره؟ ما يأثر على منتجاتك المحفوظة.';
+  if (!confirm(question)) return;
   await finishDraft(id); renderQueue(); toast('انحذف');
 }
 
@@ -2471,7 +2534,7 @@ async function deleteDraft(id) {
 async function sbUploadJSON(path, obj) {
   await sbFetch('/storage/v1/object/' + SB.bucket + '/' + path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-upsert': 'true', 'cache-control': 'max-age=0' }, body: JSON.stringify(obj) });
 }
-const draftInfo = d => ({ id: d.id, v: 1, codes: d.codes || [], note: d.note || '', front_url: d.front_url || null, label_url: d.label_url || null, created_at: d.created_at, by: (session && session.email) || '', done: false });
+const draftInfo = d => ({ id: d.id, v: 1, kind: d.kind || 'photo', codes: d.codes || [], packages: d.packages || [], off: d.off || null, note: d.note || '', front_url: d.front_url || null, label_url: d.label_url || null, created_at: d.created_at, by: (session && session.email) || '', done: false });
 // نقرأ قائمة الملفات صفحة صفحة (قبل: أول 1000 ملف فقط — ومع الوقت كانت المنتجات الجديدة تختفي من القائمة وتنحذف من الجهاز)
 async function listCloudDrafts() {
   const names = [];
@@ -2513,8 +2576,8 @@ async function flushDraftDeletes() {
 }
 async function syncDrafts(silent) {
   if (draftsSyncing) return;
-  if (!sbConfigured() || !session || !navigator.onLine) { if (currentView === 'entry') renderQueue(); return; }
-  draftsSyncing = true; queueErr = ''; if (currentView === 'entry' && !silent) renderQueue();
+  if (!sbConfigured() || !session || !navigator.onLine) { if (currentView === 'requests') renderQueue(); return; }
+  draftsSyncing = true; queueErr = ''; if (currentView === 'requests' && !silent) renderQueue();
   try {
     await sbRefresh(false);
     await loadDrafts();
@@ -2538,7 +2601,7 @@ async function syncDrafts(silent) {
     await loadDrafts();
     for (const c of cloud.infos) {
       if (pendingDel.has(c.id) || draftsCache.some(x => x.id === c.id)) continue;
-      await Drafts.put({ id: c.id, status: 'ready', front: null, label: null, front_url: c.front_url || null, label_url: c.label_url || null, codes: c.codes || [], note: c.note || '', created_at: c.created_at || now(), uploaded: true, from_cloud: true });
+      await Drafts.put({ id: c.id, kind: c.kind || 'photo', status: 'ready', front: null, label: null, front_url: c.front_url || null, label_url: c.label_url || null, codes: c.codes || [], packages: c.packages || [], off: c.off || null, note: c.note || '', created_at: c.created_at || now(), uploaded: true, from_cloud: true });
     }
     for (const d of draftsCache) {
       if (d.status !== 'ready' || !d.uploaded) continue;
@@ -2547,7 +2610,7 @@ async function syncDrafts(silent) {
       else if (!d.checked) { const cur = await Drafts.get(d.id).catch(() => null); if (cur) { cur.checked = true; await Drafts.put(cur).catch(() => {}); } }
     }
   } catch (e) { queueErr = String(e.message || e); if (!silent) toast('تعذر تحديث القائمة: ' + queueErr.slice(0, 120)); }
-  finally { draftsSyncing = false; await loadDrafts(); updateDraftBadge(); if (currentView === 'entry') { renderQueue(); renderCapture(); } }
+  finally { draftsSyncing = false; await loadDrafts(); updateDraftBadge(); if (currentView === 'requests') renderQueue(); if (currentView === 'intake') { renderCapture(); renderIntake(); } }
 }
 
 /* ---------- navigation ---------- */
@@ -2573,6 +2636,97 @@ async function tryOffFill(code) {
     : 'المنتج موجود في Open Food Facts لكن بياناته ناقصة — صوّر الملصق واضغط "حلّل الصور".');
   showSanity(); queueSaveDraft();
 }
+function saveBarcodeIntakeState() {
+  try { localStorage.setItem(BARCODE_INTAKE_KEY, JSON.stringify(barcodeIntake)); } catch (e) { toast('تعذر حفظ تسجيل الباركود على هذا الجهاز'); }
+}
+const barcodeDrafts = () => readyDrafts().filter(d => d.kind === 'barcode');
+const photoDrafts = () => readyDrafts().filter(d => d.kind !== 'barcode');
+function renderIntake() {
+  const items = barcodeIntake.packages || [];
+  ui.intakeSizes.innerHTML = items.map((p, i) => '<div class="intake-size-row" data-intake-row="' + i + '"><span class="intake-index">' + (i + 1) + '</span><span class="mono">' + esc(p.barcode) + '</span><input data-intake-amount="' + i + '" inputmode="decimal" value="' + esc(p.amount) + '" aria-label="حجم العبوة رقم ' + (i + 1) + '"><select data-intake-unit="' + i + '" aria-label="وحدة العبوة رقم ' + (i + 1) + '"><option value="g"' + (p.unit === 'g' ? ' selected' : '') + '>غرام</option><option value="l"' + (p.unit === 'l' ? ' selected' : '') + '>لتر</option></select><button type="button" class="s-del" data-intake-remove="' + i + '" aria-label="حذف الحجم">×</button></div>').join('');
+  ui.intakeSizesTitle.hidden = !items.length;
+  if (barcodeIntake.currentCode && document.activeElement !== ui.intakeCode) ui.intakeCode.value = barcodeIntake.currentCode;
+  else if (!barcodeIntake.currentCode && document.activeElement !== ui.intakeCode) ui.intakeCode.value = '';
+  renderCapture();
+}
+async function checkIntakeCode(raw) {
+  const code = normCode(raw);
+  if (!code) { toast('اكتب باركود صحيح (6 إلى 14 رقم)'); ui.intakeCode.focus(); return; }
+  if ((barcodeIntake.packages || []).some(p => p.barcode === code)) {
+    barcodeIntake.currentCode = ''; saveBarcodeIntakeState(); ui.intakeCode.value = '';
+    ui.intakeStatus.className = 'status warn intake-check'; ui.intakeStatus.textContent = 'هذا الباركود معتمد مسبقًا ضمن المنتج الجاري.'; ui.intakeStatus.hidden = false; ui.intakeSizeBox.hidden = true; renderIntake(); return;
+  }
+  barcodeIntake.currentCode = code; saveBarcodeIntakeState();
+  ui.intakeStatus.className = 'status info intake-check'; ui.intakeStatus.textContent = 'جاري التحقق من الباركود…'; ui.intakeStatus.hidden = false; ui.intakeSizeBox.hidden = true; renderIntake();
+  await loadDrafts();
+  const token = ++intakeCheckToken;
+  let hit = null; try { hit = await findLocal(code); } catch (e) {}
+  if (token !== intakeCheckToken || barcodeIntake.currentCode !== code) return;
+  if (hit) {
+    barcodeIntake.currentCode = ''; saveBarcodeIntakeState(); ui.intakeCode.value = '';
+    const p = hit.product, missing = missingOf(p.nutrients);
+    const nutrientIncomplete = p.nutrition_complete === false || p.complete === false || missing.length > 0;
+    const photoMissing = !ownPhoto(p), incomplete = nutrientIncomplete || photoMissing;
+    const parts = [];
+    parts.push(nutrientIncomplete ? 'العناصر الغذائية ناقصة' + (missing.length ? ': ' + missing.map(n => esc(n.label)).join('، ') : '') : 'العناصر الغذائية مكتملة');
+    parts.push(photoMissing ? 'صورة المنتج غير موجودة' : 'صورة المنتج موجودة');
+    ui.intakeStatus.className = 'status ' + (incomplete ? 'warn' : 'ok') + ' intake-check';
+    ui.intakeStatus.innerHTML = (incomplete ? 'موجود في المنتجات ويحتاج استكمالًا' : 'موجود في المنتجات ومكتمل') + ': <b>' + esc(p.name || 'منتج بدون اسم') + '</b><br>' + parts.join('<br>') + '<button type="button" id="intakeEditExisting">افتح المنتج لإكماله أو تعديله</button>';
+    $('#intakeEditExisting').onclick = () => { barcodeIntake.currentCode = ''; saveBarcodeIntakeState(); openForm(p, { editing: p.barcode, returnTo: 'intake' }); };
+    ui.intakeSizeBox.hidden = true; renderCapture(); return;
+  }
+  const pending = readyDrafts().find(d => (d.packages || []).some(p => p.barcode === code) || (d.codes || []).includes(code));
+  if (pending) {
+    barcodeIntake.currentCode = ''; saveBarcodeIntakeState(); ui.intakeCode.value = '';
+    ui.intakeStatus.className = 'status warn intake-check'; ui.intakeStatus.innerHTML = 'موجود في الطلبات وبانتظار التوثيق.<button type="button" id="intakeOpenPending">افتح الطلب</button>';
+    $('#intakeOpenPending').onclick = () => openDraft(pending.id);
+    ui.intakeSizeBox.hidden = true; renderCapture(); return;
+  }
+  ui.intakeStatus.className = 'status info intake-check'; ui.intakeStatus.textContent = 'غير موجود في المنتجات أو الطلبات. اكتب حجم العبوة ثم اعتمدها.';
+  ui.intakeSizeBox.hidden = false; ui.intakeAmount.value = ''; ui.intakeUnit.value = 'g'; ui.intakeApprove.hidden = false; ui.intakeAmount.focus(); renderCapture();
+}
+async function setIntakeCode(raw) { ui.intakeCode.value = raw; await checkIntakeCode(raw); }
+async function approveIntakeSize() {
+  const code = barcodeIntake.currentCode, amount = num(ui.intakeAmount.value), unit = ui.intakeUnit.value === 'l' ? 'l' : 'g';
+  if (!code) { toast('امسح باركود العبوة أولًا'); return; }
+  if (!(amount > 0)) { toast('اكتب حجم العبوة أكبر من صفر'); ui.intakeAmount.focus(); return; }
+  const hit = await findLocal(code).catch(() => null);
+  if (hit) { await checkIntakeCode(code); toast('هذا الباركود موجود في المنتجات'); return; }
+  await loadDrafts();
+  const pending = readyDrafts().find(d => (d.packages || []).some(p => p.barcode === code) || (d.codes || []).includes(code));
+  if (pending) { await checkIntakeCode(code); toast('هذا الباركود موجود في الطلبات'); return; }
+  if ((barcodeIntake.packages || []).some(p => p.barcode === code)) { await checkIntakeCode(code); return; }
+  barcodeIntake.packages.push({ barcode: code, amount: r2(amount), unit }); barcodeIntake.currentCode = ''; saveBarcodeIntakeState();
+  const c = capEnsure(); c.packages = barcodeIntake.packages.map(p => Object.assign({}, p)); c.codes = c.packages.map(p => p.barcode); await capPersist();
+  ui.intakeCode.value = ''; ui.intakeAmount.value = ''; ui.intakeStatus.className = 'status ok intake-check'; ui.intakeStatus.textContent = 'تم اعتماد الحجم رقم ' + barcodeIntake.packages.length + '. امسح باركود الحجم التالي أو صوّر المنتج.'; ui.intakeSizeBox.hidden = true; renderIntake(); ui.intakeCode.focus();
+}
+async function submitBarcodeRequest() {
+  if (capBusy) { toast('لحظة… الصورة للحين تتجهّز'); return; }
+  const packages = barcodeIntake.packages || [];
+  if (barcodeIntake.currentCode) { toast('اعتمد حجم الباركود الحالي قبل إرسال الطلب'); ui.intakeAmount.focus(); return; }
+  if (!packages.length) { toast('امسح باركودًا واحدًا على الأقل واعتمده'); ui.intakeCode.focus(); return; }
+  const invalid = packages.find(p => !(num(p.amount) > 0));
+  if (invalid) { toast('اكتب حجم كل عبوة قبل الإرسال'); const row = ui.intakeSizes.querySelector('[data-intake-amount="' + packages.indexOf(invalid) + '"]'); if (row) row.focus(); return; }
+  if (!cap || !cap.front || !cap.label) { toast('صوّر واجهة المنتج والملصق الغذائي قبل الإرسال'); return; }
+  await loadDrafts();
+  for (const p of packages) {
+    const hit = await findLocal(p.barcode).catch(() => null);
+    if (hit) { await checkIntakeCode(p.barcode); toast('هذا الباركود موجود في المنتجات؛ راجعه قبل الإرسال'); return; }
+    const pending = readyDrafts().find(d => d.id !== cap.id && ((d.packages || []).some(x => x.barcode === p.barcode) || (d.codes || []).includes(p.barcode)));
+    if (pending) { await checkIntakeCode(p.barcode); toast('هذا الباركود موجود في طلب آخر'); return; }
+  }
+  cap.kind = 'barcode'; cap.packages = packages.map(p => ({ barcode: p.barcode, amount: r2(num(p.amount)), unit: p.unit === 'l' ? 'l' : 'g' })); cap.codes = cap.packages.map(p => p.barcode);
+  cap.note = ''; cap.status = 'ready'; cap.uploaded = false;
+  if (!(await capPersist())) return;
+  const id = cap.id;
+  try { await Drafts.put(cap); } catch (e) { toast('تعذر حفظ الطلب على هذا الجهاز'); return; }
+  cap = null; barcodeIntake = { packages: [], currentCode: '' }; saveBarcodeIntakeState();
+  ui.intakeStatus.hidden = true; ui.intakeSizeBox.hidden = true; ui.intakeCode.value = ''; ui.capNote.value = '';
+  await loadDrafts(); renderIntake(); renderCapture(); renderQueue(); updateDraftBadge();
+  toast('تم إرسال المنتج إلى الطلبات للتوثيق');
+  syncDrafts(true);
+}
+
 function openEntry() {
   if (ui.form && !ui.form.hidden) return;
   openForm({ source: 'manual', barcode: '' }, { editing: null, returnTo: currentView === 'settings' ? 'list' : currentView });
@@ -2582,11 +2736,12 @@ async function go(v) {
   if (v !== 'scan' && currentView === 'scan') { wasScanning = scanning; if (scanning) await stopScanner(); }
   currentView = v;
   ui.tabs.forEach(t => t.classList.toggle('active', t.dataset.go === v));
-  ui.viewEntry.classList.toggle('active', v === 'entry'); ui.viewScan.classList.toggle('active', v === 'scan'); ui.viewList.classList.toggle('active', v === 'list'); ui.viewSettings.classList.toggle('active', v === 'settings');
+  ui.viewIntake.classList.toggle('active', v === 'intake'); ui.viewRequests.classList.toggle('active', v === 'requests'); ui.viewScan.classList.toggle('active', v === 'scan'); ui.viewList.classList.toggle('active', v === 'list'); ui.viewSettings.classList.toggle('active', v === 'settings');
   window.scrollTo(0, 0);
   if (v === 'list') { dbVer++; renderList(); } // نقرأ من جديد عند فتح القائمة (لو فيه تبويب ثاني عدّل شي)
+  else if (v === 'intake') { renderIntake(); renderCapture(); syncDrafts(true); }
+  else if (v === 'requests') { renderQueue(); syncDrafts(true); }
   else if (v === 'settings') { renderSync(); renderAi(); renderCats(); renderBrands(); }
-  else if (v === 'entry') { renderEntry(); syncDrafts(true); }
   else if (v === 'scan' && wasScanning) { wasScanning = false; startScanner(); }
 }
 
@@ -2622,19 +2777,32 @@ function wire() {
   ui.btnPhotoScan.onclick = () => ui.fileBarcode.click();
   ui.fileBarcode.onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) scanFromPhoto(f); };
   ui.tabs.forEach(t => { t.onclick = () => go(t.dataset.go); });
-  ui.themeOptions.addEventListener('click', e => { const b = e.target.closest('[data-theme-choice]'); if (b) applyTheme(b.dataset.themeChoice, true); });
-  // التصوير في البقالة
+  ui.intakeScan.onclick = () => openMiniScan(code => { setIntakeCode(code); }, { hint: 'وجّه الكاميرا على باركود العبوة' });
+  ui.intakeCode.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); checkIntakeCode(ui.intakeCode.value); } });
+  ui.intakeApprove.onclick = approveIntakeSize;
+  ui.intakeAmount.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); approveIntakeSize(); } });
+
+  ui.intakeSizes.addEventListener('change', e => {
+    const amount = e.target.closest('[data-intake-amount]'), unit = e.target.closest('[data-intake-unit]');
+    if (amount) barcodeIntake.packages[Number(amount.dataset.intakeAmount)].amount = amount.value;
+    if (unit) barcodeIntake.packages[Number(unit.dataset.intakeUnit)].unit = unit.value === 'l' ? 'l' : 'g';
+    saveBarcodeIntakeState();
+    if (cap) { cap.packages = barcodeIntake.packages.map(p => Object.assign({}, p)); cap.codes = cap.packages.map(p => p.barcode); capPersist(); }
+    renderCapture();
+  });
+  ui.intakeSizes.addEventListener('click', e => {
+    const remove = e.target.closest('[data-intake-remove]'); if (!remove) return;
+    barcodeIntake.packages.splice(Number(remove.dataset.intakeRemove), 1); saveBarcodeIntakeState(); if (cap) { cap.packages = barcodeIntake.packages.map(p => Object.assign({}, p)); cap.codes = cap.packages.map(p => p.barcode); capPersist(); } renderIntake();
+  });
+  ui.queueRefresh.onclick = () => { if (!sbConfigured() || !session) { toast('سجّل الدخول من تبويب الإعدادات أولًا'); go('settings'); return; } syncDrafts(false); };
+  ui.queueList.addEventListener('click', e => { const del = e.target.closest('[data-del-draft]'); if (del) { deleteDraft(del.dataset.delDraft); return; } const o = e.target.closest('[data-open]'); if (o) openDraft(o.dataset.open); });
   ui.shotFront.onclick = () => ui.fileCapFront.click();
   ui.shotLabel.onclick = () => ui.fileCapLabel.click();
   ui.fileCapFront.onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) capPhoto('front', f); };
   ui.fileCapLabel.onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) capPhoto('label', f); };
-  ui.capCodes.addEventListener('click', async e => { const b = e.target.closest('[data-rm]'); if (!b || !cap) return; cap.codes.splice(Number(b.dataset.rm), 1); await capPersist(); renderCapture(); });
-  let capNoteT = null; ui.capNote.addEventListener('input', () => { clearTimeout(capNoteT); capNoteT = setTimeout(() => { if (!cap && !ui.capNote.value.trim()) return; capEnsure(); cap.note = ui.capNote.value.trim(); capPersist(); }, 500); });
-  ui.capSave.onclick = capSave;
+  ui.capSave.onclick = submitBarcodeRequest;
   ui.capDiscard.onclick = capDiscard;
-  ui.queueRefresh.onclick = () => { if (!sbConfigured() || !session) { toast('سجّل الدخول من تبويب الإعدادات أولًا'); go('settings'); return; } syncDrafts(false); };
-  ui.queueList.addEventListener('click', e => { const del = e.target.closest('[data-del-draft]'); if (del) { deleteDraft(del.dataset.delDraft); return; } const o = e.target.closest('[data-open]'); if (o) openDraft(o.dataset.open); });
-  ui.btnManualEntry.onclick = openEntry;
+  ui.themeOptions.addEventListener('click', e => { const b = e.target.closest('[data-theme-choice]'); if (b) applyTheme(b.dataset.themeChoice, true); });
   // لوحة الصورة الكبيرة (الكمبيوتر)
   ui.refSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (!b || b.disabled) return; refView = b.dataset.r; refRot = 0; ui.refStage.classList.remove('zoomed'); ui.refZoom.textContent = 'تكبير'; renderRef(); });
   ui.refRotate.onclick = () => { refRot = (refRot + 90) % 360; renderRef(); };
@@ -2789,16 +2957,26 @@ function wire() {
   try { await openDB(); } catch (e) { useLS = true; }
   await refreshCount(); loadBrands(); loadCats();
   window.addEventListener('online', () => { syncNow(true); syncDrafts(true); });
-  document.addEventListener('visibilitychange', () => { if (document.hidden) return; dbVer++; refreshCount(); if (currentView === 'entry' && (!ui.form || ui.form.hidden)) syncDrafts(true); });
-  // نكمل آخر منتج كنت تصوّره لو انقفلت الصفحة
+  document.addEventListener('visibilitychange', () => { if (document.hidden) return; dbVer++; refreshCount(); if ((currentView === 'requests' || currentView === 'intake') && (!ui.form || ui.form.hidden)) syncDrafts(true); });
+  // استرجاع تسجيل الباركود الجاري وصوره وأحجامه بعد إعادة التحميل.
   await loadDrafts();
   const capturing = draftsCache.filter(d => d.status === 'capturing').sort((a, b) => String(b.updated_at || b.created_at).localeCompare(String(a.updated_at || a.created_at)));
-  if (capturing.length) {
-    cap = capturing[0];
-    for (const d of capturing.slice(1)) { if (!d.front && !d.label) await Drafts.del(d.id).catch(() => {}); else { d.status = 'ready'; d.uploaded = false; await Drafts.put(d).catch(() => {}); } }
-    await loadDrafts();
+  const barcodeCapture = capturing.find(d => d.kind === 'barcode') || null;
+  if (barcodeCapture) {
+    cap = barcodeCapture;
+    barcodeIntake.packages = (cap.packages && cap.packages.length ? cap.packages : barcodeIntake.packages || []).map(p => Object.assign({}, p));
+    cap.packages = barcodeIntake.packages.map(p => Object.assign({}, p)); cap.codes = cap.packages.map(p => p.barcode);
+    saveBarcodeIntakeState(); await capPersist();
   }
-  renderEntry();
+  for (const d of capturing) {
+    if (cap && d.id === cap.id) continue;
+    if (!d.front && !d.label) await Drafts.del(d.id).catch(() => {});
+    else { d.status = 'ready'; d.uploaded = false; await Drafts.put(d).catch(() => {}); }
+  }
+  if (!cap && barcodeIntake.packages.length) { cap = capEnsure(); cap.packages = barcodeIntake.packages.map(p => Object.assign({}, p)); cap.codes = cap.packages.map(p => p.barcode); await capPersist(); }
+  await loadDrafts();
+  renderIntake(); renderCapture(); renderQueue(); updateDraftBadge();
+  if (barcodeIntake.currentCode) checkIntakeCode(barcodeIntake.currentCode);
   await restoreDraft();
   syncNow(true); syncDrafts(true);
   try { ui.btnShare.hidden = !(navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.json', { type: 'application/json' })] })); } catch (e) { ui.btnShare.hidden = true; }
