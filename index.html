@@ -412,6 +412,16 @@ input::placeholder{color:var(--faint)}
 .q-del svg{width:17px;height:17px}
 .draft-bar{display:flex;align-items:flex-start;gap:10px;background:var(--amber-tint);color:var(--amber);border-radius:14px;padding:10px 12px;margin-bottom:12px;font-size:14px;font-weight:700;line-height:1.55}
 .draft-bar b{color:var(--text);font-weight:800}
+.draft-bar small{display:block;color:var(--muted);font-weight:600;font-size:12.5px;margin-top:4px}
+.queue-head:has(.queue-tools){flex-wrap:wrap}
+.queue-tools{display:flex;gap:6px;flex:none;margin-inline-start:auto}
+.req-tools{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.req-tools .tool{font-size:13px;padding:6px 12px;color:var(--text)}
+.req-tools .tool:disabled{opacity:.5}
+.req-tools .tool.danger{color:var(--red);background:var(--red-tint);border-color:transparent}
+.req-adopt{display:flex;align-items:center;gap:8px;margin-top:8px;color:var(--text);font-weight:700;font-size:13px;cursor:pointer}
+.req-adopt input{width:18px;height:18px;padding:0;flex:none;border:0;background:none;box-shadow:none;-webkit-appearance:checkbox;appearance:auto;accent-color:var(--green)}
+.req-adopt.off{opacity:.55;cursor:default}
 .ai-btn.stop{background:var(--red-tint);border-color:var(--red)}
 .ai-btn.stop .ic{background:var(--red);color:#fff}
 
@@ -503,9 +513,10 @@ input::placeholder{color:var(--faint)}
     <section id="view-requests" class="view">
       <div class="requests">
         <div class="card queue" id="queueCard">
-          <div class="queue-head"><h2>طلبات توثيق المنتجات <span class="muted" id="queueCount"></span></h2><button type="button" class="tool" id="queueRefresh">تحديث</button></div>
-          <p class="cap-sub">افتح الطلب، راجع صور المنتج والملصق، وأدخل القيم الغذائية ثم اعتمده لإضافته إلى المنتجات.</p>
+          <div class="queue-head"><h2>طلبات توثيق المنتجات <span class="muted" id="queueCount"></span></h2><span class="queue-tools"><button type="button" class="tool" id="reqClean" hidden>تنظيف الصور</button><button type="button" class="tool" id="queueRefresh">تحديث</button></span></div>
+          <p class="cap-sub">افتح الطلب، راجع صور المنتج والملصق، وأدخل القيم الغذائية ثم اعتمده لإضافته إلى المنتجات. الطلبات المعلّمة «من التطبيق» أرسلها مستخدمو التطبيق، وصورها خاصة.</p>
           <div id="queueMsg" class="status info queue-msg" hidden></div>
+          <div id="reqMsg" class="status warn queue-msg" hidden></div>
           <div id="queueList" class="q-list"></div>
           <div id="queueEmpty" class="empty" hidden>ما فيه طلبات بانتظار التوثيق.<br>سجّل منتجًا جديدًا من صفحة التسجيل وسيظهر هنا.</div>
         </div>
@@ -925,7 +936,7 @@ const KV = {
 };
 
 /* ---------- UI refs ---------- */
-const ids = ['intakeCode','intakeScan','intakeStatus','intakeSizeBox','intakeAmount','intakeUnit','intakeApprove','intakeSizesTitle','intakeSizes','countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','catFilter','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','filePhoto','fName','fNameEn','fBrand','brandSuggest','btnScanMain','catToggle','catHeadIcon','catHeadName','catBody','catDesc','catChips','catNew','catNewIcon','catNewAr','catNewEn','catNewDesc','catNewSave','catGuide','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','syncCard','syncState','syncBody','brandsCard','brandsCount','brandsBody','catsCard','catsCount','catsBody','aiCard','aiState','aiBody','btnAiLabel','btnAnalyze','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelThumb','labelPrevImg','labelEmpty','offRef','btnUseOff','offRefBody','lightbox','lightboxImg','lightboxClose','miniScan','miniVideo','miniTorch','miniZoom','miniCount','miniList','miniFrame','miniHint','miniCancel','miniSwitch','btnSwitchCam','detail','detailBack','detailEdit','detailBody','capCard','capToday','shotFront','shotLabel','fileCapFront','fileCapLabel','capCodes','capNote','capSave','capDiscard','queueCard','queueCount','queueRefresh','queueMsg','queueList','queueEmpty','draftBadge','draftBar','refPane','refSeg','refRotate','refZoom','refStage','refImg','refEmpty','requestPhotoStack','requestFrontImage','requestLabelImage','themeOptions','themeState'];
+const ids = ['intakeCode','intakeScan','intakeStatus','intakeSizeBox','intakeAmount','intakeUnit','intakeApprove','intakeSizesTitle','intakeSizes','countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','catFilter','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','filePhoto','fName','fNameEn','fBrand','brandSuggest','btnScanMain','catToggle','catHeadIcon','catHeadName','catBody','catDesc','catChips','catNew','catNewIcon','catNewAr','catNewEn','catNewDesc','catNewSave','catGuide','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','syncCard','syncState','syncBody','brandsCard','brandsCount','brandsBody','catsCard','catsCount','catsBody','aiCard','aiState','aiBody','btnAiLabel','btnAnalyze','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelThumb','labelPrevImg','labelEmpty','offRef','btnUseOff','offRefBody','lightbox','lightboxImg','lightboxClose','miniScan','miniVideo','miniTorch','miniZoom','miniCount','miniList','miniFrame','miniHint','miniCancel','miniSwitch','btnSwitchCam','detail','detailBack','detailEdit','detailBody','capCard','capToday','shotFront','shotLabel','fileCapFront','fileCapLabel','capCodes','capNote','capSave','capDiscard','queueCard','queueCount','queueRefresh','queueMsg','queueList','queueEmpty','draftBadge','draftBar','refPane','refSeg','refRotate','refZoom','refStage','refImg','refEmpty','requestPhotoStack','requestFrontImage','requestLabelImage','themeOptions','themeState','reqClean','reqMsg'];
 const ui = {}; ids.forEach(id => { ui[id] = document.getElementById(id); });
 ui.viewIntake = $('#view-intake'); ui.viewRequests = $('#view-requests'); ui.viewScan = $('#view-scan'); ui.viewList = $('#view-list'); ui.viewSettings = $('#view-settings'); ui.tabs = [...document.querySelectorAll('.tab')];
 
@@ -947,7 +958,7 @@ function applyTheme(theme, persist = false) {
 applyTheme(localStorage.getItem(THEME_KEY));
 
 /* ---------- state ---------- */
-const state = { unit: 'g', pkgUnit: 'g', basis: '100', photo: null, photoUrl: null, off: null, labelPhoto: null, labelUploaded: false, labelUrl: null, photoOk: false, category: null };
+const state = { unit: 'g', pkgUnit: 'g', basis: '100', photo: null, photoUrl: null, off: null, labelPhoto: null, labelUploaded: false, labelUrl: null, photoOk: false, category: null, reqFront: null, reqLabel: null, reqAdoptedPhoto: null }; // req*: صور طلب من التطبيق (في الذاكرة فقط)
 let listFilterMode = 'all', autoPulled = false;
 let scanning = false, starting = false, decoding = false, busy = false, formCtx = null, currentCode = null, currentView = 'intake', wasScanning = false;
 const BARCODE_INTAKE_KEY = projectKey('alyaf-barcode-intake');
@@ -1693,7 +1704,7 @@ function probeLabel(code) {
   im.src = url + '?probe=' + Date.now();
 }
 /* الصورة الكبيرة جنب النموذج (الكمبيوتر): تقرأ الملصق وأنت تكتب */
-function refSrc(kind) { return kind === 'label' ? (state.labelPhoto || state.labelUrl) : (state.photo || state.photoUrl); }
+function refSrc(kind) { return kind === 'label' ? (state.labelPhoto || state.labelUrl || state.reqLabel) : (state.photo || state.photoUrl || state.reqFront); }
 async function rotatedSrc(src, deg) {
   if (!deg) return src;
   const key = src.slice(0, 64) + src.length + ':' + deg; if (refRotCache.key === key) return refRotCache.url;
@@ -1706,10 +1717,10 @@ async function rotatedSrc(src, deg) {
 async function renderRef() {
   const has = !!(refSrc('label') || refSrc('front'));
   ui.form.classList.toggle('has-ref', has);
-  const requestPhotos = !!(formCtx && formCtx.draftId && (state.photo || state.photoUrl || state.labelPhoto || state.labelUrl));
+  const requestPhotos = !!(formCtx && (formCtx.draftId || formCtx.requestKey) && has);
   ui.form.classList.toggle('has-request-photos', requestPhotos);
-  if (ui.requestFrontImage) { const src = state.photo || state.photoUrl; ui.requestFrontImage.hidden = !src; if (src && ui.requestFrontImage.src !== src) ui.requestFrontImage.src = src; }
-  if (ui.requestLabelImage) { const src = state.labelPhoto || state.labelUrl; ui.requestLabelImage.hidden = !src; if (src && ui.requestLabelImage.src !== src) ui.requestLabelImage.src = src; }
+  if (ui.requestFrontImage) { const src = refSrc('front'); ui.requestFrontImage.hidden = !src; if (src && ui.requestFrontImage.src !== src) ui.requestFrontImage.src = src; }
+  if (ui.requestLabelImage) { const src = refSrc('label'); ui.requestLabelImage.hidden = !src; if (src && ui.requestLabelImage.src !== src) ui.requestLabelImage.src = src; }
   if (!has) return;
   if (!refSrc(refView)) refView = refSrc('label') ? 'label' : 'front';
   ui.refSeg.querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.r === refView); b.disabled = !refSrc(b.dataset.r); });
@@ -1734,13 +1745,14 @@ function useOffValues() {
   toast('تم نقل ' + n + ' قيمة من Open Food Facts — راجعها'); showSanity(); queueSaveDraft();
 }
 function openForm(p, ctx) {
-  formCtx = Object.assign({ editing: null, returnTo: 'scan', fromOFF: false, draftId: null }, ctx || {}); p = p || {}; formToken++;
+  formCtx = Object.assign({ editing: null, returnTo: 'scan', fromOFF: false, draftId: null, requestKey: null }, ctx || {}); p = p || {}; formToken++;
   stopAi();
-  const isDraft = !!formCtx.draftId;
-  ui.formTitle.textContent = isDraft ? 'تعبئة طلب توثيق' : (formCtx.editing ? 'تعديل منتج' : 'إضافة منتج');
+  state.reqFront = null; state.reqLabel = null; state.reqAdoptedPhoto = null;
+  const isReq = !!formCtx.requestKey, isDraft = !!formCtx.draftId || isReq;
+  ui.formTitle.textContent = isReq ? 'طلب من التطبيق' : isDraft ? 'تعبئة طلب توثيق' : (formCtx.editing ? 'تعديل منتج' : 'إضافة منتج');
   ui.formSave.textContent = isDraft ? 'اعتماد وإضافة إلى المنتجات' : 'حفظ المنتج'; ui.formSaveTop.textContent = isDraft ? 'اعتماد' : 'حفظ';
   ui.draftBar.hidden = !isDraft;
-  if (isDraft) ui.draftBar.innerHTML = '<span>📋</span><span>' + (formCtx.draftPos ? '<b>' + esc(formCtx.draftPos) + '</b> · ' : '') + 'راجع الصور على اليسار، وأدخل العناصر الغذائية ثم اضغط <b>اعتماد</b>.' + (formCtx.note ? '<br>ملاحظتك: <b>' + esc(formCtx.note) + '</b>' : '') + '</span>';
+  if (isDraft && !isReq) ui.draftBar.innerHTML = '<span>📋</span><span>' + (formCtx.draftPos ? '<b>' + esc(formCtx.draftPos) + '</b> · ' : '') + 'راجع الصور على اليسار، وأدخل العناصر الغذائية ثم اضغط <b>اعتماد</b>.' + (formCtx.note ? '<br>ملاحظتك: <b>' + esc(formCtx.note) + '</b>' : '') + '</span>';
   ui.fName.value = p.name || ''; ui.fNameEn.value = p.name_en || ''; ui.fBrand.value = p.brand || ''; ui.brandSuggest.hidden = true; pendingBrand = null; state.category = p.category || null; ui.catNew.hidden = true; ui.catBody.hidden = true; ui.catToggle.classList.remove('open'); renderCat(); renderCatGuide();
   ui.fPkg.value = ''; setUnit(p.package_unit || p.unit || 'g');
   setPkgBase(p.package_size); ui.fServ.value = fmtIn(p.serving_size); ui.fServN.value = fmtIn(p.servings_per_package);
@@ -1750,6 +1762,8 @@ function openForm(p, ctx) {
   state.off = (formCtx.off) || p.off_ref || null;
   state.photo = p.photo || null; state.photoUrl = isOwnUrl(p.photo_url) ? p.photo_url : null;
   state.photoOk = !!p.photo_ok; renderPhoto(); renderOffRef();
+  // نموذج مسترجع بعد إعادة التحميل: الصورة المحفوظة هي صورة المرسل اللي اخترتها
+  if (isReq) { if (formCtx.reqAdopted && state.photo) state.reqAdoptedPhoto = state.photo; else formCtx.reqAdopted = false; }
   state.labelPhoto = p.label_photo || null; state.labelUrl = p.label_photo_url || null; state.labelUploaded = !!p.label_photo_uploaded; showLabelThumb();
   // منتج قديم بدون رابط ملصق: نجرّب المسار الثابت في السحابة (labels/الباركود.jpg) ونرجّعه لو كان موجود
   if (!state.labelPhoto && !state.labelUrl && formCtx.editing && p.barcode) probeLabel(String(p.barcode));
@@ -1763,6 +1777,7 @@ function openForm(p, ctx) {
   ui.form.querySelectorAll('.field.ai, .field.translated').forEach(f => f.classList.remove('ai', 'translated')); ui.aiStatus.hidden = true; ui.sanityBox.hidden = true;
   ui.btnDelete.hidden = !formCtx.editing;
   ui.form.hidden = false; ui.formBody.scrollTop = 0;
+  if (isReq) loadRequestPhotos(formToken); // يرسم شريط الطلب ثم يحمّل صوره
   if (formCtx.newSize) {
     const row = addSizeRow(formCtx.newSize);
     setTimeout(() => { try { row.scrollIntoView({ block: 'center' }); } catch (e) {} row.querySelector('.s-amt').focus(); }, 80);
@@ -1770,6 +1785,7 @@ function openForm(p, ctx) {
 }
 function closeForm() {
   stopAi();
+  state.reqFront = null; state.reqLabel = null; state.reqAdoptedPhoto = null;
   const rt = formCtx ? formCtx.returnTo : 'scan'; formCtx = null; ui.form.hidden = true; clearDraft();
   if (rt === 'list') renderList(); else if (rt === 'requests' || rt === 'entry') renderQueue(); else if (rt === 'intake') { renderIntake(); renderCapture(); } else nextScan();
 }
@@ -1824,7 +1840,9 @@ async function saveFormInner() {
   const c = await refreshCount();
   const draftId = formCtx.draftId || null;
   const returnTo = formCtx.returnTo || 'scan';
+  const reqKey = formCtx.requestKey || null;
   closeForm(); syncNow(true);
+  if (reqKey) { finishRequest(reqKey, barcode, coreDone); return; }
   if (!draftId) { toast('تم الحفظ · عندك ' + c + ' منتج'); return; }
   await finishDraft(draftId);
   if (returnTo === 'requests' || returnTo === 'intake') renderQueue();
@@ -1967,7 +1985,7 @@ function setSession(j) {
   session = { access_token: j.access_token, refresh_token: j.refresh_token, expires_at: Date.now() + ((j.expires_in || 3600) - 30) * 1000, email: (j.user && j.user.email) || (session && session.email) || '' };
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
 }
-function clearSession() { session = null; localStorage.removeItem(SESSION_KEY); }
+function clearSession() { session = null; localStorage.removeItem(SESSION_KEY); reqCache = []; reqTableMissing = false; }
 async function sbLogin(email, password) {
   const r = await fetchT(SB.url + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: SB.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
   const j = await r.json().catch(() => ({}));
@@ -2000,6 +2018,29 @@ async function sbFetch(path, opts) {
   if (!r.ok) { let msg = ''; try { const j = await r.json(); msg = j.message || j.msg || j.error_description || j.error || j.hint || JSON.stringify(j); } catch (e) {} throw new Error(msg || ('HTTP ' + r.status)); }
   if (r.status === 204) return null;
   const ct = r.headers.get('content-type') || ''; return ct.includes('json') ? r.json() : r.text();
+}
+// مثل sbFetch بس يرجّع الـResponse نفسه: نحتاج الحالة ورمز الخطأ (PGRST205، 404...) والصور كـBlob
+async function sbRaw(path, opts) {
+  opts = opts || {};
+  const tok = await sbRefresh(false); if (!tok) throw new Error('nosession');
+  const headers = Object.assign({ apikey: SB.key, Authorization: 'Bearer ' + tok }, opts.headers || {});
+  const r = await fetchT(SB.url + path, { method: opts.method || 'GET', headers, body: opts.body }, opts.timeout || 30000);
+  // التخزين يرجّع انتهاء الجلسة كـ400 أو 403 ("jwt expired")، وPostgREST كـ401
+  const stale = r.status === 401 || ((r.status === 400 || r.status === 403) && /jwt|expired/i.test(await r.clone().text().catch(() => '')));
+  if (stale && !opts._retried) { await sbRefresh(true); return sbRaw(path, Object.assign({}, opts, { _retried: true })); }
+  return r;
+}
+async function sbErr(r) {
+  let j = null; try { j = await r.json(); } catch (e) {}
+  const e = new Error((j && (j.message || j.msg || j.error_description || j.error)) || ('HTTP ' + r.status));
+  e.status = r.status; e.code = j && (j.code || j.statusCode) ? String(j.code || j.statusCode) : ''; return e;
+}
+async function sbBlob(bucket, path) {
+  const r = await sbRaw('/storage/v1/object/authenticated/' + bucket + '/' + path.split('/').map(encodeURIComponent).join('/'), { timeout: 60000 });
+  if (!r.ok) throw await sbErr(r);
+  const b = await r.blob();
+  if (!/^image\/(jpe?g|png|webp)$/.test(b.type)) throw new Error('نوع ملف غير متوقع');
+  return b;
 }
 const toRow = p => ({ barcode: p.barcode, name: p.name, name_en: p.name_en || null, brand: p.brand || null, category: p.category || null, unit: p.unit || 'g', package_size: p.package_size ?? null, serving_size: p.serving_size ?? null, servings_per_package: p.servings_per_package ?? null, basis: p.basis || '100', nutrients: p.nutrients || null, per_100: p.per_100 || null, per_serving: p.per_serving || null, sizes: (p.sizes || []).filter(Boolean), complete: !!p.complete, source: p.source || 'manual', photo_url: ownPhoto(p) ? (p.photo_url && isOwnUrl(p.photo_url) ? p.photo_url : null) : null, photo_ok: !!p.photo_ok, label_photo_url: p.label_photo_url || null, created_at: p.created_at || now(), updated_at: p.updated_at || now() });
 const missingCols = new Set();
@@ -2101,6 +2142,7 @@ async function syncNow(silent) {
     for (const p of dirty) { const cur = await DB.get(p.barcode); if (cur && cur.updated_at === p.updated_at) { cur.synced = true; await DB.put(cur); } }
     const pulled = await sbPull();
     localStorage.setItem(LASTSYNC_KEY, now());
+    settleRequests().catch(() => {});
     if (upFail) toast('⚠️ ' + upFail + ' صورة ما قدرت ترتفع للسحابة: ' + upErr.slice(0, 120));
     else if (!silent) toast('تمت المزامنة · رفع ' + dirty.length + ' · سحب ' + pulled);
     if (currentView === 'list') renderList(); refreshCount(); if (currentView === 'settings') renderSync();
@@ -2129,7 +2171,7 @@ function renderSync(statusText) {
   }
   if (!session) {
     ui.syncState.textContent = 'سجّل الدخول'; ui.syncState.className = 'pill warn';
-    ui.syncBody.innerHTML = '<input id="sbEmail" type="email" placeholder="البريد" autocomplete="email"><input id="sbPass" type="password" placeholder="كلمة المرور" autocomplete="current-password"><button class="btn primary wide" id="sbLoginBtn">تسجيل الدخول</button><p class="note">نفس الحساب المسجّل كمحرّر في جدول product_editors. المنتجات تنحفظ محليًا دائمًا، والمزامنة تصير تلقائيًا لما يكون فيه إنترنت.</p><button class="link" id="sbResetCfg">تغيير رابط المشروع أو المفتاح</button>';
+    ui.syncBody.innerHTML = '<input id="sbEmail" type="email" placeholder="البريد" autocomplete="email"><input id="sbPass" type="password" placeholder="كلمة المرور" autocomplete="current-password"><button class="btn primary wide" id="sbLoginBtn">تسجيل الدخول</button><p class="note">نفس الحساب المسجّل كمحرّر في جدول catalogue_editors. المنتجات تنحفظ محليًا دائمًا، والمزامنة تصير تلقائيًا لما يكون فيه إنترنت.</p><button class="link" id="sbResetCfg">تغيير رابط المشروع أو المفتاح</button>';
     $('#sbResetCfg').onclick = resetSbConfig;
     try { $('#sbEmail').value = localStorage.getItem('alyaf-sb-email') || ''; } catch (e) {}
     $('#sbLoginBtn').onclick = async () => {
@@ -2364,7 +2406,7 @@ function formSnapshot() {
 // المسودة تنحفظ في IndexedDB (مو sessionStorage) عشان الصور الكبيرة ما تتجاوز الحد وتضيع لما الجوال يعيد تحميل الصفحة بعد الكاميرا
 function saveDraft() {
   if (!formCtx) return;
-  const payload = { ctx: { editing: formCtx.editing, returnTo: formCtx.returnTo || 'scan', fromOFF: !!formCtx.fromOFF, draftId: formCtx.draftId || null, note: formCtx.note || '', draftPos: formCtx.draftPos || '' }, product: formSnapshot(), t: Date.now() };
+  const payload = { ctx: { editing: formCtx.editing, returnTo: formCtx.returnTo || 'scan', fromOFF: !!formCtx.fromOFF, draftId: formCtx.draftId || null, note: formCtx.note || '', draftPos: formCtx.draftPos || '', requestKey: formCtx.requestKey || null, reqBarcode: formCtx.reqBarcode || '', reporters: formCtx.reporters || 0, reqFrontPath: formCtx.reqFrontPath || null, reqLabelPath: formCtx.reqLabelPath || null, reqAdopted: !!formCtx.reqAdopted }, product: formSnapshot(), t: Date.now() };
   KV.set(DRAFT_KEY, payload).catch(() => { try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(payload)); } catch (e) {} });
 }
 function clearDraft() { KV.del(DRAFT_KEY).catch(() => {}); try { sessionStorage.removeItem(DRAFT_KEY); } catch (e) {} }
@@ -2455,8 +2497,233 @@ async function renderCapture() {
   ui.capToday.textContent = n ? 'أرسلت اليوم ' + n + ' طلب' : '';
 }
 
+/* --- طلبات التطبيق: «ما عندنا هذا المنتج» من مستخدمي ألياف ---
+   تنقرأ من product_request_queue بجلسة المحرّر (RLS: غير المحرّر يشوف قائمة فاضية، والجدول الناقص PGRST205 يخفيها بهدوء).
+   الصور في bucket خاص (product-requests): تنحمّل بالجلسة وتبقى في الذاكرة فقط، ما تنحفظ على الجهاز ولا مع المنتج
+   إلا لو اخترت «استخدم صورة المرسل كصورة المنتج». الطلب ينقفل في القاعدة لما ينحفظ المنتج كامل (trigger على products)،
+   وصور الطلبات المقفلة تنحذف عبر Storage API: عند فتح القائمة، بعد كل مزامنة، بعد الرفض، ومن زر «تنظيف الصور». */
+const REQ_BUCKET = 'product-requests';
+// صور الطلبات ما تنرسل لمزوّد الذكاء الاصطناعي: سياسة الخصوصية في التطبيق ما تذكره. لا تغيّرها قبل تعديل السياسة (عربي وإنجليزي).
+const REQ_AI_ALLOWED = false;
+const REQ_COLS = 'gtin_key,alt_key,barcode,reporters,sends,first_asked_at,last_asked_at,server_row_complete,catalogue_barcode,catalogue_complete,catalogue_usable,front_path,label_path,photos_sent_at,photo_pairs';
+const REQ_PATH_RE = /^[0-9a-f]{32}\/(front|label)_[A-Za-z0-9_-]{6,64}\.(jpg|jpeg|png|webp)$/;
+const REQ_KEY_RE = /^[1-9]\d{0,13}$/;
+const REQ_MISSING = /^(PGRST205|PGRST202|42P01)$/;
+// REQ_HOLD_MS: الخادم ما يعدّ صور الطلب المرفوض قديمة إلا بعد دقيقتين (product_request_stale_photos)، أطول من مهلة التراجع
+const REQ_DONEQ_KEY = projectKey('alyaf-req-done'), REQ_UNDO_MS = 60000, REQ_HOLD_MS = 120000, REQ_DONE_TTL = 2 * 86400000;
+let reqCache = [], reqTableMissing = false, reqCleaning = null, lastReject = null, reqUndoT = null, reqCleanT = null;
+// طلبات اعتمدتها وتنتظر وصول المنتج للسحابة: {key, barcode, at}. بعد يومين ترجع للقائمة حتى لو المزامنة ما نجحت
+// (all = true: مع المنتهية، تحتاجها settleRequests عشان تقول ليش رجعت)
+const reqDoneQ = all => { try { const q = JSON.parse(localStorage.getItem(REQ_DONEQ_KEY) || '[]'); return (Array.isArray(q) ? q : []).filter(e => e && e.key && (all || Date.now() - (e.at || 0) < REQ_DONE_TTL)); } catch (e) { return []; } };
+const setReqDoneQ = q => { try { localStorage.setItem(REQ_DONEQ_KEY, JSON.stringify(q)); } catch (e) {} };
+const reqOn = () => sbConfigured() && !!session && !reqTableMissing;
+const reqRefused = r => !r.catalogue_usable && !!(r.server_row_complete || r.catalogue_complete);
+const padKeys = k => k ? [8, 12, 13, 14].filter(n => n >= String(k).length).map(n => String(k).padStart(n, '0')) : [];
+// الأكثر طلبًا أول، وبين المتساويين الأحدث طلبًا. اللي اعتمدته وينتظر المزامنة ما يظهر.
+function visibleRequests() {
+  const waiting = new Set(reqDoneQ().map(e => e.key));
+  return reqCache.filter(r => !waiting.has(r.gtin_key)).sort((a, b) => (b.reporters || 0) - (a.reporters || 0) || String(b.last_asked_at || '').localeCompare(String(a.last_asked_at || '')));
+}
+async function syncRequests() {
+  if (!reqOn()) return;
+  const r = await sbRaw('/rest/v1/product_request_queue?select=' + REQ_COLS + '&order=reporters.desc,first_asked_at.asc&limit=200');
+  if (!r.ok) { const e = await sbErr(r); if (REQ_MISSING.test(e.code)) { reqTableMissing = true; reqCache = []; return; } throw e; }
+  const rows = await r.json().catch(() => []);
+  reqCache = (Array.isArray(rows) ? rows : []).filter(x => x && REQ_KEY_RE.test(String(x.gtin_key)) && /^\d{8,14}$/.test(String(x.barcode)))
+    .map(x => Object.assign({}, x, { front_path: REQ_PATH_RE.test(x.front_path || '') ? x.front_path : null, label_path: REQ_PATH_RE.test(x.label_path || '') ? x.label_path : null }));
+}
+function reqRowHTML(r) {
+  const k = esc(r.gtin_key), pills = ['<span class="pill ok">من التطبيق · ' + esc(r.reporters || 1) + '</span>'];
+  if (!r.front_path) pills.push('<span class="pill warn">بدون صور</span>');
+  if (r.catalogue_usable) pills.push('<span class="pill ok">موجود ويظهر في التطبيق</span>');
+  else if (reqRefused(r)) pills.push('<span class="pill bad">موجود بس التطبيق رفضه</span>');
+  const last = whenSaved(r.last_asked_at), first = whenSaved(r.first_asked_at);
+  const sub = (last ? 'آخر طلب ' + last : '') + (first && first !== last ? ' · أول طلب ' + first : '');
+  return '<div class="q-row"><button type="button" class="q-open" data-open-req="' + k + '">'
+    + '<span class="q-main"><span class="q-title mono" style="display:block">' + esc(r.barcode) + '</span>'
+    + '<span class="q-sub" style="display:block">' + esc(sub) + '</span>'
+    + '<span class="row-badges">' + pills.join('') + '</span></span></button>'
+    + (r.catalogue_usable ? '<button type="button" class="q-go" data-close-req="' + k + '">اقفل الطلب</button>' : '<button type="button" class="q-go" data-open-req="' + k + '">راجع</button>')
+    + '<button type="button" class="q-del" data-reject-req="' + k + '" aria-label="رفض الطلب" title="رفض الطلب"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/></svg></button></div>';
+}
+function renderReqMsg() {
+  const u = lastReject && Date.now() - lastReject.at < REQ_UNDO_MS ? lastReject : null;
+  ui.reqMsg.innerHTML = u ? 'رفضت طلب <b dir="ltr">' + esc(u.barcode) + '</b>. <button type="button" class="link" data-undo-reject>تراجع</button>' : '';
+  ui.reqMsg.hidden = !u;
+}
+async function openRequest(key) {
+  const r = reqCache.find(x => x.gtin_key === key); if (!r) { toast('هذا الطلب انقفل أو انرفض'); renderQueue(); return; }
+  // نفس المنتج ممكن يكون محفوظ بكتابة ثانية للباركود (أصفار في البداية، UPC-E)
+  let hit = null;
+  for (const c of [...new Set([r.catalogue_barcode, r.barcode].concat(padKeys(r.gtin_key), padKeys(r.alt_key)).filter(Boolean).map(String))]) { try { hit = await findLocal(c); } catch (e) {} if (hit) break; }
+  // السحابة فيها صف لهذا الباركود وهذا الجهاز ما سحبه: نجيبه ونفتحه للتعديل. نموذج فاضي فوقه كان بيمسح أحجامه وصوره مع المزامنة
+  if (!hit && r.catalogue_barcode) {
+    const tok = formToken;
+    try { hit = await reqServerProduct(String(r.catalogue_barcode)); }
+    catch (e) { toast('هذا الباركود محفوظ في السحابة وما قدرت أجيبه: ' + String(e.message || e).slice(0, 100) + '. سوّ مزامنة من الإعدادات وارجع للطلب'); return; }
+    if (tok !== formToken) return;
+  }
+  const refused = reqRefused(r), list = visibleRequests(), pos = list.findIndex(x => x.gtin_key === key);
+  openForm(hit ? hit.product : { barcode: (refused && r.catalogue_barcode) || r.barcode, source: 'manual' },
+    { editing: hit ? hit.product.barcode : null, returnTo: 'requests', requestKey: r.gtin_key, reqBarcode: r.barcode, reporters: r.reporters || 1, reqFrontPath: r.front_path, reqLabelPath: r.label_path, draftPos: list.length > 1 && pos > -1 ? 'طلب ' + (pos + 1) + ' من ' + list.length : '' });
+  if (!formCtx || formCtx.requestKey !== key) return;
+  if (refused) aiStatusSet('warn', 'المنتج محفوظ في السحابة' + (hit ? ' باسم «' + esc(hit.product.name || '') + '»' : '') + ' بس التطبيق ما يعرضه. تأكد إن الأساسيات الأربع مكتوبة، والاسم موجود، والباركود من 8 إلى 14 رقم، والسعرات بين 0 و900، وكل ماكرو بين 0 و100، ومجموع البروتين والكارب والدهون لكل 100 ما يزيد عن 102.' + (hit ? '' : '<br>ما لقيته على هذا الجهاز: سوّ مزامنة من الإعدادات أول عشان تعدّل نسخته بدل ما تكتبه من جديد.'));
+  else if (r.catalogue_usable) aiStatusSet('ok', 'التطبيق يعرض هذا المنتج الحين. تقدر تقفل الطلب من القائمة، أو تعدّل المنتج وتعتمد.');
+  else if (hit) aiStatusSet('warn', 'هذا الباركود محفوظ على جهازك باسم «' + esc(hit.product.name || '') + '». كمّل بياناته ثم اعتمد.');
+}
+// صف المنتج من السحابة، ينحفظ على الجهاز مثل ما تسويه sbPull. null لو ما عاد موجود أو محذوف من هذا الجهاز وينتظر الحذف
+async function reqServerProduct(code) {
+  if (!/^\d{6,14}$/.test(code)) return null;
+  const rows = await sbFetch('/rest/v1/products?select=*&barcode=eq.' + encodeURIComponent(code) + '&limit=1');
+  const row = Array.isArray(rows) ? rows[0] : null; if (!row || row.barcode !== code) return null;
+  let delq = []; try { delq = JSON.parse(localStorage.getItem(DELQ_KEY) || '[]'); } catch (e) {}
+  if (delq.includes(code)) return null;
+  const local = await DB.get(code); if (local) return { product: local, size: null }; // وصل بالمزامنة وقت الجلب
+  const merged = Object.assign({}, row, { synced: true, photo: null, photo_uploaded: true, label_photo: null, label_photo_uploaded: true });
+  await DB.put(merged); refreshCount();
+  return { product: merged, size: null };
+}
+function renderReqBar() {
+  if (!formCtx || !formCtx.requestKey) return;
+  const st = formCtx.reqPhotoState || '', hasF = !!state.reqFront, hasL = !!state.reqLabel, canAdopt = hasF || !!formCtx.reqAdopted;
+  const note = st === 'loading' ? 'جاري تحميل صور الطلب…' : st === 'none' ? 'المرسل ما أرفق صور.' : st === 'failed' ? 'تعذر تحميل صور الطلب: ' + esc(formCtx.reqPhotoErr || '') : st === 'partial' ? 'وحدة من الصور ما تحمّلت: ' + esc(formCtx.reqPhotoErr || '') : '';
+  ui.draftBar.innerHTML = '<span>📋</span><span>' + (formCtx.draftPos ? '<b>' + esc(formCtx.draftPos) + '</b> · ' : '')
+    + 'طلبه <b>' + esc(formCtx.reporters || 1) + '</b> من مستخدمي التطبيق بالباركود <b dir="ltr">' + esc(formCtx.reqBarcode || '') + '</b>. عبّي المنتج واعتمده، والطلب ينقفل لما تكون الأساسيات الأربع مكتوبة.'
+    + '<small>صور الطلب خاصة: تشوفها هنا بس، ما تنحفظ مع المنتج' + (REQ_AI_ALLOWED ? '' : ' ولا تنرسل للذكاء الاصطناعي') + '، وتنحذف بعد ما ينقفل الطلب.' + (note ? ' ' + note : '') + '</small>'
+    + '<span class="req-tools"><button type="button" class="tool" data-req-view="front"' + (hasF ? '' : ' disabled') + '>صورة المنتج</button><button type="button" class="tool" data-req-view="label"' + (hasL ? '' : ' disabled') + '>صورة الملصق</button><button type="button" class="tool danger" data-reject-req="' + esc(formCtx.requestKey) + '">رفض الطلب</button></span>'
+    + '<label class="req-adopt' + (canAdopt ? '' : ' off') + '"><input type="checkbox" id="reqAdopt"' + (formCtx.reqAdopted ? ' checked' : '') + (canAdopt ? '' : ' disabled') + '>استخدم صورة المرسل كصورة المنتج (تصير ظاهرة في التطبيق)</label></span>';
+}
+async function loadRequestPhotos(tok) {
+  if (!formCtx) return;
+  const fp = formCtx.reqFrontPath, lp = formCtx.reqLabelPath;
+  if (!fp && !lp) { formCtx.reqPhotoState = 'none'; renderReqBar(); return; }
+  if (!sbConfigured() || !session) { formCtx.reqPhotoState = 'failed'; formCtx.reqPhotoErr = 'سجّل الدخول من الإعدادات'; renderReqBar(); return; }
+  formCtx.reqPhotoState = 'loading'; renderReqBar();
+  const get = async p => (p && REQ_PATH_RE.test(p)) ? blobToData(await sbBlob(REQ_BUCKET, p)) : null;
+  const [f, l] = await Promise.allSettled([get(fp), get(lp)]);
+  if (tok !== formToken || !formCtx) return;
+  state.reqFront = f.status === 'fulfilled' ? f.value : null; state.reqLabel = l.status === 'fulfilled' ? l.value : null;
+  const bad = [f, l].find(x => x.status === 'rejected');
+  formCtx.reqPhotoErr = bad ? String((bad.reason && bad.reason.message) || bad.reason).slice(0, 100) : '';
+  formCtx.reqPhotoState = (state.reqFront || state.reqLabel) ? (bad ? 'partial' : 'ok') : 'failed';
+  renderReqBar(); renderRef();
+}
+// الصورة تصير صورة المنتج العامة فقط لما تختارها بنفسك (الافتراضي: لا)
+function reqAdoptReset() { if (formCtx && formCtx.reqAdopted) { formCtx.reqAdopted = false; state.reqAdoptedPhoto = null; renderReqBar(); } }
+async function adoptRequestPhoto(on, box) {
+  if (!formCtx || !formCtx.requestKey) return;
+  if (!on) {
+    if (state.reqAdoptedPhoto && state.photo === state.reqAdoptedPhoto) { state.photo = null; state.photoOk = false; renderPhoto(); renderRef(); }
+    state.reqAdoptedPhoto = null; formCtx.reqAdopted = false; renderReqBar(); queueSaveDraft(); return;
+  }
+  if (state.photo || state.photoUrl) { box.checked = false; toast('للمنتج صورة. احذفها أول إذا تبي صورة المرسل بدالها'); return; }
+  if (!state.reqFront) { box.checked = false; return; }
+  const tok = formToken;
+  try {
+    const img = await enhanceImage(await compressImage(await (await fetch(state.reqFront)).blob(), 800, 0.85));
+    if (tok !== formToken || !formCtx) return;
+    state.photo = img; state.photoOk = true; state.reqAdoptedPhoto = img; formCtx.reqAdopted = true;
+    renderPhoto(); renderRef(); renderReqBar(); queueSaveDraft(); toast('صورة المرسل صارت صورة المنتج، وبترتفع مع المزامنة');
+  } catch (e) { box.checked = false; toast('تعذر تجهيز الصورة'); }
+}
+function finishRequest(key, barcode, done) {
+  if (!done) { toast('انحفظ المنتج، والطلب يبقى مفتوح لين تكتب الأساسيات الأربع'); renderQueue(); return; }
+  const q = reqDoneQ().filter(e => e.key !== key); q.push({ key, barcode, at: Date.now() }); setReqDoneQ(q);
+  updateDraftBadge(); renderQueue();
+  toast(sbConfigured() && session ? '✓ تم اعتماد المنتج، والطلب ينقفل بعد المزامنة' : '✓ تم اعتماد المنتج. سجّل الدخول عشان يرتفع وينقفل الطلب');
+}
+// بعد كل مزامنة: الطلب ينقفل بالـtrigger لما يوصل المنتج. لو وصل وما انقفل، التطبيق رافض الأرقام فيرجع للقائمة.
+async function settleRequests() {
+  if (!reqOn()) return;
+  const q = reqDoneQ(true);
+  if (q.length) {
+    await syncRequests();
+    const left = [];
+    for (const e of q) {
+      const row = reqCache.find(r => r.gtin_key === e.key);
+      if (!row) continue; // انقفل
+      let p = null; try { p = await DB.get(e.barcode); } catch (x) {}
+      const up = !!(p && p.synced === true);
+      if (!up && Date.now() - (e.at || 0) < REQ_DONE_TTL) { left.push(e); continue; } // المنتج للحين ما ارتفع
+      if (!up) toast('طلب ' + row.barcode + ' رجع للقائمة: المنتج ما ارتفع للسحابة');
+      else if (!row.catalogue_usable) toast('طلب ' + row.barcode + ' ما انقفل: الأرقام ما تنقبل في التطبيق');
+    }
+    setReqDoneQ(left);
+  }
+  await cleanStalePhotos(false).catch(() => 0);
+  updateDraftBadge(); if (currentView === 'requests') renderQueue();
+}
+async function patchRequests(query, body) {
+  const r = await sbRaw('/rest/v1/product_requests?' + query + '&select=gtin_key,closed_at', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(body) });
+  if (!r.ok) throw await sbErr(r);
+  const rows = await r.json().catch(() => []); return Array.isArray(rows) ? rows : [];
+}
+async function rejectRequest(key, fromForm) {
+  if (!REQ_KEY_RE.test(String(key)) || !reqOn()) return;
+  const r = reqCache.find(x => x.gtin_key === key), bc = (r && r.barcode) || (formCtx && formCtx.reqBarcode) || key;
+  const note = prompt('ترفض طلب ' + bc + '؟ يطلع من القائمة، وتقدر تتراجع خلال دقيقة.\nاكتب السبب لو تبي (اختياري، يبقى عندك):', '');
+  if (note === null) return;
+  try {
+    const rows = await patchRequests('gtin_key=eq.' + key + '&status=eq.open', { status: 'rejected', owner_note: note.trim().slice(0, 500) || null });
+    if (rows.length) {
+      lastReject = { key, barcode: bc, since: rows.map(x => x.closed_at).filter(Boolean).sort()[0] || null, at: Date.now() };
+      // شريط التراجع يختفي بعد دقيقة، والصور تنحذف بعد ما يفكّها الخادم (REQ_HOLD_MS)
+      clearTimeout(reqUndoT); reqUndoT = setTimeout(() => { reqUndoT = null; renderReqMsg(); }, REQ_UNDO_MS + 500);
+      clearTimeout(reqCleanT); reqCleanT = setTimeout(() => { reqCleanT = null; cleanStalePhotos(false).catch(() => {}); }, REQ_HOLD_MS + 5000);
+      toast('انرفض الطلب');
+    } else toast('هذا الطلب انقفل من قبل');
+    reqCache = reqCache.filter(x => x.gtin_key !== key);
+    if (fromForm && formCtx && formCtx.requestKey === key) closeForm();
+  } catch (e) { toast('تعذر رفض الطلب: ' + String(e.message || e).slice(0, 120)); }
+  updateDraftBadge(); renderQueue();
+}
+async function undoReject() {
+  const u = lastReject; if (!u) return;
+  try {
+    const rows = await patchRequests('gtin_key=eq.' + u.key + '&status=eq.rejected' + (u.since ? '&closed_at=gte.' + encodeURIComponent(u.since) : ''), { status: 'open' });
+    lastReject = null; clearTimeout(reqUndoT); reqUndoT = null;
+    toast(rows.length ? 'رجع الطلب للقائمة' : 'ما لقيت الطلب المرفوض');
+    await syncRequests();
+  } catch (e) { toast('تعذر التراجع: ' + String(e.message || e).slice(0, 120)); }
+  updateDraftBadge(); renderQueue();
+}
+async function closeRequest(key) {
+  if (!REQ_KEY_RE.test(String(key)) || !reqOn()) return;
+  try {
+    const rows = await patchRequests('gtin_key=eq.' + key + '&status=eq.open', { status: 'published' });
+    toast(rows.length ? 'انقفل الطلب' : 'هذا الطلب انقفل من قبل');
+    reqCache = reqCache.filter(x => x.gtin_key !== key);
+    cleanStalePhotos(false).catch(() => {});
+  } catch (e) { toast('تعذر قفل الطلب: ' + String(e.message || e).slice(0, 120)); }
+  updateDraftBadge(); renderQueue();
+}
+// يحذف صور الطلبات المقفلة والمستبدلة والناقصة (product_request_stale_photos). المسار الوحيد للحذف هو Storage API.
+// صور الطلب المرفوض للتو ما تنحذف خلال مهلة التراجع، ولا من زر «تنظيف الصور»: الخادم ما يدرجها قبل دقيقتين
+// ويرفض حذفها، وهنا نتخطى «rejected» كلها ما دام رفض هذا التبويب داخل المهلة (احتياط لو الخادم أقدم).
+async function cleanStalePhotos(manual) {
+  if (!reqOn()) return 0;
+  if (reqCleaning) return reqCleaning;
+  reqCleaning = (async () => {
+    let total = 0;
+    for (let round = 0; round < 20; round++) {
+      const r = await sbRaw('/rest/v1/product_request_stale_photos?select=name,reason,bytes&limit=1000');
+      if (!r.ok) { const e = await sbErr(r); if (REQ_MISSING.test(e.code)) return total; throw e; }
+      const rows = await r.json().catch(() => []);
+      const hold = !!(lastReject && Date.now() - lastReject.at < REQ_HOLD_MS);
+      const names = (Array.isArray(rows) ? rows : []).filter(x => x && !(hold && x.reason === 'rejected')).map(x => x.name).filter(n => typeof n === 'string' && n && n[0] !== '/' && !n.includes('..'));
+      if (!names.length) break;
+      const d = await sbRaw('/storage/v1/object/' + REQ_BUCKET, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: names }) });
+      if (!d.ok) throw await sbErr(d);
+      const gone = await d.json().catch(() => []); const n = Array.isArray(gone) ? gone.length : 0;
+      total += n; if (!n || rows.length < 1000) break;
+    }
+    return total;
+  })();
+  try { return await reqCleaning; } finally { reqCleaning = null; }
+}
+
 /* --- قائمة "بانتظار التعبئة" --- */
-function updateDraftBadge() { const n = readyDrafts().length; ui.draftBadge.textContent = String(n); ui.draftBadge.hidden = !n; }
+function updateDraftBadge() { const n = readyDrafts().length + visibleRequests().length; ui.draftBadge.textContent = String(n); ui.draftBadge.hidden = !n; }
 function queueRowHTML(d) {
   const f = d.front || d.front_url, l = d.label || d.label_url, codes = d.codes || [];
   if (d.kind === 'barcode') {
@@ -2480,12 +2747,14 @@ function queueRowHTML(d) {
     + '<button type="button" class="q-del" data-del-draft="' + esc(d.id) + '" aria-label="حذف"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button></div>';
 }
 async function renderQueue() {
-  await loadDrafts(); const list = readyDrafts(); updateDraftBadge();
-  ui.queueCount.textContent = list.length ? '(' + list.length + ')' : '';
-  ui.queueList.innerHTML = list.map(queueRowHTML).join('');
-  ui.queueEmpty.hidden = list.length > 0;
+  await loadDrafts(); const list = readyDrafts(), reqs = visibleRequests(); updateDraftBadge();
+  const total = list.length + reqs.length;
+  ui.queueCount.textContent = total ? '(' + total + ')' : '';
+  ui.queueList.innerHTML = reqs.map(reqRowHTML).join('') + list.map(queueRowHTML).join('');
+  ui.queueEmpty.hidden = total > 0;
+  ui.reqClean.hidden = !reqOn(); renderReqMsg();
   let msg = '';
-  if (!sbConfigured() || !session) msg = 'الطلبات محفوظة على هذا الجهاز فقط. لمزامنتها بين أجهزتك، سجّل الدخول من الإعدادات على الجهازين.';
+  if (!sbConfigured() || !session) msg = 'الطلبات محفوظة على هذا الجهاز فقط. لمزامنتها بين أجهزتك، سجّل الدخول من الإعدادات على الجهازين. وطلبات مستخدمي التطبيق تظهر هنا بعد تسجيل الدخول.';
   else if (draftsSyncing) msg = '<span class="busy"><span class="spinner"></span><span>جاري تحديث الطلبات من السحابة…</span></span>';
   else if (queueErr) msg = 'تعذر تحديث الطلبات من السحابة: ' + esc(queueErr.slice(0, 160));
   ui.queueMsg.innerHTML = msg; ui.queueMsg.hidden = !msg;
@@ -2580,6 +2849,8 @@ async function syncDrafts(silent) {
   draftsSyncing = true; queueErr = ''; if (currentView === 'requests' && !silent) renderQueue();
   try {
     await sbRefresh(false);
+    // 0) طلبات التطبيق وتنظيف صورها (خطأها ما يوقف مزامنة المسودات)
+    try { await syncRequests(); cleanStalePhotos(false).catch(() => {}); } catch (e) { queueErr = 'طلبات التطبيق: ' + String(e.message || e); }
     await loadDrafts();
     // 1) نرفع المسودات الجديدة من هذا الجهاز
     for (const d of draftsCache.filter(x => x.status === 'ready' && !x.uploaded)) {
@@ -2795,7 +3066,26 @@ function wire() {
     barcodeIntake.packages.splice(Number(remove.dataset.intakeRemove), 1); saveBarcodeIntakeState(); if (cap) { cap.packages = barcodeIntake.packages.map(p => Object.assign({}, p)); cap.codes = cap.packages.map(p => p.barcode); capPersist(); } renderIntake();
   });
   ui.queueRefresh.onclick = () => { if (!sbConfigured() || !session) { toast('سجّل الدخول من تبويب الإعدادات أولًا'); go('settings'); return; } syncDrafts(false); };
-  ui.queueList.addEventListener('click', e => { const del = e.target.closest('[data-del-draft]'); if (del) { deleteDraft(del.dataset.delDraft); return; } const o = e.target.closest('[data-open]'); if (o) openDraft(o.dataset.open); });
+  ui.queueList.addEventListener('click', e => {
+    const rj = e.target.closest('[data-reject-req]'); if (rj) { rejectRequest(rj.dataset.rejectReq); return; }
+    const cl = e.target.closest('[data-close-req]'); if (cl) { closeRequest(cl.dataset.closeReq); return; }
+    const oq = e.target.closest('[data-open-req]'); if (oq) { openRequest(oq.dataset.openReq); return; }
+    const del = e.target.closest('[data-del-draft]'); if (del) { deleteDraft(del.dataset.delDraft); return; } const o = e.target.closest('[data-open]'); if (o) openDraft(o.dataset.open);
+  });
+  ui.reqMsg.addEventListener('click', e => { if (e.target.closest('[data-undo-reject]')) undoReject(); });
+  ui.reqClean.onclick = async () => {
+    if (!reqOn() || ui.reqClean.disabled) return;
+    ui.reqClean.disabled = true;
+    try { const n = await cleanStalePhotos(true); toast(n ? 'انحذفت ' + n + ' صورة من صور الطلبات المقفلة' : 'ما فيه صور طلبات قديمة'); }
+    catch (e) { toast('تعذر تنظيف الصور: ' + String(e.message || e).slice(0, 120)); }
+    finally { ui.reqClean.disabled = false; }
+  };
+  // شريط الطلب داخل النموذج: عرض صور المرسل، الرفض، واختيار صورة المرسل للمنتج
+  ui.draftBar.addEventListener('click', e => {
+    const v = e.target.closest('[data-req-view]'); if (v) { const src = v.dataset.reqView === 'label' ? state.reqLabel : state.reqFront; if (src) { ui.lightboxImg.src = src; ui.lightbox.hidden = false; } return; }
+    const rj = e.target.closest('[data-reject-req]'); if (rj) rejectRequest(rj.dataset.rejectReq, true);
+  });
+  ui.draftBar.addEventListener('change', e => { if (e.target && e.target.id === 'reqAdopt') adoptRequestPhoto(e.target.checked, e.target); });
   ui.shotFront.onclick = () => ui.fileCapFront.click();
   ui.shotLabel.onclick = () => ui.fileCapLabel.click();
   ui.fileCapFront.onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) capPhoto('front', f); };
@@ -2852,8 +3142,8 @@ function wire() {
   ui.formSave.onclick = saveForm; ui.formSaveTop.onclick = saveForm;
   ui.btnDelete.onclick = deleteCurrent;
   ui.btnPhoto.onclick = () => { saveDraft(); ui.filePhoto.click(); };
-  ui.filePhoto.onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { state.photo = await enhanceImage(await compressImage(f, 800, 0.85)); state.photoOk = true; renderPhoto(); saveDraft(); } catch (err) { toast('تعذر قراءة الصورة: ' + (err.message || err)); } };
-  ui.btnPhotoRemove.onclick = () => { state.photo = null; state.photoUrl = null; state.photoOk = false; renderPhoto(); };
+  ui.filePhoto.onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { state.photo = await enhanceImage(await compressImage(f, 800, 0.85)); state.photoOk = true; reqAdoptReset(); renderPhoto(); saveDraft(); } catch (err) { toast('تعذر قراءة الصورة: ' + (err.message || err)); } };
+  ui.btnPhotoRemove.onclick = () => { state.photo = null; state.photoUrl = null; state.photoOk = false; reqAdoptReset(); renderPhoto(); };
   ui.btnPhotoOk.onclick = () => { state.photoOk = true; renderPhoto(); toast('تم تأكيد صورة المنتج'); };
   const openLightbox = src => { if (!src) return; ui.lightboxImg.src = src; ui.lightbox.hidden = false; };
   ui.lightbox.onclick = () => { ui.lightbox.hidden = true; ui.lightboxImg.removeAttribute('src'); };
@@ -2873,7 +3163,10 @@ function wire() {
   ui.btnAnalyze.onclick = async () => {
     if (aiCtl) { stopAi(true); return; } // الزر نفسه يصير "إيقاف" أثناء التحليل
     if (!aiReady()) { toast('فعّل الذكاء الاصطناعي أولًا من تبويب الإعدادات (المزوّد والمفتاح)'); return; }
-    if (!state.photo && !state.photoUrl && !state.labelPhoto && !state.labelUrl) { toast('صوّر المنتج من الأمام والملصق الغذائي أولًا'); return; }
+    // صور الطلب (وصورة المرسل لو اخترتها للمنتج) تنرسل فقط لو REQ_AI_ALLOWED
+    const reqForm = !!(formCtx && formCtx.requestKey), ownFront = (!REQ_AI_ALLOWED && state.photo && state.photo === state.reqAdoptedPhoto) ? null : state.photo;
+    const reqF = REQ_AI_ALLOWED ? state.reqFront : null, reqL = REQ_AI_ALLOWED ? state.reqLabel : null, reqHeld = reqForm && !REQ_AI_ALLOWED && !!(state.reqFront || state.reqLabel);
+    if (!ownFront && !state.photoUrl && !state.labelPhoto && !state.labelUrl && !reqF && !reqL) { toast(reqHeld ? 'صور الطلبات ما تنرسل للذكاء الاصطناعي (خصوصية المرسل). صوّر الملصق بنفسك، أو عبّي القيم من صورة الطلب.' : 'صوّر المنتج من الأمام والملصق الغذائي أولًا'); return; }
     const ctl = new AbortController(); aiCtl = ctl; const tok = formToken;
     setAnalyzeBusy(true);
     const prov = esc(AI_PROVIDERS[ai.provider].label); let curModel = '', t0 = Date.now();
@@ -2881,9 +3174,10 @@ function wire() {
     tickStatus(); const iv = setInterval(tickStatus, 1000);
     try {
       // نجهّز الصور: لو الصورة محفوظة كرابط بالسحابة فقط نحمّلها، ونصغّرها عشان يكون الإرسال أسرع
-      let front = state.photo || null, label = state.labelPhoto || null;
+      let front = ownFront || null, label = state.labelPhoto || null;
       try { if (!front && state.photoUrl) front = await urlToData(state.photoUrl); } catch (e) { front = null; }
       try { if (!label && state.labelUrl) label = await urlToData(state.labelUrl); } catch (e) { label = null; }
+      if (!front && reqF) front = reqF; if (!label && reqL) label = reqL;
       if (!front && !label) throw new Error('تعذر تحميل الصور — تأكد من الإنترنت');
       if (front) front = await shrinkDataUrl(front, 640, 0.8);
       if (label) label = await shrinkDataUrl(label, 1280, 0.85);
@@ -2901,6 +3195,7 @@ function wire() {
       if (bits.length) { aiStatus('ok', '✓ خلال ' + secs + ' ث: ' + bits.join(' · ') + ' (الموديل: ' + esc(res.model) + '). المظلل بالأخضر من الصور، والأصفر مترجم آليًا — راجع ثم احفظ.'); showSanity(); try { ui.fName.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (x) {} }
       else aiStatus('err', 'ما لقيت معلومات واضحة بالصور — قرّب الكاميرا وتأكد من الإضاءة وجرّب مرة ثانية.');
       if (!front) aiStatus('warn', ui.aiStatus.innerHTML + '<br>ما فيه صورة للمنتج من الأمام — الاسم والعلامة قد يكونان ناقصين.');
+      if (reqHeld) ui.aiStatus.insertAdjacentHTML('beforeend', '<br>صور الطلب ما انرسلت (خصوصية المرسل).');
     } catch (err) {
       if (tok !== formToken) return;
       if (ctl.signal.aborted || (err && err.message === 'stopped')) aiStatus('warn', 'وقّفت التحليل. تقدر تعبّي القيم بنفسك من الصورة، أو تضغط «حلّل الصور» مرة ثانية.');
