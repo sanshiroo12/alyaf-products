@@ -139,8 +139,9 @@ select option{color:var(--text);background:var(--surface)}
 .label-prev .tx{flex:1;min-width:0;font-size:13px;color:var(--muted);line-height:1.5}
 .label-prev .link{padding:2px 0;display:block}
 #photoPreview,.label-prev img,.thumb,.res-photo,.res-img{cursor:zoom-in}
-.lightbox{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:16px}
-.lightbox img{max-width:100%;max-height:100%;border-radius:12px;object-fit:contain}
+.lightbox{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.92);overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+.lightbox img{border-radius:12px}
+.lightbox .x{z-index:1}
 .lightbox .x{position:absolute;top:calc(14px + var(--sat));left:14px;background:rgba(255,255,255,.14);color:#fff;border-radius:999px;padding:8px 14px;font-weight:700}
 .unit-row{margin-bottom:10px}
 .help{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
@@ -419,9 +420,19 @@ input::placeholder{color:var(--faint)}
 .req-tools .tool{font-size:13px;padding:6px 12px;color:var(--text)}
 .req-tools .tool:disabled{opacity:.5}
 .req-tools .tool.danger{color:var(--red);background:var(--red-tint);border-color:transparent}
-.req-adopt{display:flex;align-items:center;gap:8px;margin-top:8px;color:var(--text);font-weight:700;font-size:13px;cursor:pointer}
-.req-adopt input{width:18px;height:18px;padding:0;flex:none;border:0;background:none;box-shadow:none;-webkit-appearance:checkbox;appearance:auto;accent-color:var(--green)}
-.req-adopt.off{opacity:.55;cursor:default}
+.draft-bar>span:last-child{flex:1;min-width:0}
+.req-swap{display:flex;justify-content:center;margin-top:10px}
+.req-swap .tool{font-size:13px;padding:6px 14px;color:var(--text)}
+.label-card .label-remove{display:block;margin-top:6px}
+.ai-sheet{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;padding:16px 16px calc(16px + var(--sab))}
+.ai-sheet-card{width:100%;max-width:520px;max-height:100%;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:14px 16px 16px}
+.ai-sheet-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ai-sheet-head b{font-size:16px;font-weight:800;color:var(--text)}
+.ai-sheet-head .tool{font-size:13px;padding:6px 12px;color:var(--text)}
+.ai-sheet .note{margin:8px 0 0}
+.ai-sheet a{color:var(--green);font-weight:700}
+@media (min-width:980px){.ai-sheet{align-items:center}}
+.seg button:disabled{opacity:.4;cursor:default}
 .ai-btn.stop{background:var(--red-tint);border-color:var(--red)}
 .ai-btn.stop .ic{background:var(--red);color:#fff}
 
@@ -437,16 +448,18 @@ input::placeholder{color:var(--faint)}
   .form.has-ref .form-body{grid-area:body}
   .form.has-ref .form-foot{grid-area:foot}
   .form.has-ref .ref-pane{grid-area:ref;display:flex;flex-direction:column;gap:10px;padding:12px 16px 16px;border-inline-start:1px solid var(--line);background:var(--surface);min-height:0}
-  .form.has-request-photos .ref-bar,.form.has-request-photos .ref-stage{display:none}
-  .form.has-request-photos .request-photo-stack{display:grid;grid-template-rows:1fr 1fr;gap:10px;flex:1;min-height:0}
 }
 .ref-bar{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .ref-tools{display:flex;gap:6px}
 .ref-tools .tool{padding:7px 12px;font-size:13px}
-.ref-stage{flex:1;min-height:0;overflow:auto;border-radius:16px;background:#000;border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
-.ref-stage img{max-width:100%;max-height:100%;object-fit:contain;display:block;cursor:zoom-in}
-.ref-stage.zoomed{display:block}
-.ref-stage.zoomed img{max-width:none;max-height:none;width:200%;cursor:zoom-out}
+.ref-stage{flex:1;min-height:0;position:relative;overflow:hidden;border-radius:16px;background:#000;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;touch-action:none;user-select:none;-webkit-user-select:none;cursor:zoom-in}
+.ref-stage.zoomed{cursor:grab}
+.ref-stage.dragging{cursor:grabbing}
+/* عارض التكبير: الصورة بإحداثيات فيزيائية (left/top وtransform-origin 0 0) عمداً، لأن translate() وgetBoundingClientRect ما ينقلبان مع RTL */
+.ref-stage img,.lightbox img{position:absolute;left:0;top:0;max-width:none;max-height:none;transform-origin:0 0;will-change:transform;-webkit-user-drag:none}
+.ref-zoom{display:inline-flex;gap:4px}
+.ref-zoom .tool{min-width:36px;text-align:center}
+.ref-hint{margin:0;color:var(--faint);font-size:12px;text-align:center}
 .ref-empty{color:var(--faint);font-size:14px;padding:20px;text-align:center}
 
 /* ---------- theme selector ---------- */
@@ -514,7 +527,7 @@ input::placeholder{color:var(--faint)}
       <div class="requests">
         <div class="card queue" id="queueCard">
           <div class="queue-head"><h2>طلبات توثيق المنتجات <span class="muted" id="queueCount"></span></h2><span class="queue-tools"><button type="button" class="tool" id="reqClean" hidden>تنظيف الصور</button><button type="button" class="tool" id="queueRefresh">تحديث</button></span></div>
-          <p class="cap-sub">افتح الطلب، راجع صور المنتج والملصق، وأدخل القيم الغذائية ثم اعتمده لإضافته إلى المنتجات. الطلبات المعلّمة «من التطبيق» أرسلها مستخدمو التطبيق، وصورها خاصة.</p>
+          <p class="cap-sub">افتح الطلب، راجع صور المنتج والملصق، وأدخل القيم الغذائية ثم اعتمده لإضافته إلى المنتجات. الطلبات المعلّمة «من التطبيق» أرسلها مستخدمو التطبيق، وصورها تنحط في خانتي صورة المنتج والملصق، وتغيّرها مثل أي منتج.</p>
           <div id="queueMsg" class="status info queue-msg" hidden></div>
           <div id="reqMsg" class="status warn queue-msg" hidden></div>
           <div id="queueList" class="q-list"></div>
@@ -637,12 +650,14 @@ input::placeholder{color:var(--faint)}
       <p class="note" style="margin:0;text-align:center">للحصول على صورة أفضل: سطح فاتح وسادة، إضاءة طبيعية، والمنتج يملأ الإطار بدون يدك. الإضاءة والألوان تتحسّن تلقائيًا بعد التصوير.</p>
       <input type="file" id="filePhoto" accept="image/*" capture="environment" hidden>
     </div>
+    <div class="req-swap" id="reqSwapRow" hidden><button type="button" class="tool" id="reqSwapBtn">⇄ بدّل الصورتين</button></div>
     <div class="card label-card">
       <div class="card-title">الملصق الغذائي والتحليل <span class="pill">الملصق داخلي — ما يظهر للمستخدمين</span></div>
       <div class="label-row">
         <div class="label-thumb" id="labelThumb"><img id="labelPrevImg" alt="" hidden><span id="labelEmpty">الملصق الغذائي</span></div>
         <button class="btn ghost" id="btnAiLabel" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>صوّر الملصق الغذائي</button>
       </div>
+      <button type="button" class="link danger label-remove" id="btnLabelRemove" hidden>حذف الملصق</button>
       <button class="ai-btn" id="btnAnalyze" type="button"><span class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg></span><span class="tx"><b id="aiBtnTitle">حلّل الصور وعبّي كل شي</b><small>صورة المنتج من الأمام + الملصق: الاسم عربي وإنجليزي، العلامة، والقيم — بضغطة</small></span></button>
       <div id="aiStatus" class="ai-status" hidden></div>
       <div id="sanityBox" class="ai-status warn" hidden></div>
@@ -714,15 +729,24 @@ input::placeholder{color:var(--faint)}
   <div class="form-foot"><button class="btn primary big" id="formSave">حفظ المنتج</button></div>
   <aside class="ref-pane" id="refPane">
     <div class="ref-bar">
-      <span class="seg small" id="refSeg"><button type="button" data-r="label" class="on">الملصق</button><button type="button" data-r="front">المنتج</button></span>
-      <div class="ref-tools"><button type="button" class="tool" id="refRotate">تدوير</button><button type="button" class="tool" id="refZoom">تكبير</button></div>
+      <span class="seg small" id="refSeg"><button type="button" data-r="label" class="on" title="Alt+1">الملصق</button><button type="button" data-r="front" title="Alt+2">المنتج</button></span>
+      <div class="ref-tools"><span class="ref-zoom"><button type="button" class="tool" id="refZoomOut" title="Alt+-" aria-label="تصغير">−</button><button type="button" class="tool" id="refZoom" title="Alt+0" aria-label="رجّعها لحجمها">100%</button><button type="button" class="tool" id="refZoomIn" title="Alt+=" aria-label="تكبير">+</button></span><button type="button" class="tool" id="refRotate" title="Alt+R">تدوير</button></div>
     </div>
     <div class="ref-stage" id="refStage"><img id="refImg" alt="" hidden><div class="ref-empty" id="refEmpty">ما فيه صورة</div></div>
+    <p class="ref-hint">كبّر بالعجلة أو بإصبعين، واسحب الصورة لتحريكها، ونقرتين ترجعها لحجمها.</p>
     <div class="request-photo-stack" id="requestPhotoStack">
       <figure class="request-photo"><figcaption>واجهة المنتج</figcaption><img id="requestFrontImage" alt="صورة واجهة المنتج" hidden></figure>
       <figure class="request-photo"><figcaption>الملصق الغذائي</figcaption><img id="requestLabelImage" alt="صورة الملصق الغذائي" hidden></figure>
     </div>
   </aside>
+</div>
+
+<div id="aiSheet" class="ai-sheet" hidden>
+  <div class="ai-sheet-card" role="dialog" aria-modal="true" aria-labelledby="aiSheetTitle">
+    <div class="ai-sheet-head"><b id="aiSheetTitle">إعدادات الذكاء الاصطناعي</b><button type="button" class="tool" id="aiSheetClose">رجوع للمنتج</button></div>
+    <p class="note" id="aiSheetNote"></p>
+    <div id="aiSheetSlot"></div>
+  </div>
 </div>
 
 <div id="miniScan" class="mini-scan" hidden>
@@ -936,7 +960,7 @@ const KV = {
 };
 
 /* ---------- UI refs ---------- */
-const ids = ['intakeCode','intakeScan','intakeStatus','intakeSizeBox','intakeAmount','intakeUnit','intakeApprove','intakeSizesTitle','intakeSizes','countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','catFilter','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','filePhoto','fName','fNameEn','fBrand','brandSuggest','btnScanMain','catToggle','catHeadIcon','catHeadName','catBody','catDesc','catChips','catNew','catNewIcon','catNewAr','catNewEn','catNewDesc','catNewSave','catGuide','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','syncCard','syncState','syncBody','brandsCard','brandsCount','brandsBody','catsCard','catsCount','catsBody','aiCard','aiState','aiBody','btnAiLabel','btnAnalyze','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelThumb','labelPrevImg','labelEmpty','offRef','btnUseOff','offRefBody','lightbox','lightboxImg','lightboxClose','miniScan','miniVideo','miniTorch','miniZoom','miniCount','miniList','miniFrame','miniHint','miniCancel','miniSwitch','btnSwitchCam','detail','detailBack','detailEdit','detailBody','capCard','capToday','shotFront','shotLabel','fileCapFront','fileCapLabel','capCodes','capNote','capSave','capDiscard','queueCard','queueCount','queueRefresh','queueMsg','queueList','queueEmpty','draftBadge','draftBar','refPane','refSeg','refRotate','refZoom','refStage','refImg','refEmpty','requestPhotoStack','requestFrontImage','requestLabelImage','themeOptions','themeState','reqClean','reqMsg'];
+const ids = ['intakeCode','intakeScan','intakeStatus','intakeSizeBox','intakeAmount','intakeUnit','intakeApprove','intakeSizesTitle','intakeSizes','countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','catFilter','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','filePhoto','fName','fNameEn','fBrand','brandSuggest','btnScanMain','catToggle','catHeadIcon','catHeadName','catBody','catDesc','catChips','catNew','catNewIcon','catNewAr','catNewEn','catNewDesc','catNewSave','catGuide','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','syncCard','syncState','syncBody','brandsCard','brandsCount','brandsBody','catsCard','catsCount','catsBody','aiCard','aiState','aiBody','btnAiLabel','btnAnalyze','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelThumb','labelPrevImg','labelEmpty','offRef','btnUseOff','offRefBody','lightbox','lightboxImg','lightboxClose','miniScan','miniVideo','miniTorch','miniZoom','miniCount','miniList','miniFrame','miniHint','miniCancel','miniSwitch','btnSwitchCam','detail','detailBack','detailEdit','detailBody','capCard','capToday','shotFront','shotLabel','fileCapFront','fileCapLabel','capCodes','capNote','capSave','capDiscard','queueCard','queueCount','queueRefresh','queueMsg','queueList','queueEmpty','draftBadge','draftBar','refPane','refSeg','refRotate','refZoom','refStage','refImg','refEmpty','requestPhotoStack','requestFrontImage','requestLabelImage','themeOptions','themeState','reqClean','reqMsg','refZoomIn','refZoomOut','reqSwapRow','reqSwapBtn','aiSheet','aiSheetSlot','aiSheetNote','aiSheetClose','btnLabelRemove'];
 const ui = {}; ids.forEach(id => { ui[id] = document.getElementById(id); });
 ui.viewIntake = $('#view-intake'); ui.viewRequests = $('#view-requests'); ui.viewScan = $('#view-scan'); ui.viewList = $('#view-list'); ui.viewSettings = $('#view-settings'); ui.tabs = [...document.querySelectorAll('.tab')];
 
@@ -958,7 +982,7 @@ function applyTheme(theme, persist = false) {
 applyTheme(localStorage.getItem(THEME_KEY));
 
 /* ---------- state ---------- */
-const state = { unit: 'g', pkgUnit: 'g', basis: '100', photo: null, photoUrl: null, off: null, labelPhoto: null, labelUploaded: false, labelUrl: null, photoOk: false, category: null, reqFront: null, reqLabel: null, reqAdoptedPhoto: null }; // req*: صور طلب من التطبيق (في الذاكرة فقط)
+const state = { unit: 'g', pkgUnit: 'g', basis: '100', photo: null, photoUrl: null, off: null, labelPhoto: null, labelUploaded: false, labelUrl: null, photoOk: false, category: null, reqFront: null, reqLabel: null, reqAdoptedPhoto: null, reqAdoptedLabel: null, reqLabelAuto: false, labelRemoved: false, labelUrlReq: false, labelFile: false }; // req*: صور طلب من التطبيق (الأصل في الذاكرة فقط، واللي في خانات النموذج نسخة في photo/labelPhoto). labelRemoved: شلت الملصق بـ«حذف الملصق» وملفه ممكن يبقى على labels/<الباركود>.jpg، labelUrlReq: رابط الملصق في الخانة ملصق مرسل، labelFile: للمنتج ملف ملصق في السحابة ممكن
 let listFilterMode = 'all', autoPulled = false;
 let scanning = false, starting = false, decoding = false, busy = false, formCtx = null, currentCode = null, currentView = 'intake', wasScanning = false;
 const BARCODE_INTAKE_KEY = projectKey('alyaf-barcode-intake');
@@ -1688,6 +1712,7 @@ function renderBrandSuggest() {
 function aiStatusSet(cls, html) { ui.aiStatus.className = 'ai-status ' + cls; ui.aiStatus.innerHTML = html; ui.aiStatus.hidden = false; }
 function showLabelThumb() {
   const src = state.labelPhoto || state.labelUrl;
+  ui.btnLabelRemove.hidden = !src; // «حذف الملصق» ما دام في خانة الملصق شي، مثل «حذف الصورة»
   ui.labelPrevImg.onload = null; ui.labelPrevImg.onerror = null; ui.labelPrevImg.removeAttribute('src'); ui.labelPrevImg.hidden = true;
   if (!src) { ui.labelEmpty.textContent = 'الملصق الغذائي'; ui.labelEmpty.hidden = false; return; }
   ui.labelEmpty.textContent = 'جاري التحميل…'; ui.labelEmpty.hidden = false; renderRef();
@@ -1695,13 +1720,32 @@ function showLabelThumb() {
   ui.labelPrevImg.onerror = () => { ui.labelEmpty.textContent = 'تعذر تحميل صورة الملصق'; };
   ui.labelPrevImg.src = src;
 }
-let formToken = 0, refView = 'label', refRot = 0, refRotCache = { key: '', url: '' };
-function probeLabel(code) {
+let formToken = 0, refView = 'label', refRot = 0, refRotCache = { key: '', url: '' }, labelProbe = null;
+function probeLabel(code, fromReq) {
   if (!sbConfigured()) return;
   const tok = formToken, url = SB.url + '/storage/v1/object/public/' + SB.bucket + '/labels/' + code + '.jpg';
-  const im = new Image();
-  im.onload = () => { if (tok !== formToken || state.labelPhoto || state.labelUrl) return; state.labelUrl = url + '?v=' + Date.now(); state.labelUploaded = true; showLabelThumb(); refView = 'label'; renderRef(); };
-  im.src = url + '?probe=' + Date.now();
+  // 'found' (2xx)، 'missing' (ما فيه أكيد: 404، أو 400 ورمزه 404 في الجسم مثل ما يرجّعه التخزين)، 'unknown' (أي شي ثاني،
+  // أو انقطاع، أو ما وصل جواب خلال 8 ثوان). الطلب يحط ملصق المرسل في خانة الملصق لحاله مع 'missing' بس
+  let settle = null; labelProbe = new Promise(r => { settle = r; });
+  const timer = setTimeout(() => settle('unknown'), 8000), end = v => { clearTimeout(timer); settle(v); };
+  const found = () => {
+    end('found');
+    if (tok !== formToken || !formCtx) return;
+    state.labelFile = true; if (state.labelRemoved) return; // شلت الملصق بـ«حذف الملصق» والجواب للحين ما وصل: ما يرجع
+    const fresh = url + '?v=' + Date.now();
+    // نسخة المنتج في هذا الجهاز معلّمة إن ملصقه من المرسل (fromReq): العلامة تمشي مع الرابط (labelUrlReq)
+    if (!state.labelPhoto && !state.labelUrl) { state.labelUrl = fresh; state.labelUploaded = true; state.labelUrlReq = !!fromReq; showLabelThumb(); renderRef(); renderReqBar(); return; }
+    // الجواب وصل بعد ما انحط ملصق المرسل لحاله: ملصق المنتج المحفوظ يرجع لخانته. ملصق حطيته أنت (أو بدّلته) يبقى
+    if (state.reqLabelAuto && state.labelPhoto && state.labelPhoto === state.reqAdoptedLabel) { state.labelPhoto = null; state.labelUrl = fresh; state.labelUploaded = true; state.labelUrlReq = !!fromReq; state.reqAdoptedLabel = null; state.reqLabelAuto = false; formCtx.reqAdoptedLabel = false; if (formCtx.reqKept) formCtx.reqKept.label = true; showLabelThumb(); renderRef(); renderReqBar(); queueSaveDraft(); }
+  };
+  (async () => {
+    let r = await fetch(url + '?probe=' + Date.now(), { method: 'HEAD', cache: 'no-store' });
+    // التخزين يرجّع «ما فيه» كـ400 ورمزه الحقيقي في الجسم، والـHEAD ما له جسم: نسأل GET مرة عشان نقراه
+    if (r.status === 400) r = await fetch(url + '?probe=' + Date.now(), { cache: 'no-store' });
+    if (r.ok) { found(); return; }
+    const j = r.status === 400 ? await r.json().catch(() => null) : null;
+    end(r.status === 404 || (j && String(j.statusCode) === '404') ? 'missing' : 'unknown');
+  })().catch(() => end('unknown'));
 }
 /* الصورة الكبيرة جنب النموذج (الكمبيوتر): تقرأ الملصق وأنت تكتب */
 function refSrc(kind) { return kind === 'label' ? (state.labelPhoto || state.labelUrl || state.reqLabel) : (state.photo || state.photoUrl || state.reqFront); }
@@ -1714,20 +1758,111 @@ async function rotatedSrc(src, deg) {
   const x = c.getContext('2d'); x.translate(c.width / 2, c.height / 2); x.rotate(deg * Math.PI / 180); x.drawImage(bmp, -w / 2, -h / 2);
   const url = c.toDataURL('image/jpeg', 0.9); refRotCache = { key, url }; return url;
 }
+const REF_VIEWS = ['label', 'front'];
+let refViewer = null, lbViewer = null;
+// «الملصق | المنتج» (طلب المالك 2026-11-01): كل نموذج يفتح على الملصق، وكل خيار يعرض صورته وحدها مكبّرة في العارض
+function pickRef(v) { if (!REF_VIEWS.includes(v)) return; refView = v; refRot = 0; renderRef(); }
+// المعروض يُشتق من اختيارك كل مرة ولا يكتب فوقه: صورة توصل متأخر ما تثبّت اللوحة على جهة وحدة
+function refShown() { return refSrc(refView) ? refView : (refSrc('label') ? 'label' : 'front'); }
 async function renderRef() {
-  const has = !!(refSrc('label') || refSrc('front'));
+  const has = !!(refSrc('label') || refSrc('front')), v = refShown();
   ui.form.classList.toggle('has-ref', has);
-  const requestPhotos = !!(formCtx && (formCtx.draftId || formCtx.requestKey) && has);
-  ui.form.classList.toggle('has-request-photos', requestPhotos);
-  if (ui.requestFrontImage) { const src = refSrc('front'); ui.requestFrontImage.hidden = !src; if (src && ui.requestFrontImage.src !== src) ui.requestFrontImage.src = src; }
-  if (ui.requestLabelImage) { const src = refSrc('label'); ui.requestLabelImage.hidden = !src; if (src && ui.requestLabelImage.src !== src) ui.requestLabelImage.src = src; }
+  ui.refSeg.querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.r === v); b.disabled = !refSrc(b.dataset.r); });
   if (!has) return;
-  if (!refSrc(refView)) refView = refSrc('label') ? 'label' : 'front';
-  ui.refSeg.querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.r === refView); b.disabled = !refSrc(b.dataset.r); });
-  const src = refSrc(refView), tok = formToken;
-  let show = src; try { show = await rotatedSrc(src, refRot); } catch (e) { show = src; }
-  if (tok !== formToken || src !== refSrc(refView)) return;
-  ui.refImg.src = show; ui.refImg.hidden = false; ui.refEmpty.hidden = true;
+  const src = refSrc(v), rot = refRot, tok = formToken;
+  let show = src; try { show = await rotatedSrc(src, rot); } catch (e) { show = src; }
+  if (tok !== formToken || refShown() !== v || src !== refSrc(v) || rot !== refRot) return;
+  if (ui.refImg.getAttribute('src') !== show) ui.refImg.src = show;
+  ui.refImg.hidden = false; ui.refEmpty.hidden = true;
+}
+/* عارض صورة: العجلة (وقرصة لوحة اللمس، ctrlKey) تكبّر عند المؤشر، والسحب يحرّك، وإصبعين يكبّرون عند منتصفهم،
+   ونقرتين بين 100% و250%. الإحداثيات فيزيائية عمداً (left/top وtransform-origin 0 0): translate() وgetBoundingClientRect
+   ما ينقلبون مع RTL، والخصائص المنطقية هنا تقلب الحساب. level: زر يعرض النسبة، pad: هامش الملاءمة */
+function makeViewer(stage, img, level, pad) {
+  pad = pad || 0;
+  const v = { s: 1, s0: 1, tx: 0, ty: 0, w: 0, h: 0, rw: 0, rh: 0, pending: true, pts: new Map(), pinch: 0, moved: false, start: null, tap: null, touchAt: 0 };
+  const box = () => stage.getBoundingClientRect();
+  const clamp = () => {
+    const W = v.w * v.s, H = v.h * v.s;
+    v.tx = W <= v.rw ? (v.rw - W) / 2 : Math.min(0, Math.max(v.rw - W, v.tx));
+    v.ty = H <= v.rh ? (v.rh - H) / 2 : Math.min(0, Math.max(v.rh - H, v.ty));
+  };
+  const apply = () => {
+    img.style.transform = 'translate(' + v.tx + 'px,' + v.ty + 'px) scale(' + v.s + ')';
+    const z = v.s / v.s0; if (level) level.textContent = Math.round(z * 100) + '%';
+    stage.classList.toggle('zoomed', z > 1.001);
+  };
+  // keep: اللوحة تغيّر حجمها (النافذة) فيبقى التكبير ونفس النقطة في الوسط
+  const fit = keep => {
+    const r = box();
+    if (!v.w || !v.h || r.width < 1 || r.height < 1) { v.pending = true; return; }
+    const s0 = Math.max(Math.min((r.width - 2 * pad) / v.w, (r.height - 2 * pad) / v.h), 1e-3);
+    if (keep && !v.pending) {
+      const z = v.s / v.s0, cx = (v.rw / 2 - v.tx) / v.s, cy = (v.rh / 2 - v.ty) / v.s;
+      v.s0 = s0; v.s = s0 * z; v.tx = r.width / 2 - cx * v.s; v.ty = r.height / 2 - cy * v.s;
+    } else { v.s0 = v.s = s0; }
+    v.rw = r.width; v.rh = r.height; v.pending = false; clamp(); apply();
+  };
+  const zoomAt = (px, py, f) => {
+    if (v.pending) fit(false);
+    if (v.pending) return;
+    const s = Math.min(Math.max(v.s * f, v.s0), v.s0 * 8), k = s / v.s;
+    v.tx = px - (px - v.tx) * k; v.ty = py - (py - v.ty) * k; v.s = s; clamp(); apply();
+  };
+  const at = e => { const r = box(); return [e.clientX - r.left, e.clientY - r.top]; };
+  const toggle = (x, y) => { if (v.s / v.s0 > 1.01) fit(false); else zoomAt(x, y, 2.5); };
+  const shown = () => !!img.getAttribute('src') && !img.hidden;
+  img.draggable = false;
+  img.addEventListener('dragstart', e => e.preventDefault());
+  img.addEventListener('load', () => { v.w = img.naturalWidth; v.h = img.naturalHeight; v.pending = true; fit(false); });
+  stage.addEventListener('wheel', e => {
+    if (!shown()) return;
+    e.preventDefault();
+    const k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? (v.rh || 400) : 1;
+    if (e.shiftKey && !e.ctrlKey) { if (!v.pending) { v.tx -= (e.deltaX || e.deltaY) * k; clamp(); apply(); } return; }
+    const [x, y] = at(e); zoomAt(x, y, Math.exp(-e.deltaY * k * (e.ctrlKey ? 0.01 : 0.0015)));
+  }, { passive: false });
+  // الالتقاط يبدأ مع السحب لا مع اللمسة: النقرة العادية تبقى على هدفها (الخلفية أو الصورة)
+  stage.addEventListener('pointerdown', e => {
+    if ((e.pointerType === 'mouse' && e.button !== 0) || e.target.closest('button') || !shown()) return;
+    if (e.pointerType === 'touch') v.touchAt = Date.now();
+    if (!v.pts.size) { v.moved = false; v.start = [e.clientX, e.clientY]; }
+    v.pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (v.pts.size === 2) {
+      const [a, b] = [...v.pts.values()]; v.pinch = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1; v.moved = true;
+      v.pts.forEach((p, id) => { try { stage.setPointerCapture(id); } catch (x) {} });
+    }
+  });
+  stage.addEventListener('pointermove', e => {
+    const p = v.pts.get(e.pointerId); if (!p) return;
+    if (v.pts.size >= 2) {
+      const [a0, b0] = [...v.pts.values()]; v.pts.set(e.pointerId, [e.clientX, e.clientY]); const [a, b] = [...v.pts.values()];
+      const r = box(), d = Math.hypot(a[0] - b[0], a[1] - b[1]) || 1;
+      if (!v.pending) { v.tx += (a[0] + b[0] - a0[0] - b0[0]) / 2; v.ty += (a[1] + b[1] - a0[1] - b0[1]) / 2; }
+      zoomAt((a[0] + b[0]) / 2 - r.left, (a[1] + b[1]) / 2 - r.top, d / v.pinch); v.pinch = d; return;
+    }
+    if (!v.moved) {
+      if (Math.hypot(e.clientX - v.start[0], e.clientY - v.start[1]) < 5) return;
+      v.moved = true; stage.classList.add('dragging'); try { stage.setPointerCapture(e.pointerId); } catch (x) {}
+    }
+    v.tx += e.clientX - p[0]; v.ty += e.clientY - p[1]; v.pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (!v.pending) { clamp(); apply(); }
+  });
+  const up = e => {
+    if (!v.pts.delete(e.pointerId)) return;
+    if (v.pts.size < 2) v.pinch = 0;
+    if (v.pts.size) return;
+    stage.classList.remove('dragging');
+    // نقرتين باللمس: المتصفح ما يرسل dblclick للمس دايم
+    if (e.type === 'pointerup' && e.pointerType === 'touch' && !v.moved) {
+      const t = Date.now(), [x, y] = at(e);
+      if (v.tap && t - v.tap.t < 320 && Math.hypot(x - v.tap.x, y - v.tap.y) < 30) { v.tap = null; toggle(x, y); } else v.tap = { t, x, y };
+    }
+  };
+  stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
+  stage.addEventListener('dblclick', e => { if (e.target.closest('button') || !shown() || Date.now() - v.touchAt < 800) return; const [x, y] = at(e); toggle(x, y); });
+  if (window.ResizeObserver) new ResizeObserver(() => fit(true)).observe(stage);
+  return { fit, zoomBy: f => { const r = box(); zoomAt(r.width / 2, r.height / 2, f); }, moved: () => v.moved };
 }
 function renderOffRef() {
   const o = state.off; ui.offRef.hidden = !o; if (!o) return;
@@ -1745,9 +1880,9 @@ function useOffValues() {
   toast('تم نقل ' + n + ' قيمة من Open Food Facts — راجعها'); showSanity(); queueSaveDraft();
 }
 function openForm(p, ctx) {
-  formCtx = Object.assign({ editing: null, returnTo: 'scan', fromOFF: false, draftId: null, requestKey: null }, ctx || {}); p = p || {}; formToken++;
+  formCtx = Object.assign({ editing: null, returnTo: 'scan', fromOFF: false, draftId: null, requestKey: null, reqSeen: [] }, ctx || {}); p = p || {}; formToken++;
   stopAi();
-  state.reqFront = null; state.reqLabel = null; state.reqAdoptedPhoto = null;
+  state.reqFront = null; state.reqLabel = null; state.reqAdoptedPhoto = null; state.reqAdoptedLabel = null; state.reqLabelAuto = false; labelProbe = null; ui.reqSwapRow.hidden = true;
   const isReq = !!formCtx.requestKey, isDraft = !!formCtx.draftId || isReq;
   ui.formTitle.textContent = isReq ? 'طلب من التطبيق' : isDraft ? 'تعبئة طلب توثيق' : (formCtx.editing ? 'تعديل منتج' : 'إضافة منتج');
   ui.formSave.textContent = isDraft ? 'اعتماد وإضافة إلى المنتجات' : 'حفظ المنتج'; ui.formSaveTop.textContent = isDraft ? 'اعتماد' : 'حفظ';
@@ -1762,12 +1897,20 @@ function openForm(p, ctx) {
   state.off = (formCtx.off) || p.off_ref || null;
   state.photo = p.photo || null; state.photoUrl = isOwnUrl(p.photo_url) ? p.photo_url : null;
   state.photoOk = !!p.photo_ok; renderPhoto(); renderOffRef();
-  // نموذج مسترجع بعد إعادة التحميل: الصورة المحفوظة هي صورة المرسل اللي اخترتها
-  if (isReq) { if (formCtx.reqAdopted && state.photo) state.reqAdoptedPhoto = state.photo; else formCtx.reqAdopted = false; }
+  // صورة المرسل في الخانة: من مسودة الطلب بعد إعادة التحميل، أو من علامة المنتج المحفوظ على هذا الجهاز (photo_from_req)،
+  // في نموذج الطلب والتعديل العادي، فالذكاء ما يرسلها لمزوّد برّا REQ_AI_PROVIDERS ولو انحفظت قبل
+  if (state.photo && ((isReq && formCtx.reqAdopted) || p.photo_from_req)) { state.reqAdoptedPhoto = state.photo; if (isReq) formCtx.reqAdopted = true; } else if (isReq) formCtx.reqAdopted = false;
   state.labelPhoto = p.label_photo || null; state.labelUrl = p.label_photo_url || null; state.labelUploaded = !!p.label_photo_uploaded; showLabelThumb();
+  if (state.labelPhoto && ((isReq && formCtx.reqAdoptedLabel) || p.label_from_req)) { state.reqAdoptedLabel = state.labelPhoto; if (isReq) formCtx.reqAdoptedLabel = true; } else if (isReq) formCtx.reqAdoptedLabel = false;
+  // ملصق برابطه بس (بلا نسخته على الجهاز) والمنتج معلّم إنه من المرسل: العلامة على الرابط، فالذكاء يحجبه عن مزوّد ثاني.
+  // label_removed: شلت ملصقه بـ«حذف الملصق» وملفه ممكن يبقى على labels/<الباركود>.jpg (علامة على نسخة هذا الجهاز بس)، فما نسأل عنه
+  // ولا نحط ملصق المرسل في خانته. label_file: للمنتج ملف ملصق في السحابة ممكن (ارتفع مرة أو لقته الأداة هناك)
+  state.labelUrlReq = !state.labelPhoto && !!state.labelUrl && !!p.label_from_req;
+  state.labelRemoved = !state.labelPhoto && !state.labelUrl && !!p.label_removed;
+  state.labelFile = !!(p.label_file || p.label_removed || p.label_from_req || (formCtx.editing && p.label_photo_url));
   // منتج قديم بدون رابط ملصق: نجرّب المسار الثابت في السحابة (labels/الباركود.jpg) ونرجّعه لو كان موجود
-  if (!state.labelPhoto && !state.labelUrl && formCtx.editing && p.barcode) probeLabel(String(p.barcode));
-  refView = state.labelPhoto || state.labelUrl ? 'label' : 'front'; refRot = 0; renderRef();
+  if (!state.labelPhoto && !state.labelUrl && formCtx.editing && p.barcode && !state.labelRemoved) probeLabel(String(p.barcode), !!p.label_from_req);
+  refView = 'label'; refRot = 0; if (refViewer) refViewer.fit(false); renderRef();
   ui.sizeRows.innerHTML = '';
   const sizesIn = (p.sizes || []).filter(Boolean);
   const pcode = String(p.barcode != null ? p.barcode : (currentCode || ''));
@@ -1785,7 +1928,8 @@ function openForm(p, ctx) {
 }
 function closeForm() {
   stopAi();
-  state.reqFront = null; state.reqLabel = null; state.reqAdoptedPhoto = null;
+  if (!ui.aiSheet.hidden) closeAiSheet(false);
+  state.reqFront = null; state.reqLabel = null; state.reqAdoptedPhoto = null; state.reqAdoptedLabel = null; state.reqLabelAuto = false;
   const rt = formCtx ? formCtx.returnTo : 'scan'; formCtx = null; ui.form.hidden = true; clearDraft();
   if (rt === 'list') renderList(); else if (rt === 'requests' || rt === 'entry') renderQueue(); else if (rt === 'intake') { renderIntake(); renderCapture(); } else nextScan();
 }
@@ -1829,6 +1973,14 @@ async function saveFormInner() {
     // إصلاح حذف الملصق: كان الرابط ينمسح لما يكون الملصق محفوظ في السحابة فقط (مثل فتح المنتج من الكمبيوتر)
     label_photo: state.labelPhoto || null, label_photo_url: state.labelUrl || null,
     label_photo_uploaded: state.labelPhoto ? !!(state.labelUrl && existing && existing.label_photo === state.labelPhoto && existing.label_photo_uploaded) : true,
+    // صورة المرسل في الخانة: علامة على نسخة هذا الجهاز بس (toRow ما يرسلها، وجدول products ما يتغيّر)، فالذكاء يعرفها لو فتحت المنتج بعدين
+    photo_from_req: !!(state.photo && (state.photo === state.reqAdoptedPhoto || (existing && existing.photo_from_req && existing.photo === state.photo))),
+    label_from_req: !!(state.labelPhoto ? (state.labelPhoto === state.reqAdoptedLabel || (existing && existing.label_from_req && existing.label_photo === state.labelPhoto)) : (state.labelUrl && state.labelUrlReq)),
+    // «حذف الملصق» شال ملصق مرفوع أو من المرسل: ملفه يبقى على labels/<الباركود>.jpg، فالفتح الجاي ما يسأل عنه ولا يحط ملصق المرسل
+    // (هذا الجهاز بس، مثل العلامة). label_file يبقى: ملصق تحطه فوقه وتحذفه قبل ما يرتفع يعلّمه بعد
+    label_removed: !!(state.labelRemoved && !state.labelPhoto && !state.labelUrl), label_file: !!(state.labelFile || (existing && existing.label_file)),
+    // مسارات صور الطلب اللي انحطت في خانات هذا المنتج: فتح الطلب من جديد ما يرجّع صورة شلتها وحفظت، مثل تعديل منتج محفوظ (هذا الجهاز بس)
+    req_seen: [...new Set(((existing && existing.req_seen) || []).concat((formCtx.requestKey && formCtx.reqSeen) || []))].slice(-20),
     created_at: existing ? (existing.created_at || now()) : now(), updated_at: now(),
     synced: false, photo_uploaded: state.photo ? !!(existing && existing.photo === state.photo && existing.photo_uploaded) : true
   };
@@ -2390,7 +2542,7 @@ function renderAi() {
   $('#aiSaveBtn').onclick = () => {
     const key = $('#aiKey').value.trim(); if (key.length < 10) { toast('الصق المفتاح كامل'); return; }
     const spd = ui.aiBody.querySelector('#aiSpeed button.on'); ai = { provider: $('#aiProvider').value, key, model: $('#aiModel').value.trim(), speed: spd && spd.dataset.s === 'accurate' ? 'accurate' : 'fast' };
-    localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(ai)); toast('تم حفظ إعدادات الذكاء الاصطناعي'); renderAi();
+    localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(ai)); toast('تم حفظ إعدادات الذكاء الاصطناعي'); renderAi(); if (!ui.aiSheet.hidden) closeAiSheet(true);
   };
   $('#aiSpeed').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; ui.aiBody.querySelectorAll('#aiSpeed button').forEach(x => x.classList.toggle('on', x === b)); });
   const c = $('#aiClearBtn'); if (c) c.onclick = () => { ai = { provider: ai.provider, key: '', model: '', speed: ai.speed }; localStorage.removeItem(AI_CONFIG_KEY); renderAi(); };
@@ -2401,12 +2553,12 @@ const DRAFT_KEY = projectKey('alyaf-form-draft');
 function formSnapshot() {
   const raw = sizeRowsAll().map(r => { const a = num(r.querySelector('.s-amt').value), u = r.querySelector('.s-unit').value; return { name: a == null ? null : fmt(a) + ' ' + PKG_UNITS[u].label, amount: a == null ? null : r2(a * PKG_UNITS[u].factor), unit: PKG_UNITS[u].base, barcode: rowCode(r) || null }; }).filter(x => x.amount != null || x.barcode);
   const pc = (raw.find(x => x.barcode) || {}).barcode || '';
-  return { name: ui.fName.value, name_en: ui.fNameEn.value, brand: ui.fBrand.value, barcode: pc, package_unit: state.pkgUnit, unit: state.unit, package_size: pkgBase(), serving_size: num(ui.fServ.value), servings_per_package: num(ui.fServN.value), basis: state.basis, nutrients: readNutrients(), sizes: raw.filter(x => x.barcode !== pc || (x.name && x.amount != null)), photo: state.photo, photo_url: state.photoUrl, photo_ok: state.photoOk, label_photo: state.labelPhoto, label_photo_url: state.labelUrl, label_photo_uploaded: state.labelUploaded, off_ref: state.off };
+  return { name: ui.fName.value, name_en: ui.fNameEn.value, brand: ui.fBrand.value, barcode: pc, package_unit: state.pkgUnit, unit: state.unit, package_size: pkgBase(), serving_size: num(ui.fServ.value), servings_per_package: num(ui.fServN.value), basis: state.basis, nutrients: readNutrients(), sizes: raw.filter(x => x.barcode !== pc || (x.name && x.amount != null)), photo: state.photo, photo_url: state.photoUrl, photo_ok: state.photoOk, label_photo: state.labelPhoto, label_photo_url: state.labelUrl, label_photo_uploaded: state.labelUploaded, off_ref: state.off, photo_from_req: !!(state.photo && state.photo === state.reqAdoptedPhoto), label_from_req: !!(state.labelPhoto ? state.labelPhoto === state.reqAdoptedLabel : (state.labelUrl && state.labelUrlReq)), label_removed: !!(state.labelRemoved && !state.labelPhoto && !state.labelUrl), label_file: !!state.labelFile };
 }
 // المسودة تنحفظ في IndexedDB (مو sessionStorage) عشان الصور الكبيرة ما تتجاوز الحد وتضيع لما الجوال يعيد تحميل الصفحة بعد الكاميرا
 function saveDraft() {
   if (!formCtx) return;
-  const payload = { ctx: { editing: formCtx.editing, returnTo: formCtx.returnTo || 'scan', fromOFF: !!formCtx.fromOFF, draftId: formCtx.draftId || null, note: formCtx.note || '', draftPos: formCtx.draftPos || '', requestKey: formCtx.requestKey || null, reqBarcode: formCtx.reqBarcode || '', reporters: formCtx.reporters || 0, reqFrontPath: formCtx.reqFrontPath || null, reqLabelPath: formCtx.reqLabelPath || null, reqAdopted: !!formCtx.reqAdopted }, product: formSnapshot(), t: Date.now() };
+  const payload = { ctx: { editing: formCtx.editing, returnTo: formCtx.returnTo || 'scan', fromOFF: !!formCtx.fromOFF, draftId: formCtx.draftId || null, note: formCtx.note || '', draftPos: formCtx.draftPos || '', requestKey: formCtx.requestKey || null, reqBarcode: formCtx.reqBarcode || '', reporters: formCtx.reporters || 0, reqFrontPath: formCtx.reqFrontPath || null, reqLabelPath: formCtx.reqLabelPath || null, reqAdopted: !!formCtx.reqAdopted, reqAdoptedLabel: !!formCtx.reqAdoptedLabel, reqSwapped: !!formCtx.reqSwapped, reqInit: !!formCtx.reqInit, reqSeen: formCtx.reqSeen || [], reqKept: formCtx.reqKept || null, reqSkip: formCtx.reqSkip || null, reqLabelUnknown: !!formCtx.reqLabelUnknown }, product: formSnapshot(), t: Date.now() };
   KV.set(DRAFT_KEY, payload).catch(() => { try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(payload)); } catch (e) {} });
 }
 function clearDraft() { KV.del(DRAFT_KEY).catch(() => {}); try { sessionStorage.removeItem(DRAFT_KEY); } catch (e) {} }
@@ -2499,12 +2651,21 @@ async function renderCapture() {
 
 /* --- طلبات التطبيق: «ما عندنا هذا المنتج» من مستخدمي ألياف ---
    تنقرأ من product_request_queue بجلسة المحرّر (RLS: غير المحرّر يشوف قائمة فاضية، والجدول الناقص PGRST205 يخفيها بهدوء).
-   الصور في bucket خاص (product-requests): تنحمّل بالجلسة وتبقى في الذاكرة فقط، ما تنحفظ على الجهاز ولا مع المنتج
-   إلا لو اخترت «استخدم صورة المرسل كصورة المنتج». الطلب ينقفل في القاعدة لما ينحفظ المنتج كامل (trigger على products)،
-   وصور الطلبات المقفلة تنحذف عبر Storage API: عند فتح القائمة، بعد كل مزامنة، بعد الرفض، ومن زر «تنظيف الصور». */
+   الصور في bucket خاص (product-requests): الأصل ينحمّل بالجلسة ويبقى في الذاكرة فقط. صور المرسل لنا حسب الشروط، وأول ما
+   تفتح الطلب تنحط في خانتي النموذج نفسها مثل تعديل منتج محفوظ (طلب المالك 2026-11-01): الواجهة في صورة المنتج والملصق في
+   خانة الملصق، نسخة ترتفع مع المزامنة إلى product-photos/<الباركود>.jpg وlabels/<الباركود>.jpg، وتغيّرها بأزرار النموذج العادية.
+   بلا اعتماد ولا إلغاء اعتماد. الخانة اللي للمنتج فيها صورة من قبل تبقى، و«⇄ بدّل الصورتين» تصحيح لو المرسل عكسهما.
+   الطلب ينقفل في القاعدة لما ينحفظ المنتج كامل (trigger على products)، وأصل صور الطلبات المقفلة ينحذف عبر Storage API:
+   عند فتح القائمة، بعد كل مزامنة، بعد الرفض، ومن زر «تنظيف الصور». */
 const REQ_BUCKET = 'product-requests';
-// صور الطلبات ما تنرسل لمزوّد الذكاء الاصطناعي: سياسة الخصوصية في التطبيق ما تذكره. لا تغيّرها قبل تعديل السياسة (عربي وإنجليزي).
-const REQ_AI_ALLOWED = false;
+// صور المرسل تنقرأ بالذكاء الاصطناعي عبر المزوّدين في REQ_AI_PROVIDERS وحدهم (قرار المالك 2026-10-31: Google Gemini).
+// أي مزوّد ثاني ترسل له الأداة صورك أنت بس، و«حلّل الصور» يقول ذلك ويفتح إعدادات الذكاء على Gemini (reqAskGemini).
+// السياسة تذكر المزوّد، فلا تضيف واحد قبل ما تتعدّل (عربي وإنجليزي).
+const REQ_AI_ALLOWED = true;
+const REQ_AI_PROVIDERS = ['gemini'];
+// اسم المزوّد داخل جملة عربية بين عازلي اتجاه (U+2068 … U+2069): بدونهما القوس الأخير في «OpenAI (GPT)» ينعكس قبل الفاصلة العربية
+const bidiIso = s => '\u2068' + s + '\u2069';
+const reqAiNames = () => REQ_AI_PROVIDERS.map(k => bidiIso((AI_PROVIDERS[k] || { label: k }).label)).join(' أو ');
 const REQ_COLS = 'gtin_key,alt_key,barcode,reporters,sends,first_asked_at,last_asked_at,server_row_complete,catalogue_barcode,catalogue_complete,catalogue_usable,front_path,label_path,photos_sent_at,photo_pairs';
 const REQ_PATH_RE = /^[0-9a-f]{32}\/(front|label)_[A-Za-z0-9_-]{6,64}\.(jpg|jpeg|png|webp)$/;
 const REQ_KEY_RE = /^[1-9]\d{0,13}$/;
@@ -2583,15 +2744,34 @@ async function reqServerProduct(code) {
   await DB.put(merged); refreshCount();
   return { product: merged, size: null };
 }
+// الخانة فيها صورة المرسل (مو صورتك ولا صورة المنتج المحفوظة): للتبديل، ولبوابة الذكاء، ولعلامة السجل
+const reqIn = slot => slot === 'front' ? !!(state.photo && state.photo === state.reqAdoptedPhoto) : !!(state.labelPhoto && state.labelPhoto === state.reqAdoptedLabel);
+// مسار الأصل اللي يروح لهذي الخانة (بعد «⇄ بدّل الصورتين» الواجهة من مسار الملصق والعكس)
+const reqSrcPath = slot => (formCtx && ((slot === 'front') !== !!formCtx.reqSwapped ? formCtx.reqFrontPath : formCtx.reqLabelPath)) || null;
+// شريط الطلب: من طلبه، ووين صور المرسل، والملاحظات، و«رفض الطلب». بلا خانات ولا اعتماد: الصور في خانات النموذج نفسها
 function renderReqBar() {
   if (!formCtx || !formCtx.requestKey) return;
-  const st = formCtx.reqPhotoState || '', hasF = !!state.reqFront, hasL = !!state.reqLabel, canAdopt = hasF || !!formCtx.reqAdopted;
-  const note = st === 'loading' ? 'جاري تحميل صور الطلب…' : st === 'none' ? 'المرسل ما أرفق صور.' : st === 'failed' ? 'تعذر تحميل صور الطلب: ' + esc(formCtx.reqPhotoErr || '') : st === 'partial' ? 'وحدة من الصور ما تحمّلت: ' + esc(formCtx.reqPhotoErr || '') : '';
+  const st = formCtx.reqPhotoState || '', sent = !!(formCtx.reqFrontPath || formCtx.reqLabelPath);
+  const kept = formCtx.reqKept || {}, skip = formCtx.reqSkip || {}, emptyF = !state.photo && !state.photoUrl, emptyL = !state.labelPhoto && !state.labelUrl;
+  const notes = [st === 'loading' ? 'جاري تحميل صور الطلب…' : st === 'none' ? 'المرسل ما أرفق صور.' : st === 'failed' ? 'تعذر تحميل صور الطلب: ' + esc(formCtx.reqPhotoErr || '') : st === 'partial' ? 'وحدة من الصور ما تحمّلت: ' + esc(formCtx.reqPhotoErr || '') : ''];
+  if (kept.front && !emptyF && !reqIn('front')) notes.push('صورة المنتج المحفوظة من قبل بقيت في خانتها.');
+  if (kept.label && !emptyL && !reqIn('label')) notes.push('ملصق المنتج المحفوظ من قبل بقي في خانته.');
+  if (skip.front && emptyF) notes.push('ما رجّعت صورة المرسل لخانة صورة المنتج، لأنك شلتها وحفظت المنتج قبل.');
+  if (skip.label && emptyL) notes.push(skip.label === 'removed' ? 'خانة الملصق فاضية: ما حطيت فيها ملصق المرسل، لأنك حذفت ملصق هذا المنتج قبل.' : 'ما رجّعت ملصق المرسل لخانة الملصق، لأنك شلته وحفظت المنتج قبل.');
+  if (formCtx.reqLabelUnknown && state.reqLabel && emptyL) notes.push('ما قدرت أتأكد إذا للمنتج ملصق محفوظ في السحابة، فخليت خانة الملصق فاضية. ارجع وافتح الطلب مرة ثانية.');
+  const note = notes.filter(Boolean).join(' ');
+  // الجملة الأولى من اللي في الخانات فعلاً (reqIn)، مو من وجود صور في الطلب: خانة بقت فيها صورة المنتج، أو فضيت، أو التحميل فشل أو للحين
+  const inF = reqIn('front'), inL = reqIn('label');
+  const placed = inF && inL ? 'صور المرسل في خانتي صورة المنتج والملصق، وتغيّرها مثل أي منتج. ' : inF ? 'صورة المرسل في خانة صورة المنتج، وتغيّرها مثل أي منتج. ' : inL ? 'ملصق المرسل في خانة الملصق، وتغيّره مثل أي منتج. ' : '';
   ui.draftBar.innerHTML = '<span>📋</span><span>' + (formCtx.draftPos ? '<b>' + esc(formCtx.draftPos) + '</b> · ' : '')
-    + 'طلبه <b>' + esc(formCtx.reporters || 1) + '</b> من مستخدمي التطبيق بالباركود <b dir="ltr">' + esc(formCtx.reqBarcode || '') + '</b>. عبّي المنتج واعتمده، والطلب ينقفل لما تكون الأساسيات الأربع مكتوبة.'
-    + '<small>صور الطلب خاصة: تشوفها هنا بس، ما تنحفظ مع المنتج' + (REQ_AI_ALLOWED ? '' : ' ولا تنرسل للذكاء الاصطناعي') + '، وتنحذف بعد ما ينقفل الطلب.' + (note ? ' ' + note : '') + '</small>'
-    + '<span class="req-tools"><button type="button" class="tool" data-req-view="front"' + (hasF ? '' : ' disabled') + '>صورة المنتج</button><button type="button" class="tool" data-req-view="label"' + (hasL ? '' : ' disabled') + '>صورة الملصق</button><button type="button" class="tool danger" data-reject-req="' + esc(formCtx.requestKey) + '">رفض الطلب</button></span>'
-    + '<label class="req-adopt' + (canAdopt ? '' : ' off') + '"><input type="checkbox" id="reqAdopt"' + (formCtx.reqAdopted ? ' checked' : '') + (canAdopt ? '' : ' disabled') + '>استخدم صورة المرسل كصورة المنتج (تصير ظاهرة في التطبيق)</label></span>';
+    + 'طلبه <b>' + esc(formCtx.reporters || 1) + '</b> من مستخدمي التطبيق بالباركود <b dir="ltr">' + esc(formCtx.reqBarcode || '') + '</b>. '
+    + (sent ? placed + 'عبّي الاسم والصنف والحصص والقيم واعتمد.' : 'عبّي المنتج واعتمده.') + ' الطلب ينقفل لما تكون الأساسيات الأربع مكتوبة.'
+    + '<small>' + (sent ? 'الصور لنا حسب الشروط: الواجهة تظهر في التطبيق، والملصق ما يظهر فيه بس رابطه عام مثلها. '
+      + (REQ_AI_ALLOWED ? 'الذكاء الاصطناعي يقرأها عبر ' + esc(reqAiNames()) + ' فقط' : 'ما تنرسل للذكاء الاصطناعي') + '، والأصل في الطلب ينحذف بعد ما ينقفل.' + (note ? ' ' : '') : '') + note + '</small>'
+    + (sent ? '<small><b>تأكد إن الصورتين بلا وجه أو يد أو بيانات شخصية.</b></small>' : '')
+    + '<span class="req-tools"><button type="button" class="tool danger" data-reject-req="' + esc(formCtx.requestKey) + '">رفض الطلب</button></span></span>';
+  // «⇄ بدّل الصورتين» جنب الصور: لما يكون الأصلين في الذاكرة وفي خانة وحدة على الأقل صورة المرسل
+  ui.reqSwapRow.hidden = !(state.reqFront && state.reqLabel && (reqIn('front') || reqIn('label')));
 }
 async function loadRequestPhotos(tok) {
   if (!formCtx) return;
@@ -2603,28 +2783,103 @@ async function loadRequestPhotos(tok) {
   const [f, l] = await Promise.allSettled([get(fp), get(lp)]);
   if (tok !== formToken || !formCtx) return;
   state.reqFront = f.status === 'fulfilled' ? f.value : null; state.reqLabel = l.status === 'fulfilled' ? l.value : null;
+  if (formCtx.reqSwapped) [state.reqFront, state.reqLabel] = [state.reqLabel, state.reqFront]; // بدّلتها قبل إعادة التحميل
   const bad = [f, l].find(x => x.status === 'rejected');
   formCtx.reqPhotoErr = bad ? String((bad.reason && bad.reason.message) || bad.reason).slice(0, 100) : '';
   formCtx.reqPhotoState = (state.reqFront || state.reqLabel) ? (bad ? 'partial' : 'ok') : 'failed';
+  // أول فتح للطلب: صور المرسل تنحط في خانتي النموذج الفاضيتين. الخانة اللي للمنتج فيها صورة من قبل تبقى (reqKept)،
+  // والصورة اللي انحطت وشلتها وحفظت المنتج ما ترجع (req_seen على نسخة هذا الجهاز، reqSkip). reqInit ينحفظ مع النموذج،
+  // فإعادة تحميل الصفحة ما تحط شي من جديد
+  if (!formCtx.reqInit && (state.reqFront || state.reqLabel)) {
+    // ملصق محفوظ للمنتج في السحابة يبقى: ملصق المرسل ينحط لحاله بس لما نعرف أكيد إن ما فيه ملصق (أو ما فيه شي نسأل عنه)
+    const probe = labelProbe ? await labelProbe : 'missing';
+    let rec = null; if (formCtx && formCtx.editing) { try { rec = await DB.get(formCtx.editing); } catch (e) {} }
+    if (tok !== formToken || !formCtx) return;
+    const seen = new Set((rec && rec.req_seen) || []);
+    formCtx.reqInit = true; formCtx.reqLabelUnknown = probe === 'unknown'; formCtx.reqKept = {}; formCtx.reqSkip = {};
+    for (const slot of ['front', 'label']) {
+      const f = slot === 'front';
+      if (!(f ? state.reqFront : state.reqLabel)) continue;
+      if (f ? (state.photo || state.photoUrl) : (state.labelPhoto || state.labelUrl)) { formCtx.reqKept[slot] = true; continue; }
+      if (seen.has(reqSrcPath(slot))) { formCtx.reqSkip[slot] = true; continue; }
+      // شلت ملصق المنتج بـ«حذف الملصق» (label_removed على نسخة هذا الجهاز): ما نحط ملصق المرسل، ولا سألنا عن labels/<الباركود>.jpg
+      if (!f && state.labelRemoved) { formCtx.reqSkip.label = 'removed'; continue; }
+      if (!f && probe !== 'missing') continue;
+      await reqPlace(slot, !f);
+      if (tok !== formToken || !formCtx) return;
+    }
+    queueSaveDraft();
+  }
   renderReqBar(); renderRef();
 }
-// الصورة تصير صورة المنتج العامة فقط لما تختارها بنفسك (الافتراضي: لا)
-function reqAdoptReset() { if (formCtx && formCtx.reqAdopted) { formCtx.reqAdopted = false; state.reqAdoptedPhoto = null; renderReqBar(); } }
-async function adoptRequestPhoto(on, box) {
+// صورة المرسل في خانتها، من الأصل دايماً: الواجهة مثل صورتك (800 ومحسّنة، فما يطلب «تأكيد الصورة»)، والملصق يتجهّز من جديد
+// على canvas دايماً (1600 وJPEG 0.92: نسخ التطبيق 1080 بالكثير فما تصغر، والخط الصغير يبقى واضح)، فتنشال بيانات الملف
+// (EXIF وموقع التصوير) قبل ما تنرفع للحاوية العامة. auto: الأداة حطت الملصق لحالها عند أول فتح.
+async function reqPlace(slot, auto) {
   if (!formCtx || !formCtx.requestKey) return;
-  if (!on) {
-    if (state.reqAdoptedPhoto && state.photo === state.reqAdoptedPhoto) { state.photo = null; state.photoOk = false; renderPhoto(); renderRef(); }
-    state.reqAdoptedPhoto = null; formCtx.reqAdopted = false; renderReqBar(); queueSaveDraft(); return;
-  }
-  if (state.photo || state.photoUrl) { box.checked = false; toast('للمنتج صورة. احذفها أول إذا تبي صورة المرسل بدالها'); return; }
-  if (!state.reqFront) { box.checked = false; return; }
-  const tok = formToken;
+  const f = slot === 'front', tok = formToken, raw = f ? state.reqFront : state.reqLabel; if (!raw) return;
+  const held = () => f ? [state.photo, state.photoUrl] : [state.labelPhoto, state.labelUrl], before = held();
   try {
-    const img = await enhanceImage(await compressImage(await (await fetch(state.reqFront)).blob(), 800, 0.85));
-    if (tok !== formToken || !formCtx) return;
-    state.photo = img; state.photoOk = true; state.reqAdoptedPhoto = img; formCtx.reqAdopted = true;
-    renderPhoto(); renderRef(); renderReqBar(); queueSaveDraft(); toast('صورة المرسل صارت صورة المنتج، وبترتفع مع المزامنة');
-  } catch (e) { box.checked = false; toast('تعذر تجهيز الصورة'); }
+    const blob = await (await fetch(raw)).blob();
+    const img = f ? await enhanceImage(await compressImage(blob, 800, 0.85)) : await compressImage(blob, 1600, 0.92);
+    // تغيّر شي وقت التجهيز (نموذج ثاني، تبديل، صورتك أنت): نتركه
+    const after = held();
+    if (tok !== formToken || !formCtx || (f ? state.reqFront : state.reqLabel) !== raw || after[0] !== before[0] || after[1] !== before[1]) return;
+    if (f) { state.photo = img; state.photoUrl = null; state.photoOk = true; state.reqAdoptedPhoto = img; formCtx.reqAdopted = true; renderPhoto(); }
+    else { state.labelPhoto = img; state.labelUrl = null; state.labelUploaded = false; state.labelRemoved = false; state.reqAdoptedLabel = img; state.reqLabelAuto = !!auto; formCtx.reqAdoptedLabel = true; showLabelThumb(); }
+    const p = reqSrcPath(slot); if (!Array.isArray(formCtx.reqSeen)) formCtx.reqSeen = []; if (p && !formCtx.reqSeen.includes(p)) formCtx.reqSeen.push(p);
+  } catch (e) { if (tok === formToken) toast('تعذر تجهيز الصورة'); }
+  if (tok !== formToken || !formCtx) return;
+  renderRef(); renderReqBar(); queueSaveDraft();
+}
+// صورتك أنت (أو حذفت الصورة): الخانة ما عادت صورة المرسل، في أي نموذج (علامة المنتج تنمسح مع الحفظ)
+function reqAdoptReset(slot) {
+  if (slot === 'front') state.reqAdoptedPhoto = null; else { state.reqAdoptedLabel = null; state.reqLabelAuto = false; }
+  if (!formCtx || !formCtx.requestKey) return;
+  if (slot === 'front') formCtx.reqAdopted = false; else formCtx.reqAdoptedLabel = false;
+  if (formCtx.reqKept) formCtx.reqKept[slot] = false; if (formCtx.reqSkip) formCtx.reqSkip[slot] = false;
+  renderReqBar();
+}
+// المرسل صوّر الملصق مكان الواجهة: نبدّل الأصلين ونجهّز من جديد الخانات اللي فيها صورة المرسل (من الأصل، مو من النسخة المصغّرة).
+// تصحيح مو اعتماد: الخانة اللي عليها صورتك أو صورة المنتج تبقى كما هي.
+async function reqSwap() {
+  if (!formCtx || !formCtx.requestKey || !state.reqFront || !state.reqLabel) return;
+  const fr = reqIn('front'), lr = reqIn('label');
+  [state.reqFront, state.reqLabel] = [state.reqLabel, state.reqFront]; formCtx.reqSwapped = !formCtx.reqSwapped;
+  renderReqBar(); renderRef();
+  const tok = formToken;
+  // قبل كل خانة: للحين فيها صورة المرسل؟ صورتك اللي حطيتها وقت تجهيز الثانية تبقى
+  if (fr && tok === formToken && reqIn('front')) await reqPlace('front');
+  if (lr && tok === formToken && reqIn('label')) await reqPlace('label');
+  if (tok !== formToken || !formCtx) return;
+  renderReqBar(); renderRef(); queueSaveDraft(); toast('بدّلت الصورتين');
+}
+// الذكاء على صور المرسل: مزوّد مو من REQ_AI_PROVIDERS (أو الذكاء مو مفعّل)؟ الحالة تقولها بوضوح، وزر يفتح إعدادات الذكاء
+// نفسها فوق النموذج وGemini مختار، فتلصق مفتاحه وتحفظ والتحليل يبدأ لحاله. ما ينرسل شي من صور المرسل لمزوّد ثاني
+const reqGeminiBtn = ok => '<span class="req-tools"><button type="button" class="tool" data-ai-gemini>' + (ok ? 'افتح إعدادات الذكاء' : 'اختر ' + esc(bidiIso((AI_PROVIDERS[REQ_AI_PROVIDERS[0]] || { label: '' }).label)) + ' من الإعدادات') + '</button></span>';
+function reqAskGemini(why) { aiStatusSet('warn', esc(why) + reqGeminiBtn(false)); }
+let aiCardHome = null;
+function openAiSheet() {
+  if (!ui.aiSheet.hidden || !ui.aiCard) return;
+  aiCardHome = { parent: ui.aiCard.parentNode, next: ui.aiCard.nextSibling };
+  ui.aiSheetSlot.appendChild(ui.aiCard);
+  const want = REQ_AI_PROVIDERS[0], had = ai.provider === want && aiReady();
+  renderAi();
+  const sel = $('#aiProvider');
+  // مزوّد ثاني محفوظ: نختار Gemini ونفضّي المفتاح والموديل (هم للمزوّد الثاني). الحفظ يبدّل المزوّد على هذا الجهاز
+  if (sel && sel.value !== want && AI_PROVIDERS[want]) { sel.value = want; sel.dispatchEvent(new Event('change')); $('#aiKey').value = ''; $('#aiModel').value = ''; }
+  ui.aiSheetNote.innerHTML = had ? 'غيّر الموديل أو المفتاح واضغط «حفظ»، والتحليل يبدأ من جديد.'
+    : 'صور الطلبات تنقرأ عبر ' + esc(reqAiNames()) + ' فقط، واخترته لك هنا: الصق مفتاحه واضغط «حفظ»، والتحليل يبدأ لحاله. المفتاح من <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>، وينحفظ على هذا الجهاز بس، ويصير هو المزوّد في كل النماذج.';
+  ui.aiSheet.hidden = false;
+  setTimeout(() => { const k = $('#aiKey'); if (k && !ui.aiSheet.hidden) k.focus(); }, 30);
+}
+// run: انحفظت الإعدادات، فنضغط «حلّل الصور» من جديد (البوابة تعيد الفحص لو اخترت مزوّد ثاني)
+function closeAiSheet(run) {
+  if (ui.aiSheet.hidden) return;
+  ui.aiSheet.hidden = true;
+  if (aiCardHome) { aiCardHome.parent.insertBefore(ui.aiCard, aiCardHome.next); aiCardHome = null; }
+  if (!formCtx || ui.form.hidden) return;
+  if (run && !aiCtl) ui.btnAnalyze.click(); else { try { ui.btnAnalyze.focus(); } catch (e) {} }
 }
 function finishRequest(key, barcode, done) {
   if (!done) { toast('انحفظ المنتج، والطلب يبقى مفتوح لين تكتب الأساسيات الأربع'); renderQueue(); return; }
@@ -3080,12 +3335,18 @@ function wire() {
     catch (e) { toast('تعذر تنظيف الصور: ' + String(e.message || e).slice(0, 120)); }
     finally { ui.reqClean.disabled = false; }
   };
-  // شريط الطلب داخل النموذج: عرض صور المرسل، الرفض، واختيار صورة المرسل للمنتج
-  ui.draftBar.addEventListener('click', e => {
-    const v = e.target.closest('[data-req-view]'); if (v) { const src = v.dataset.reqView === 'label' ? state.reqLabel : state.reqFront; if (src) { ui.lightboxImg.src = src; ui.lightbox.hidden = false; } return; }
-    const rj = e.target.closest('[data-reject-req]'); if (rj) rejectRequest(rj.dataset.rejectReq, true);
-  });
-  ui.draftBar.addEventListener('change', e => { if (e.target && e.target.id === 'reqAdopt') adoptRequestPhoto(e.target.checked, e.target); });
+  // شريط الطلب داخل النموذج: الرفض بس. «⇄ بدّل الصورتين» جنب الصور، والصور نفسها بأزرار النموذج العادية
+  ui.draftBar.addEventListener('click', e => { const rj = e.target.closest('[data-reject-req]'); if (rj) rejectRequest(rj.dataset.rejectReq, true); });
+  ui.reqSwapBtn.onclick = () => reqSwap();
+  // إعدادات الذكاء فوق النموذج: من زر Gemini في حالة «حلّل الصور»، وتنقفل بـ«رجوع للمنتج» أو Escape أو لمسة على الخلفية
+  ui.aiStatus.addEventListener('click', e => { if (e.target.closest('[data-ai-gemini]')) openAiSheet(); });
+  ui.aiSheetClose.onclick = () => closeAiSheet(false);
+  // الخلفية تقفلها بس لما الضغطة والإفلات كلهم عليها: سحب يبدأ في خانة المفتاح وينتهي برّا البطاقة يوصل click للخلفية، وكان يقفلها ويضيّع المفتاح
+  let aiSheetDown = false;
+  ui.aiSheet.addEventListener('pointerdown', e => { aiSheetDown = e.target === ui.aiSheet; });
+  ui.aiSheet.addEventListener('click', e => { const down = aiSheetDown; aiSheetDown = false; if (down && e.target === ui.aiSheet) closeAiSheet(false); });
+  ui.aiSheet.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'aiKey') { e.preventDefault(); const b = $('#aiSaveBtn'); if (b) b.click(); } });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !ui.aiSheet.hidden && ui.lightbox.hidden) { e.preventDefault(); closeAiSheet(false); } });
   ui.shotFront.onclick = () => ui.fileCapFront.click();
   ui.shotLabel.onclick = () => ui.fileCapLabel.click();
   ui.fileCapFront.onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) capPhoto('front', f); };
@@ -3094,10 +3355,23 @@ function wire() {
   ui.capDiscard.onclick = capDiscard;
   ui.themeOptions.addEventListener('click', e => { const b = e.target.closest('[data-theme-choice]'); if (b) applyTheme(b.dataset.themeChoice, true); });
   // لوحة الصورة الكبيرة (الكمبيوتر)
-  ui.refSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (!b || b.disabled) return; refView = b.dataset.r; refRot = 0; ui.refStage.classList.remove('zoomed'); ui.refZoom.textContent = 'تكبير'; renderRef(); });
+  refViewer = makeViewer(ui.refStage, ui.refImg, ui.refZoom);
+  ui.refSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (!b || b.disabled) return; pickRef(b.dataset.r); });
   ui.refRotate.onclick = () => { refRot = (refRot + 90) % 360; renderRef(); };
-  const toggleRefZoom = () => { const z = ui.refStage.classList.toggle('zoomed'); ui.refZoom.textContent = z ? 'تصغير' : 'تكبير'; };
-  ui.refZoom.onclick = toggleRefZoom; ui.refImg.onclick = toggleRefZoom;
+  ui.refZoom.onclick = () => refViewer.fit(false);
+  ui.refZoomIn.onclick = () => refViewer.zoomBy(1.25);
+  ui.refZoomOut.onclick = () => refViewer.zoomBy(0.8);
+  // Alt بالـe.code (مو e.key): يشتغل مع لوحة المفاتيح العربية ومع Option في الماك، وpreventDefault يمنع Option يكتب حرف في الخانة
+  const REF_KEYS = { Digit1: 'label', Digit2: 'front', Numpad1: 'label', Numpad2: 'front' };
+  document.addEventListener('keydown', e => {
+    if (!e.altKey || e.ctrlKey || e.metaKey || !formCtx || ui.form.hidden || !ui.aiSheet.hidden || !ui.form.classList.contains('has-ref') || !matchMedia('(min-width:980px)').matches) return;
+    const r = REF_KEYS[e.code];
+    if (r) { e.preventDefault(); const b = ui.refSeg.querySelector('[data-r="' + r + '"]'); if (b && !b.disabled) pickRef(r); return; }
+    if (e.code === 'Equal' || e.code === 'NumpadAdd') { e.preventDefault(); refViewer.zoomBy(1.25); }
+    else if (e.code === 'Minus' || e.code === 'NumpadSubtract') { e.preventDefault(); refViewer.zoomBy(0.8); }
+    else if (e.code === 'Digit0' || e.code === 'Numpad0') { e.preventDefault(); refViewer.fit(false); }
+    else if (e.code === 'KeyR') { e.preventDefault(); ui.refRotate.click(); }
+  });
   ui.form.addEventListener('input', () => { if (formCtx) queueSaveDraft(); });
   ui.form.addEventListener('click', e => { if (formCtx && e.target.closest('.seg button, .cat-tile, .s-del, .chip')) queueSaveDraft(); });
   ui.countPill.onclick = () => go('list');
@@ -3142,31 +3416,48 @@ function wire() {
   ui.formSave.onclick = saveForm; ui.formSaveTop.onclick = saveForm;
   ui.btnDelete.onclick = deleteCurrent;
   ui.btnPhoto.onclick = () => { saveDraft(); ui.filePhoto.click(); };
-  ui.filePhoto.onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { state.photo = await enhanceImage(await compressImage(f, 800, 0.85)); state.photoOk = true; reqAdoptReset(); renderPhoto(); saveDraft(); } catch (err) { toast('تعذر قراءة الصورة: ' + (err.message || err)); } };
-  ui.btnPhotoRemove.onclick = () => { state.photo = null; state.photoUrl = null; state.photoOk = false; reqAdoptReset(); renderPhoto(); };
+  ui.filePhoto.onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { state.photo = await enhanceImage(await compressImage(f, 800, 0.85)); state.photoOk = true; reqAdoptReset('front'); renderPhoto(); saveDraft(); } catch (err) { toast('تعذر قراءة الصورة: ' + (err.message || err)); } };
+  ui.btnPhotoRemove.onclick = () => { state.photo = null; state.photoUrl = null; state.photoOk = false; reqAdoptReset('front'); renderPhoto(); saveDraft(); };
   ui.btnPhotoOk.onclick = () => { state.photoOk = true; renderPhoto(); toast('تم تأكيد صورة المنتج'); };
   const openLightbox = src => { if (!src) return; ui.lightboxImg.src = src; ui.lightbox.hidden = false; };
-  ui.lightbox.onclick = () => { ui.lightbox.hidden = true; ui.lightboxImg.removeAttribute('src'); };
+  lbViewer = makeViewer(ui.lightbox, ui.lightboxImg, null, 16);
+  const closeLightbox = () => { ui.lightbox.hidden = true; ui.lightboxImg.removeAttribute('src'); };
+  ui.lightbox.onclick = e => { if (!e.target.closest('#lightboxClose') && (e.target === ui.lightboxImg || lbViewer.moved())) return; closeLightbox(); };
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !ui.lightbox.hidden) { e.preventDefault(); closeLightbox(); } });
   ui.photoPreview.onclick = () => openLightbox(ui.photoPreview.src);
   ui.labelThumb.onclick = () => openLightbox(state.labelPhoto || state.labelUrl);
   ui.btnUseOff.onclick = useOffValues;
   ui.result.addEventListener('click', e => { const im = e.target.closest('img.res-photo, img.res-img'); if (im) openLightbox(im.src); });
   ui.btnAiLabel.onclick = () => { saveDraft(); ui.fileLabel.click(); };
+  ui.btnLabelRemove.onclick = () => { if (state.labelFile || reqIn('label')) state.labelRemoved = true; state.labelPhoto = null; state.labelUrl = null; reqAdoptReset('label'); showLabelThumb(); renderRef(); saveDraft(); };
   const aiStatus = aiStatusSet;
   ui.fileLabel.onchange = async e => {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
     try {
-      state.labelPhoto = await compressImage(f, 1600, 0.82); state.labelUrl = null; state.labelUploaded = false; showLabelThumb();
+      state.labelPhoto = await compressImage(f, 1600, 0.82); state.labelUrl = null; state.labelUploaded = false; state.labelRemoved = false; reqAdoptReset('label'); showLabelThumb();
       saveDraft(); toast('تم حفظ صورة الملصق — اضغط "حلّل الصور" لتعبئة القيم');
     } catch (err) { toast('تعذر قراءة الصورة'); }
   };
   ui.btnAnalyze.onclick = async () => {
     if (aiCtl) { stopAi(true); return; } // الزر نفسه يصير "إيقاف" أثناء التحليل
-    if (!aiReady()) { toast('فعّل الذكاء الاصطناعي أولًا من تبويب الإعدادات (المزوّد والمفتاح)'); return; }
-    // صور الطلب (وصورة المرسل لو اخترتها للمنتج) تنرسل فقط لو REQ_AI_ALLOWED
-    const reqForm = !!(formCtx && formCtx.requestKey), ownFront = (!REQ_AI_ALLOWED && state.photo && state.photo === state.reqAdoptedPhoto) ? null : state.photo;
-    const reqF = REQ_AI_ALLOWED ? state.reqFront : null, reqL = REQ_AI_ALLOWED ? state.reqLabel : null, reqHeld = reqForm && !REQ_AI_ALLOWED && !!(state.reqFront || state.reqLabel);
-    if (!ownFront && !state.photoUrl && !state.labelPhoto && !state.labelUrl && !reqF && !reqL) { toast(reqHeld ? 'صور الطلبات ما تنرسل للذكاء الاصطناعي (خصوصية المرسل). صوّر الملصق بنفسك، أو عبّي القيم من صورة الطلب.' : 'صوّر المنتج من الأمام والملصق الغذائي أولًا'); return; }
+    // صور المرسل (الأصل، واللي في خانات المنتج منها ولو انحفظ قبل) تنقرأ بالذكاء عبر مزوّد من REQ_AI_PROVIDERS فقط، في أي نموذج.
+    // مع غيره تنرسل صورك أنت بس، ونموذج الطلب ما يرجع لرابط الصورة في السحابة (ممكن تكون صورة مرسل حطها جهاز ثاني).
+    // ما فيه شي ينرسل، أو الذكاء مو مفعّل في نموذج طلب: الحالة تقول ليش، وزر يفتح إعدادات الذكاء على Gemini (reqAskGemini)
+    const reqForm = !!(formCtx && formCtx.requestKey), okProv = REQ_AI_ALLOWED && REQ_AI_PROVIDERS.includes(ai.provider);
+    const reqWhy = REQ_AI_ALLOWED ? 'صور الطلبات تنقرأ بالذكاء عبر ' + reqAiNames() + ' فقط' : 'صور هذا الطلب ما تنرسل للذكاء الاصطناعي';
+    if (!aiReady()) { if (reqForm && REQ_AI_ALLOWED) reqAskGemini('الذكاء الاصطناعي غير مفعّل على هذا الجهاز، و' + reqWhy + '.'); else toast('فعّل الذكاء الاصطناعي أولًا من تبويب الإعدادات (المزوّد والمفتاح)'); return; }
+    // ملصق برابطه بس معلّم إنه من المرسل (labelUrlReq: من نسخة المنتج، أو لقته الأداة على labels/<الباركود>.jpg والنسخة معلّمة) يتحجب مثل نسخته
+    const markF = !!(state.photo && state.photo === state.reqAdoptedPhoto), markL = !!(state.labelPhoto ? state.labelPhoto === state.reqAdoptedLabel : (state.labelUrl && state.labelUrlReq));
+    const ownFront = !okProv && markF ? null : state.photo, ownLabel = !okProv && markL ? null : state.labelPhoto;
+    const urlF = !okProv && (reqForm || markF) ? null : state.photoUrl, urlL = !okProv && (reqForm || markL) ? null : state.labelUrl;
+    const reqF = reqForm && okProv ? state.reqFront : null, reqL = reqForm && okProv ? state.reqLabel : null;
+    const reqHeld = !okProv && !!((reqForm && (state.reqFront || state.reqLabel)) || ((state.photo || state.photoUrl) && !ownFront && !urlF) || ((state.labelPhoto || state.labelUrl) && !ownLabel && !urlL));
+    if (!ownFront && !urlF && !ownLabel && !urlL && !reqF && !reqL) {
+      if (reqHeld && REQ_AI_ALLOWED) reqAskGemini('المزوّد المحفوظ عندك ' + bidiIso(AI_PROVIDERS[ai.provider].label) + '، و' + reqWhy + '، فما انرسلت أي صورة.');
+      else toast(reqHeld ? reqWhy + '. عبّي القيم من الصورة بنفسك، أو صوّر الملصق.' : 'صوّر المنتج من الأمام والملصق الغذائي أولًا');
+      return;
+    }
+    if (reqHeld) toast(reqWhy + '، فانرسلت صورك أنت بس.');
     const ctl = new AbortController(); aiCtl = ctl; const tok = formToken;
     setAnalyzeBusy(true);
     const prov = esc(AI_PROVIDERS[ai.provider].label); let curModel = '', t0 = Date.now();
@@ -3174,10 +3465,12 @@ function wire() {
     tickStatus(); const iv = setInterval(tickStatus, 1000);
     try {
       // نجهّز الصور: لو الصورة محفوظة كرابط بالسحابة فقط نحمّلها، ونصغّرها عشان يكون الإرسال أسرع
-      let front = ownFront || null, label = state.labelPhoto || null;
-      try { if (!front && state.photoUrl) front = await urlToData(state.photoUrl); } catch (e) { front = null; }
-      try { if (!label && state.labelUrl) label = await urlToData(state.labelUrl); } catch (e) { label = null; }
-      if (!front && reqF) front = reqF; if (!label && reqL) label = reqL;
+      let front = ownFront || null, label = ownLabel || null;
+      try { if (!front && urlF) front = await urlToData(urlF); } catch (e) { front = null; }
+      try { if (!label && urlL) label = await urlToData(urlL); } catch (e) { label = null; }
+      // أصل المرسل (لما الخانة فاضية) يتجهّز من جديد على canvas قبل ما ينرسل، فما تروح بيانات ملفه (EXIF وموقع التصوير) للذكاء
+      try { if (!front && reqF) front = await compressImage(await (await fetch(reqF)).blob(), 640, 0.8); } catch (e) { front = null; }
+      try { if (!label && reqL) label = await compressImage(await (await fetch(reqL)).blob(), 1280, 0.85); } catch (e) { label = null; }
       if (!front && !label) throw new Error('تعذر تحميل الصور — تأكد من الإنترنت');
       if (front) front = await shrinkDataUrl(front, 640, 0.8);
       if (label) label = await shrinkDataUrl(label, 1280, 0.85);
@@ -3195,11 +3488,13 @@ function wire() {
       if (bits.length) { aiStatus('ok', '✓ خلال ' + secs + ' ث: ' + bits.join(' · ') + ' (الموديل: ' + esc(res.model) + '). المظلل بالأخضر من الصور، والأصفر مترجم آليًا — راجع ثم احفظ.'); showSanity(); try { ui.fName.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (x) {} }
       else aiStatus('err', 'ما لقيت معلومات واضحة بالصور — قرّب الكاميرا وتأكد من الإضاءة وجرّب مرة ثانية.');
       if (!front) aiStatus('warn', ui.aiStatus.innerHTML + '<br>ما فيه صورة للمنتج من الأمام — الاسم والعلامة قد يكونان ناقصين.');
-      if (reqHeld) ui.aiStatus.insertAdjacentHTML('beforeend', '<br>صور الطلب ما انرسلت (خصوصية المرسل).');
+      if (reqHeld) ui.aiStatus.insertAdjacentHTML('beforeend', '<br>صور الطلب ما انرسلت للذكاء: ' + esc(reqWhy) + '.' + (REQ_AI_ALLOWED ? reqGeminiBtn(false) : ''));
     } catch (err) {
       if (tok !== formToken) return;
       if (ctl.signal.aborted || (err && err.message === 'stopped')) aiStatus('warn', 'وقّفت التحليل. تقدر تعبّي القيم بنفسك من الصورة، أو تضغط «حلّل الصور» مرة ثانية.');
-      else aiStatus('err', 'تعذر التحليل: ' + esc(err.message || err) + '<br>جرّب مرة ثانية، أو غيّر المزوّد أو الموديل من تبويب «الإعدادات».');
+      else aiStatus('err', 'تعذر التحليل: ' + esc(err.message || err) + '<br>' + (reqForm && REQ_AI_ALLOWED
+        ? (okProv ? 'جرّب مرة ثانية، أو غيّر الموديل من إعدادات الذكاء.' : 'جرّب مرة ثانية. ' + esc(reqWhy) + '.') + reqGeminiBtn(okProv)
+        : 'جرّب مرة ثانية، أو غيّر المزوّد أو الموديل من تبويب «الإعدادات».'));
     } finally { clearInterval(iv); if (aiCtl === ctl) aiCtl = null; setAnalyzeBusy(false); }
   };
   ui.catChips.addEventListener('click', e => {
