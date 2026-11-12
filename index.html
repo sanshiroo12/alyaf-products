@@ -157,19 +157,16 @@ select option{color:var(--text);background:var(--surface)}
 .field.translated input{border-color:var(--amber-border);background:var(--amber-soft)}
 .field.translated>span::after{content:"مترجم";color:var(--amber);font-size:11px;margin-right:6px;background:var(--amber-tint);padding:1px 6px;border-radius:6px}
 .suggest{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.fam-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
-.fam-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--card-2);border:1px solid var(--line);border-radius:12px}
-.fam-row .tx{flex:1;min-width:0}
-.fam-row b{display:block;font-size:14px;color:var(--text)}
-.fam-row small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
-.fam-row .tool{font-size:13px;padding:6px 12px;color:var(--text);flex:none}
-.fam-row.pending{border-style:dashed}
-.fam-state{margin:8px 0 0}
-.fam-state .tool{font-size:13px;padding:4px 10px;margin-inline-start:6px;color:var(--text)}
-.brand-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) auto auto;align-items:center;gap:6px;margin-top:6px}
+.brand-tr{margin-top:12px}
+.brand-tr summary .pill{margin-inline-start:4px}
+.brand-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) auto;align-items:center;gap:6px;margin-top:6px}
 .brand-row b{font-size:14px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.brand-row input{min-width:0}
+.brand-row input{min-width:0;padding:8px 10px;font-size:14px}
 .brand-row .tool{font-size:13px;padding:6px 10px;color:var(--text)}
+.s-main{display:none;flex:none;width:44px;align-items:center;justify-content:center;border-radius:12px;background:var(--card-2);border:1px solid var(--line-2);color:var(--faint);font-size:19px;font-weight:800;line-height:1}
+#sizeRows.multi .s-main{display:flex}
+.size-row.main .s-main{background:var(--green-tint);border-color:var(--green);color:var(--green)}
+.sizes-hint{margin:6px 0 0}
 .chips.cats{max-height:168px;overflow:auto;margin-top:10px;padding-bottom:2px}
 .cat-new{margin-top:10px;display:flex;flex-direction:column;gap:8px;background:var(--card-2);border-radius:14px;padding:10px}
 .cat-new .btn{width:100%;margin-top:0}
@@ -625,8 +622,12 @@ input::placeholder{color:var(--faint)}
       </div>
       <div class="card sync" id="brandsCard">
         <div class="card-title">العلامات التجارية <span class="pill" id="brandsCount"></span></div>
-        <p class="note" style="margin:0 0 6px">هذي قائمة الاقتراحات المحفوظة على هذا الجهاز. اكتب اسم الشركة بالعربي واضغط «حفظ»: ينكتب على كل منتجاتها ويظهر للناس في البحث. ✕ يوقف اقتراح العلامة بس وما يعدّل المنتجات.</p>
+        <p class="note" style="margin:0 0 6px">هذي قائمة الاقتراحات المحفوظة على هذا الجهاز. حذف علامة من هنا ما يعدّل المنتجات — بس توقف اقتراحها.</p>
         <div id="brandsBody" class="chips"></div>
+        <details class="help brand-tr" id="brandTr" hidden><summary><span class="q">ع</span>ترجمة الشركات بالعربي <span class="pill" id="brandTrCount"></span></summary>
+          <p class="note" style="margin:8px 0 0">اكتب اسم الشركة بالعربي واضغط «حفظ»: ينكتب على كل منتجاتها، وأي منتج تحفظه بعدها لنفس الشركة ياخذه تلقائيًا، ويظهر للناس في البحث. الأسماء اللي كتبتها قبل تطلع لك وانت تكتب.</p>
+          <div id="brandTrBody"></div><datalist id="brandArList"></datalist>
+        </details>
       </div>
       <div class="card sync" id="catsCard">
         <div class="card-title">الأصناف <span class="pill" id="catsCount"></span></div>
@@ -682,19 +683,7 @@ input::placeholder{color:var(--faint)}
       <label class="field"><span>اسم المنتج بالإنجليزي</span><input id="fNameEn" placeholder="Almarai Full Fat Milk" enterkeyhint="next" autocomplete="off" dir="ltr" style="text-align:left"></label>
       <label class="field"><span>العلامة التجارية (بالإنجليزي)</span><input id="fBrand" placeholder="Almarai" enterkeyhint="next" autocomplete="off" dir="ltr" style="text-align:left"></label>
       <div class="suggest" id="brandSuggest" hidden></div>
-      <label class="field"><span>اسم الشركة بالعربي (يظهر للناس في البحث)</span><input id="fBrandAr" placeholder="مثال: المراعي" enterkeyhint="next" autocomplete="off"></label>
-    </div>
-    <div class="card" id="famCard">
-      <div class="card-title">العائلة <span class="pill">اسم يجمع كل الأحجام</span></div>
-      <p class="note" style="margin:0 0 8px">مثل «ببسي»: كل حجم منتج مستقل (صنف) تحت نفس العائلة. اختر عائلة من اللي تطلع لك، أو اكتب اسم عائلة جديدة.</p>
-      <label class="field"><span>اسم العائلة بالعربي</span><input id="fFamAr" placeholder="مثال: ببسي" enterkeyhint="next" autocomplete="off"></label>
-      <label class="field"><span>اسم العائلة بالإنجليزي</span><input id="fFamEn" placeholder="Pepsi" enterkeyhint="next" autocomplete="off" dir="ltr" style="text-align:left"></label>
-      <div class="suggest" id="famSuggest" hidden></div>
-      <div class="note fam-state" id="famState"></div>
-      <div class="sizes-head"><span>الأصناف <span class="pill" id="famCount"></span></span></div>
-      <div id="famMembers" class="fam-list"></div>
-      <label class="field"><span>أضف منتج موجود لهذي العائلة</span><input id="famAdd" placeholder="اكتب اسم المنتج أو الباركود" enterkeyhint="search" autocomplete="off"></label>
-      <div id="famAddList" class="fam-list"></div>
+
     </div>
     <div class="card">
       <button type="button" class="cat-head" id="catToggle"><span class="em" id="catHeadIcon">🏷️</span><span class="tx"><b>الصنف</b><small id="catHeadName">اضغط للاختيار</small></span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button>
@@ -735,6 +724,7 @@ input::placeholder{color:var(--faint)}
       <button type="button" class="btn primary wide" id="btnScanMain" style="margin-top:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 9v6M11 9v6M15 9v6"/></svg> امسح الباركودات — امسح وكرّر</button>
       <p class="note" style="margin:8px 0 0">كل مربع = باركود حجم. امسح كل الأحجام ورا بعض — العدّاد يزيد مع كل مسحة — ثم اكتب وزن كل حجم فقط بالغرام أو المل. الاسم يتكوّن تلقائيًا من الوزن، مثل «250 غ». كل مربع يبقى باركوده مع حجمه. أول باركود يُستخدم للبحث التلقائي في Open Food Facts.</p>
       <div id="sizeRows"></div>
+      <p class="note sizes-hint" id="sizesHint" hidden>✓ جنب الباركود = الحجم اللي يطلع للناس في البحث (مثل علبة 330 مل)، فيختارون «حصة» وتنحسب العلبة كاملة. بدون ✓ يطلع المنتج مثل قبل، والمسح يجيب حجم كل باركود دايم.</p>
     </div>
 
     <div class="basis">
@@ -985,7 +975,7 @@ const KV = {
 };
 
 /* ---------- UI refs ---------- */
-const ids = ['intakeCode','intakeScan','intakeStatus','intakeSizeBox','intakeAmount','intakeUnit','intakeApprove','intakeSizesTitle','intakeSizes','countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','catFilter','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','filePhoto','fName','fNameEn','fBrand','brandSuggest','btnScanMain','catToggle','catHeadIcon','catHeadName','catBody','catDesc','catChips','catNew','catNewIcon','catNewAr','catNewEn','catNewDesc','catNewSave','catGuide','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','syncCard','syncState','syncBody','brandsCard','brandsCount','brandsBody','catsCard','catsCount','catsBody','aiCard','aiState','aiBody','btnAiLabel','btnAnalyze','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelThumb','labelPrevImg','labelEmpty','offRef','btnUseOff','offRefBody','lightbox','lightboxImg','lightboxClose','miniScan','miniVideo','miniTorch','miniZoom','miniCount','miniList','miniFrame','miniHint','miniCancel','miniSwitch','btnSwitchCam','detail','detailBack','detailEdit','detailBody','capCard','capToday','shotFront','shotLabel','fileCapFront','fileCapLabel','capCodes','capNote','capSave','capDiscard','queueCard','queueCount','queueRefresh','queueMsg','queueList','queueEmpty','draftBadge','draftBar','refPane','refSeg','refRotate','refZoom','refStage','refImg','refEmpty','requestPhotoStack','requestFrontImage','requestLabelImage','themeOptions','themeState','reqClean','reqMsg','refZoomIn','refZoomOut','reqSwapRow','reqSwapBtn','aiSheet','aiSheetSlot','aiSheetNote','aiSheetClose','btnLabelRemove','fBrandAr','famCard','fFamAr','fFamEn','famSuggest','famState','famCount','famMembers','famAdd','famAddList'];
+const ids = ['intakeCode','intakeScan','intakeStatus','intakeSizeBox','intakeAmount','intakeUnit','intakeApprove','intakeSizesTitle','intakeSizes','countPill','countNum','readerWrap','video','guide','engineStatus','readerIdle','btnStart','hint','scanTools','btnTorch','zoomWrap','zoom','btnStop','manualCode','btnManual','btnPhotoScan','fileBarcode','result','search','catFilter','listFilter','btnExport','btnExportLite','btnExportCsv','btnShare','btnImport','fileImport','list','listEmpty','listCount','form','formBack','formTitle','formSaveTop','formBody','photoPreview','btnPhoto','btnPhotoRemove','photoTools','btnPhotoOk','filePhoto','fName','fNameEn','fBrand','brandSuggest','btnScanMain','catToggle','catHeadIcon','catHeadName','catBody','catDesc','catChips','catNew','catNewIcon','catNewAr','catNewEn','catNewDesc','catNewSave','catGuide','unitSeg','fPkg','fServ','fServN','basisSeg','coreGrid','moreGrid','pkgUnit','btnDelete','formSave','toast','btnAddSize','sizeRows','syncCard','syncState','syncBody','brandsCard','brandsCount','brandsBody','catsCard','catsCount','catsBody','aiCard','aiState','aiBody','btnAiLabel','btnAnalyze','aiBtnTitle','aiStatus','sanityBox','fileLabel','labelThumb','labelPrevImg','labelEmpty','offRef','btnUseOff','offRefBody','lightbox','lightboxImg','lightboxClose','miniScan','miniVideo','miniTorch','miniZoom','miniCount','miniList','miniFrame','miniHint','miniCancel','miniSwitch','btnSwitchCam','detail','detailBack','detailEdit','detailBody','capCard','capToday','shotFront','shotLabel','fileCapFront','fileCapLabel','capCodes','capNote','capSave','capDiscard','queueCard','queueCount','queueRefresh','queueMsg','queueList','queueEmpty','draftBadge','draftBar','refPane','refSeg','refRotate','refZoom','refStage','refImg','refEmpty','requestPhotoStack','requestFrontImage','requestLabelImage','themeOptions','themeState','reqClean','reqMsg','refZoomIn','refZoomOut','reqSwapRow','reqSwapBtn','aiSheet','aiSheetSlot','aiSheetNote','aiSheetClose','btnLabelRemove','sizesHint','brandTr','brandTrBody','brandTrCount','brandArList'];
 const ui = {}; ids.forEach(id => { ui[id] = document.getElementById(id); });
 ui.viewIntake = $('#view-intake'); ui.viewRequests = $('#view-requests'); ui.viewScan = $('#view-scan'); ui.viewList = $('#view-list'); ui.viewSettings = $('#view-settings'); ui.tabs = [...document.querySelectorAll('.tab')];
 
@@ -1408,7 +1398,7 @@ function detailTable(p) {
 }
 function sizesList(p, matched) {
   const list = (p.sizes || []).filter(Boolean); if (!list.length) return '';
-  return '<div class="sizes-title">الأحجام والحصص المسجّلة</div><div class="sizes">' + list.map(sz => '<div class="size' + (matched && matched === sz ? ' hit' : '') + '"><b>' + esc(sz.name) + '</b><span class="amt">' + fmt(sz.amount) + ' ' + unitLabel(sz.unit || p.unit) + '</span>'
+  return '<div class="sizes-title">الأحجام والحصص المسجّلة</div><div class="sizes">' + list.map(sz => '<div class="size' + (matched && matched === sz ? ' hit' : '') + '"><b>' + esc(sz.name) + (sz.search ? ' ✓ البحث' : '') + '</b><span class="amt">' + fmt(sz.amount) + ' ' + unitLabel(sz.unit || p.unit) + '</span>'
     + (sz.nutrients && sz.nutrients.kcal != null ? '<span class="kc">' + fmt(sz.nutrients.kcal) + ' kcal</span>' : '') + (sz.barcode ? '<span class="mono code">' + esc(sz.barcode) + '</span>' : '') + '</div>').join('') + '</div>';
 }
 function productDetailHTML(p, size, statusText) {
@@ -1419,7 +1409,6 @@ function productDetailHTML(p, size, statusText) {
   return (img ? '<img class="res-photo" src="' + esc(img) + '" alt="">' : '') + head(p.name, p.brand, p.barcode, null)
     + (p.name_en ? '<div class="res-sub" dir="ltr" style="text-align:left">' + esc(p.name_en) + '</div>' : '')
     + (p.brand_ar ? '<div class="res-sub">الشركة بالعربي: <b>' + esc(p.brand_ar) + '</b></div>' : '')
-    + (p.family_id && p.family_ar ? '<div class="res-sub">العائلة: <b>' + esc(p.family_ar) + '</b>' + (p.family_en ? ' · <span dir="ltr">' + esc(p.family_en) + '</span>' : '') + '</div>' : '')
     + '<div class="status ok">' + statusText + ' · ' + whenSaved(p.updated_at || p.created_at)
     + (size ? '<small>الباركود الممسوح هو حجم: ' + esc(size.name) + ' ' + fmt(size.amount) + ' ' + unitLabel(size.unit || p.unit) + '</small>' : '')
     + (p.complete ? '' : '<small>البيانات ناقصة — تقدر تكملها من "تعديل"</small>') + '</div>'
@@ -1511,7 +1500,7 @@ const readNutrients = () => Object.fromEntries(NUTRIENTS.map(n => [n.key, num($(
 function addSizeRow(sz) {
   sz = sz || {};
   const row = document.createElement('div'); row.className = 'size-row';
-  row.innerHTML = '<div class="code-row"><span class="s-num">1</span><input class="s-code mono" inputmode="numeric" placeholder="باركود المنتج — امسحه أو اكتبه" enterkeyhint="next" autocomplete="off"></div>'
+  row.innerHTML = '<div class="code-row"><span class="s-num">1</span><input class="s-code mono" inputmode="numeric" placeholder="باركود المنتج — امسحه أو اكتبه" enterkeyhint="next" autocomplete="off"><button type="button" class="s-main" aria-pressed="false" aria-label="حجم البحث" title="الحجم اللي يطلع للناس في البحث">✓</button></div>'
     + '<label class="field num"><input class="s-amt" inputmode="decimal" placeholder="الوزن" enterkeyhint="next"></label>'
     + '<select class="s-unit" aria-label="الوحدة"><option value="g">غرام</option><option value="ml">مل</option></select>'
     + '<button type="button" class="s-del" aria-label="حذف">×</button>';
@@ -1521,6 +1510,8 @@ function addSizeRow(sz) {
   su.value = u;
   row.querySelector('.s-amt').value = sz.amount == null ? '' : fmtIn(r2(sz.amount / PKG_UNITS[u].factor));
   row.querySelector('.s-code').value = sz.barcode || '';
+  if (sz.search === true) { sizeRowsAll().forEach(r => r.classList.remove('main')); row.classList.add('main'); }
+  row.querySelector('.s-main').onclick = () => { const on = !row.classList.contains('main'); sizeRowsAll().forEach(r => r.classList.remove('main')); if (on) row.classList.add('main'); renumberSizes(); queueSaveDraft(); };
   su.onchange = () => { setUnit(su.value); queueSaveDraft(); };
   row.querySelector('.s-del').onclick = () => { row.remove(); if (!ui.sizeRows.querySelector('.size-row')) addSizeRow(); else renumberSizes(); };
   row.querySelector('.s-code').addEventListener('change', e => { const c = latin(e.target.value).replace(/\D/g, ''); if (c.length >= 8 && sizeRowsAll().find(r => rowCode(r)) === row) tryOffFill(c); });
@@ -1530,6 +1521,9 @@ function addSizeRow(sz) {
 }
 function renumberSizes() {
   sizeRowsAll().forEach((r, i) => { const n = r.querySelector('.s-num'); n.textContent = String(i + 1); n.classList.toggle('on', !!rowCode(r)); });
+  const many = sizeRowsAll().length > 1;
+  ui.sizeRows.classList.toggle('multi', many); ui.sizesHint.hidden = !many;
+  sizeRowsAll().forEach(r => r.querySelector('.s-main').setAttribute('aria-pressed', r.classList.contains('main') ? 'true' : 'false'));
 }
 const sizeRowsAll = () => [...ui.sizeRows.querySelectorAll('.size-row')];
 const rowCode = r => latin(r.querySelector('.s-code').value).replace(/\D/g, '');
@@ -1544,14 +1538,16 @@ function readSizes() {
       if (codes.has(code)) return { error: 'فيه باركود مكرر بين المربعات' };
       codes.add(code);
     }
-    entries.push({ name, amount, su, code });
+    entries.push({ name, amount, su, code, main: r.classList.contains('main') });
   }
   const primary = (entries.find(e => e.code) || {}).code || '';
   for (const e of entries) {
     if (e.code === primary && e.code) continue;
     if (!(e.amount > 0)) return { error: 'اكتب وزن كل مربع فيه باركود (أو احذف المربع)' };
   }
-  const sizes = entries.filter(e => e.name && e.amount > 0).map(e => ({ name: e.name, amount: e.amount, unit: PKG_UNITS[e.su].base, barcode: e.code || null }));
+  const many = rows.length > 1, main = many ? entries.find(e => e.main) : null;
+  if (main && !(main.amount > 0)) return { error: 'اكتب وزن الحجم اللي عليه ✓ (حجم البحث)' };
+  const sizes = entries.filter(e => e.name && e.amount > 0).map(e => Object.assign({ name: e.name, amount: e.amount, unit: PKG_UNITS[e.su].base, barcode: e.code || null }, e === main ? { search: true } : {}));
   return { sizes, primary };
 }
 const pkgBase = () => { const v = num(ui.fPkg.value); return v == null ? null : v * PKG_UNITS[state.pkgUnit].factor; };
@@ -1722,9 +1718,18 @@ function matchBrand(b) {
 }
 function renderBrands() {
   ui.brandsCount.textContent = brands.length + ' علامة';
-  allProducts().then(all => { ui.brandsBody.querySelectorAll('[data-brand-ar]').forEach(i => { if (!i.value && document.activeElement !== i) { const nb = normBrand(i.dataset.brandAr); let best = null; all.forEach(p => { if (p && p.brand_ar && normBrand(p.brand) === nb && (!best || String(p.updated_at || '') > String(best.updated_at || ''))) best = p; }); if (best) i.value = best.brand_ar; } }); }).catch(() => {});
+  const list = brands.slice().sort((a, b2) => a.localeCompare(b2));
+  ui.brandTr.hidden = !list.length;
+  const drawTr = all => {
+    if (ui.brandTrBody.contains(document.activeElement)) return; // لا تمسح اللي ينكتب الحين
+    let done = 0;
+    ui.brandTrBody.innerHTML = list.map(x => { const ar = brandArFor(x, all); if (ar) done++; return '<div class="brand-row"><b dir="ltr">' + esc(x) + '</b><input data-brand-ar="' + esc(x) + '" value="' + esc(ar) + '" placeholder="بالعربي" list="brandArList" autocomplete="off" enterkeyhint="done" aria-label="اسم ' + esc(x) + ' بالعربي"><button type="button" class="tool" data-brand-save="' + esc(x) + '">حفظ</button></div>'; }).join('');
+    ui.brandTrCount.textContent = done + ' من ' + list.length;
+    ui.brandArList.innerHTML = brandArNames(all).map(n => '<option value="' + esc(n) + '">').join('');
+  };
+  drawTr([]); allProducts().then(drawTr).catch(() => {});
   ui.brandsBody.innerHTML = brands.length
-    ? brands.slice().sort((a, b2) => a.localeCompare(b2)).map(x => '<div class="brand-row"><b dir="ltr">' + esc(x) + '</b><input data-brand-ar="' + esc(x) + '" placeholder="بالعربي" autocomplete="off" aria-label="اسم ' + esc(x) + ' بالعربي"><button type="button" class="tool" data-brand-save="' + esc(x) + '">حفظ</button><button type="button" class="chip" data-b="' + esc(x) + '" aria-label="وقف اقتراح ' + esc(x) + '">✕</button></div>').join('')
+    ? brands.slice().sort((a, b2) => a.localeCompare(b2)).map(x => '<button type="button" class="chip" dir="ltr" data-b="' + esc(x) + '">' + esc(x) + ' ✕</button>').join('')
     : '<p class="note">ما فيه علامات محفوظة بعد — تنضاف تلقائيًا مع كل منتج تحفظه.</p>';
 }
 function loadBrands() {
@@ -1948,11 +1953,10 @@ function openForm(p, ctx) {
   const prim = sizesIn.find(sz => sz.barcode && String(sz.barcode) === pcode)
     || sizesIn.find(sz => !sz.barcode && sz.amount != null && p.package_size != null && Math.abs(Number(sz.amount) - Number(p.package_size)) < 0.01)
     || (sizesIn[0] && !sizesIn[0].barcode && pcode ? sizesIn[0] : null);
-  addSizeRow(prim ? { name: prim.name, amount: prim.amount, unit: prim.unit, barcode: pcode } : { barcode: pcode });
+  addSizeRow(prim ? { name: prim.name, amount: prim.amount, unit: prim.unit, barcode: pcode, search: prim.search === true } : { barcode: pcode });
   sizesIn.filter(sz => sz !== prim).forEach(addSizeRow); renumberSizes();
   ui.form.querySelectorAll('.field.ai, .field.translated').forEach(f => f.classList.remove('ai', 'translated')); ui.aiStatus.hidden = true; ui.sanityBox.hidden = true;
   ui.btnDelete.hidden = !formCtx.editing;
-  famOpen(p);
   ui.form.hidden = false; ui.formBody.scrollTop = 0;
   if (isReq) loadRequestPhotos(formToken); // يرسم شريط الطلب ثم يحمّل صوره
   if (formCtx.newSize) {
@@ -1978,7 +1982,7 @@ async function saveFormInner() {
   const nameEn = ui.fNameEn.value.trim() || null; const brandIn = matchBrand(ui.fBrand.value);
   if (brandIn) { try { const h = hiddenBrands().filter(x => x.toLowerCase() !== brandIn.toLowerCase()); localStorage.setItem(BRANDS_HIDE_KEY, JSON.stringify(h)); } catch (e) {} addBrand(brandIn); }
   const rsz = readSizes(); if (rsz.error) { toast(rsz.error); return; }
-  const fam = await famRead(); if (fam.error) { toast(fam.error); return; }
+  let brandAr = null; if (brandIn) { let all = []; try { all = await allProducts(); } catch (e) {} brandAr = brandArFor(brandIn, all) || null; }
   const barcode = rsz.primary; if (!barcode || barcode.length < 6) { toast('امسح أو اكتب باركود المنتج في المربع الأول'); return; }
   const vals = readNutrients();
   // "مكتمل" = الأساسيات الأربع مكتوبة فعلًا (قبل: كان دايم "مكتمل" لأن الفاضي يتحوّل صفر)
@@ -1991,7 +1995,7 @@ async function saveFormInner() {
   let per_100 = null, per_serving = null;
   if (state.basis === '100') { per_100 = vals; if (serving > 0) per_serving = scale(vals, serving / 100); }
   else { per_serving = vals; if (serving > 0) per_100 = scale(vals, 100 / serving); }
-  const sizes = rsz.sizes.map(sz => ({ name: sz.name, amount: sz.amount, unit: state.unit, barcode: sz.barcode || null, nutrients: per_100 ? scale(per_100, sz.amount / 100) : null }));
+  const sizes = rsz.sizes.map(sz => Object.assign({ name: sz.name, amount: sz.amount, unit: state.unit, barcode: sz.barcode || null, nutrients: per_100 ? scale(per_100, sz.amount / 100) : null }, sz.search ? { search: true } : {}));
   let existing = null; try { existing = await DB.get(formCtx.editing || barcode); } catch (e) {}
   // منتج جديد بباركود محفوظ من قبل: قبل كان يستبدل المنتج القديم بصمت
   if (!formCtx.editing && !formCtx.draftId && existing && !confirm('هذا الباركود محفوظ من قبل باسم «' + (existing.name || barcode) + '».\nتبي تستبدل بياناته بالبيانات الجديدة؟')) return;
@@ -1999,8 +2003,7 @@ async function saveFormInner() {
   if (formCtx.editing && formCtx.editing !== barcode) { let other = null; try { other = await DB.get(barcode); } catch (e) {} if (other && !confirm('الباركود ' + barcode + ' محفوظ لمنتج ثاني «' + (other.name || '') + '». تبي تستبدله؟')) return; }
   const source = existing ? (existing.source === 'off' ? 'off+manual' : (existing.source || 'manual')) : (formCtx.fromOFF ? 'off+manual' : 'manual');
   const rec = {
-    barcode, name, name_en: nameEn, brand: brandIn || null, brand_ar: fam.brand_ar, category: state.category || null, source,
-    family_id: fam.family_id, family_ar: fam.family_ar, family_en: fam.family_en,
+    barcode, name, name_en: nameEn, brand: brandIn || null, brand_ar: brandAr, category: state.category || null, source,
     package_size: pkg, package_unit: state.pkgUnit, unit: state.unit, serving_size: serving, servings_per_package: servN,
     basis: state.basis, nutrients: vals, per_100, per_serving,
     complete: coreDone, nutrition_complete: nutritionDone, sizes,
@@ -2025,7 +2028,6 @@ async function saveFormInner() {
     // غيّرت الباركود: نحذف القديم من الجهاز ومن السحابة (قبل كان يبقى في السحابة ويرجع كمنتج مكرر)
     if (formCtx.editing && formCtx.editing !== barcode) await queueProductDelete(formCtx.editing);
   } catch (e) { toast('تعذر الحفظ — مساحة التخزين ممتلئة أو المتصفح يمنع التخزين'); return; }
-  await famApply(rec, fam);
   const c = await refreshCount();
   const draftId = formCtx.draftId || null;
   const returnTo = formCtx.returnTo || 'scan';
@@ -2069,7 +2071,7 @@ function rowHTML(p) {
   const codes = codesOf(p);
   return '<div class="row-wrap"><button class="row-item" data-code="' + esc(p.barcode) + '">'
     + (img ? '<img class="thumb" src="' + esc(img) + '" alt="" loading="lazy" decoding="async">' : '<div class="thumb">بدون صورة</div>')
-    + '<div class="row-main"><div class="row-name">' + esc(p.name) + '</div><div class="row-sub">' + (p.brand ? esc(p.brand) + (p.brand_ar ? ' (' + esc(p.brand_ar) + ')' : '') + ' · ' : '') + '<span class="mono">' + esc(p.barcode) + '</span></div>' + (() => { const b = []; if (p.family_id && p.family_ar) b.push('<span class="pill">عائلة ' + esc(p.family_ar) + '</span>'); if (p.category && catLabel(p.category)) b.push('<span class="pill ok">' + catIcon(catById(p.category)) + ' ' + esc(catLabel(p.category)) + '</span>'); if (codes > 1) b.push('<span class="pill">' + codes + ' باركود</span>'); if (p.complete === false) b.push('<span class="pill warn">ناقص الأساسيات</span>'); if (!ownPhoto(p)) b.push('<span class="pill bad">بدون صورة</span>'); else if (!p.photo_ok) b.push('<span class="pill warn">صورة تحتاج تأكيد</span>'); return b.length ? '<div class="row-badges">' + b.join('') + '</div>' : ''; })() + (missingOf(p.nutrients).length ? strip(p.nutrients) : '') + '</div>'
+    + '<div class="row-main"><div class="row-name">' + esc(p.name) + '</div><div class="row-sub">' + (p.brand ? esc(p.brand) + (p.brand_ar ? ' (' + esc(p.brand_ar) + ')' : '') + ' · ' : '') + '<span class="mono">' + esc(p.barcode) + '</span></div>' + (() => { const b = []; const ms = (p.sizes || []).find(z => z && z.search === true); if (ms) b.push('<span class="pill">✓ البحث: ' + esc(ms.name || (fmt(ms.amount) + ' ' + unitLabel(ms.unit || p.unit))) + '</span>'); if (p.category && catLabel(p.category)) b.push('<span class="pill ok">' + catIcon(catById(p.category)) + ' ' + esc(catLabel(p.category)) + '</span>'); if (codes > 1) b.push('<span class="pill">' + codes + ' باركود</span>'); if (p.complete === false) b.push('<span class="pill warn">ناقص الأساسيات</span>'); if (!ownPhoto(p)) b.push('<span class="pill bad">بدون صورة</span>'); else if (!p.photo_ok) b.push('<span class="pill warn">صورة تحتاج تأكيد</span>'); return b.length ? '<div class="row-badges">' + b.join('') + '</div>' : ''; })() + (missingOf(p.nutrients).length ? strip(p.nutrients) : '') + '</div>'
     + '<div class="row-kcal"><b>' + fmt(v.kcal) + '</b><span>kcal</span><span>' + (p.per_100 ? '/100' : '/حصة') + '</span></div></button>'
     + '<button class="row-del" data-del-code="' + esc(p.barcode) + '" aria-label="حذف"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></button></div>';
 }
@@ -2077,7 +2079,7 @@ async function renderList() {
   let all = []; try { all = (await allProducts()).slice(); } catch (e) {}
   all.sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
   const q = latin(ui.search.value).trim().toLowerCase();
-  const hit = p => (p.name || '').toLowerCase().includes(q) || (p.name_en || '').toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q) || (p.brand_ar || '').includes(q) || (p.family_ar || '').includes(q) || (p.family_en || '').toLowerCase().includes(q) || String(p.barcode).includes(q) || (p.sizes || []).some(sz => sz && sz.barcode && String(sz.barcode).includes(q));
+  const hit = p => (p.name || '').toLowerCase().includes(q) || (p.name_en || '').toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q) || (p.brand_ar || '').includes(q) || String(p.barcode).includes(q) || (p.sizes || []).some(sz => sz && sz.barcode && String(sz.barcode).includes(q));
   let items = q ? all.filter(hit) : all;
   const cf = ui.catFilter.value; if (cf) items = items.filter(p => p.category === cf);
   if (listFilterMode === 'photo') items = items.filter(p => ownPhoto(p) && !p.photo_ok);
@@ -2117,12 +2119,12 @@ async function buildExport(withPhotos) {
 }
 const csvCell = v => { if (v == null) return ''; const s = String(v); return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
 function toCSV(all) {
-  const cols = ['barcode', 'name', 'name_en', 'brand', 'brand_ar', 'family_ar', 'family_en', 'unit', 'package_size', 'serving_size', 'servings_per_package', 'sizes', 'basis', 'complete', 'source',
+  const cols = ['barcode', 'name', 'name_en', 'brand', 'brand_ar', 'unit', 'package_size', 'serving_size', 'servings_per_package', 'sizes', 'basis', 'complete', 'source',
     ...NUTRIENTS.map(n => 'per100_' + n.key), ...NUTRIENTS.map(n => 'serving_' + n.key)];
   const rows = [cols.join(',')];
   for (const p of all) {
-    const sizesTxt = (p.sizes || []).filter(Boolean).map(sz => sz.name + ' ' + sz.amount + ' ' + (sz.unit || p.unit) + (sz.barcode ? ' [' + sz.barcode + ']' : '')).join(' | ');
-    const r = [p.barcode, p.name, p.name_en, p.brand, p.brand_ar, p.family_ar, p.family_en, p.unit, p.package_size, p.serving_size, p.servings_per_package, sizesTxt, p.basis, p.complete, p.source,
+    const sizesTxt = (p.sizes || []).filter(Boolean).map(sz => sz.name + ' ' + sz.amount + ' ' + (sz.unit || p.unit) + (sz.barcode ? ' [' + sz.barcode + ']' : '') + (sz.search ? ' (البحث)' : '')).join(' | ');
+    const r = [p.barcode, p.name, p.name_en, p.brand, p.brand_ar, p.unit, p.package_size, p.serving_size, p.servings_per_package, sizesTxt, p.basis, p.complete, p.source,
       ...NUTRIENTS.map(n => p.per_100 ? p.per_100[n.key] : null), ...NUTRIENTS.map(n => p.per_serving ? p.per_serving[n.key] : null)];
     rows.push(r.map(csvCell).join(','));
   }
@@ -2231,7 +2233,7 @@ async function sbBlob(bucket, path) {
   if (!/^image\/(jpe?g|png|webp)$/.test(b.type)) throw new Error('نوع ملف غير متوقع');
   return b;
 }
-const toRow = p => ({ barcode: p.barcode, name: p.name, name_en: p.name_en || null, brand: p.brand || null, category: p.category || null, brand_ar: p.brand_ar || null, family_id: p.family_id || null, family_ar: p.family_id ? (p.family_ar || null) : null, family_en: p.family_id ? (p.family_en || null) : null, unit: p.unit || 'g', package_size: p.package_size ?? null, serving_size: p.serving_size ?? null, servings_per_package: p.servings_per_package ?? null, basis: p.basis || '100', nutrients: p.nutrients || null, per_100: p.per_100 || null, per_serving: p.per_serving || null, sizes: (p.sizes || []).filter(Boolean), complete: !!p.complete, source: p.source || 'manual', photo_url: ownPhoto(p) ? (p.photo_url && isOwnUrl(p.photo_url) ? p.photo_url : null) : null, photo_ok: !!p.photo_ok, label_photo_url: p.label_photo_url || null, created_at: p.created_at || now(), updated_at: p.updated_at || now() });
+const toRow = p => ({ barcode: p.barcode, name: p.name, name_en: p.name_en || null, brand: p.brand || null, category: p.category || null, brand_ar: p.brand_ar || null, unit: p.unit || 'g', package_size: p.package_size ?? null, serving_size: p.serving_size ?? null, servings_per_package: p.servings_per_package ?? null, basis: p.basis || '100', nutrients: p.nutrients || null, per_100: p.per_100 || null, per_serving: p.per_serving || null, sizes: (p.sizes || []).filter(Boolean), complete: !!p.complete, source: p.source || 'manual', photo_url: ownPhoto(p) ? (p.photo_url && isOwnUrl(p.photo_url) ? p.photo_url : null) : null, photo_ok: !!p.photo_ok, label_photo_url: p.label_photo_url || null, created_at: p.created_at || now(), updated_at: p.updated_at || now() });
 const missingCols = new Set();
 const tms = v => { const d = new Date(v || 0); return isNaN(d) ? 0 : d.getTime(); };
 async function sbUploadPhoto(barcode, dataUrl) {
@@ -2326,7 +2328,7 @@ async function syncNow(silent) {
       for (let attempt = 0; ; attempt++) {
         if (attempt > 9) throw new Error('تعذر رفع المنتجات: أعمدة ناقصة في قاعدة المنتجات');
         try { await upsert(stripCols(batch)); break; }
-        catch (e) { const m = String(e.message || e).match(/'?(photo_ok|label_photo_url|name_en|category|brand_ar|family_id|family_ar|family_en)'?\s+column|column\s+'?(?:products\.)?(photo_ok|label_photo_url|name_en|category|brand_ar|family_id|family_ar|family_en)/i); const col = m && (m[1] || m[2]); if (col && !missingCols.has(col)) { missingCols.add(col); if (/brand_ar|family/.test(col)) { ['brand_ar', 'family_id', 'family_ar', 'family_en'].forEach(c => missingCols.add(c)); toast('⚠️ اسم الشركة بالعربي والعائلة محفوظة على هذا الجهاز بس: قاعدة المنتجات تحتاج تحديث (20261112000000_families_brands.sql)'); } } else throw e; }
+        catch (e) { const m = String(e.message || e).match(/'?(photo_ok|label_photo_url|name_en|category|brand_ar)'?\s+column|column\s+'?(?:products\.)?(photo_ok|label_photo_url|name_en|category|brand_ar)/i); const col = m && (m[1] || m[2]); if (col && !missingCols.has(col)) { missingCols.add(col); if (col === 'brand_ar') toast('⚠️ أسماء الشركات بالعربي محفوظة على هذا الجهاز بس: قاعدة المنتجات تحتاج تحديث (20261112000000_families_brands.sql)'); } else throw e; }
       }
     }
     for (const p of dirty) { const cur = await DB.get(p.barcode); if (cur && cur.updated_at === p.updated_at) { cur.synced = true; await DB.put(cur); } }
@@ -2589,10 +2591,9 @@ function renderAi() {
 /* ---------- form draft protection (survives a page reload) ---------- */
 const DRAFT_KEY = projectKey('alyaf-form-draft');
 function formSnapshot() {
-  const raw = sizeRowsAll().map(r => { const a = num(r.querySelector('.s-amt').value), u = r.querySelector('.s-unit').value; return { name: a == null ? null : fmt(a) + ' ' + PKG_UNITS[u].label, amount: a == null ? null : r2(a * PKG_UNITS[u].factor), unit: PKG_UNITS[u].base, barcode: rowCode(r) || null }; }).filter(x => x.amount != null || x.barcode);
+  const raw = sizeRowsAll().map(r => { const a = num(r.querySelector('.s-amt').value), u = r.querySelector('.s-unit').value; return { name: a == null ? null : fmt(a) + ' ' + PKG_UNITS[u].label, amount: a == null ? null : r2(a * PKG_UNITS[u].factor), unit: PKG_UNITS[u].base, barcode: rowCode(r) || null, ...(r.classList.contains('main') ? { search: true } : {}) }; }).filter(x => x.amount != null || x.barcode);
   const pc = (raw.find(x => x.barcode) || {}).barcode || '';
-  return { name: ui.fName.value, name_en: ui.fNameEn.value, brand: ui.fBrand.value, barcode: pc, package_unit: state.pkgUnit, unit: state.unit, package_size: pkgBase(), serving_size: num(ui.fServ.value), servings_per_package: num(ui.fServN.value), basis: state.basis, nutrients: readNutrients(), sizes: raw.filter(x => x.barcode !== pc || (x.name && x.amount != null)), photo: state.photo, photo_url: state.photoUrl, photo_ok: state.photoOk, label_photo: state.labelPhoto, label_photo_url: state.labelUrl, label_photo_uploaded: state.labelUploaded, off_ref: state.off, photo_from_req: !!(state.photo && state.photo === state.reqAdoptedPhoto), label_from_req: !!(state.labelPhoto ? state.labelPhoto === state.reqAdoptedLabel : (state.labelUrl && state.labelUrlReq)), label_removed: !!(state.labelRemoved && !state.labelPhoto && !state.labelUrl), label_file: !!state.labelFile,
-    brand_ar: ui.fBrandAr.value, family_id: famId, family_ar: ui.fFamAr.value, family_en: ui.fFamEn.value, fam_add: [...famAdd], fam_drop: [...famDrop] };
+  return { name: ui.fName.value, name_en: ui.fNameEn.value, brand: ui.fBrand.value, barcode: pc, package_unit: state.pkgUnit, unit: state.unit, package_size: pkgBase(), serving_size: num(ui.fServ.value), servings_per_package: num(ui.fServN.value), basis: state.basis, nutrients: readNutrients(), sizes: raw.filter(x => x.barcode !== pc || (x.name && x.amount != null)), photo: state.photo, photo_url: state.photoUrl, photo_ok: state.photoOk, label_photo: state.labelPhoto, label_photo_url: state.labelUrl, label_photo_uploaded: state.labelUploaded, off_ref: state.off, photo_from_req: !!(state.photo && state.photo === state.reqAdoptedPhoto), label_from_req: !!(state.labelPhoto ? state.labelPhoto === state.reqAdoptedLabel : (state.labelUrl && state.labelUrlReq)), label_removed: !!(state.labelRemoved && !state.labelPhoto && !state.labelUrl), label_file: !!state.labelFile };
 }
 // المسودة تنحفظ في IndexedDB (مو sessionStorage) عشان الصور الكبيرة ما تتجاوز الحد وتضيع لما الجوال يعيد تحميل الصفحة بعد الكاميرا
 function saveDraft() {
@@ -3016,123 +3017,37 @@ async function cleanStalePhotos(manual) {
   try { return await reqCleaning; } finally { reqCleaning = null; }
 }
 
-/* ---------- اسم الشركة بالعربي، والعائلة وأصنافها (طلب المالك 2026-11-12) ---------- */
-// famAll: منتجات هذا الجهاز وقت فتح النموذج. العائلة = family_id، واسمها منسوخ على كل صنف فيها
-let famAll = [], famId = null, famAdd = new Set(), famDrop = new Set(), brandArAuto = false;
-const famSelf = () => new Set([formCtx && formCtx.editing, sizeRowsAll().map(rowCode).find(Boolean)].filter(Boolean).map(String));
-const famNewId = () => 'fam-' + Array.from(crypto.getRandomValues(new Uint8Array(6)), b => b.toString(16).padStart(2, '0')).join('');
-const famHasArabic = v => /[؀-ۿ]/.test(String(v || ''));
-function famIndex() {
-  const m = new Map();
-  famAll.forEach(p => {
-    if (!p || !p.family_id) return;
-    const f = m.get(p.family_id) || { id: p.family_id, ar: '', en: '', members: [], t: '' };
-    f.members.push(p);
-    const t = String(p.updated_at || '');
-    if (!f.ar || t > f.t) { f.t = t; f.ar = p.family_ar || f.ar; f.en = p.family_en || f.en; }
-    m.set(p.family_id, f);
-  });
-  return m;
-}
-function famSize(p) { return p.package_size ? fmt(p.package_size) + ' ' + unitLabel(p.unit) : 'بدون حجم'; }
-// الأصناف كما بتنحفظ: أصناف العائلة المحفوظة، ناقص اللي شلتها، زايد اللي أضفتها
-function famMembersNow() {
-  const self = famSelf(), byCode = new Map(famAll.map(p => [String(p.barcode), p]));
-  const base = famId ? ((famIndex().get(famId) || { members: [] }).members) : [];
-  const out = base.filter(p => !self.has(String(p.barcode)) && !famDrop.has(String(p.barcode))).map(p => ({ p, pending: false }));
-  famAdd.forEach(c => { const p = byCode.get(c); if (p && !self.has(c) && !out.some(x => String(x.p.barcode) === c)) out.push({ p, pending: true }); });
-  return out;
-}
-function famRowHTML(p, extra, btn) {
-  return '<div class="fam-row' + (extra.pending ? ' pending' : '') + '"><div class="tx"><b>' + esc(p.name || 'منتج بدون اسم') + '</b><small>' + esc(famSize(p)) + ' · <span class="mono">' + esc(p.barcode) + '</span>' + (extra.note ? ' · ' + esc(extra.note) : '') + '</small></div>' + btn + '</div>';
-}
-function renderFam() {
-  if (!formCtx) return;
-  const idx = famIndex(), cur = famId ? idx.get(famId) : null, ar = ui.fFamAr.value.trim(), en = ui.fFamEn.value.trim();
-  const members = famMembersNow();
-  let st;
-  if (cur) {
-    const renamed = (ar && ar !== (cur.ar || '')) || (en !== (cur.en || ''));
-    st = 'عائلة محفوظة' + (renamed ? '، والاسم الجديد بيتغيّر على كل أصنافها' : '') + '.';
-  } else st = ar ? 'عائلة جديدة، تنحفظ مع المنتج.' : (en ? 'اكتب اسم العائلة بالعربي.' : 'بدون عائلة.');
-  ui.famState.innerHTML = esc(st) + ((famId || ar || en) ? '<button type="button" class="tool" id="famClear">بدون عائلة</button>' : '');
-  const clr = $('#famClear'); if (clr) clr.onclick = () => { famId = null; famAdd = new Set(); famDrop = new Set(); ui.fFamAr.value = ''; ui.fFamEn.value = ''; ui.famSuggest.hidden = true; renderFam(); queueSaveDraft(); };
-  ui.famCount.textContent = members.length ? (members.length + 1) + ' مع هذا' : '';
-  ui.famMembers.innerHTML = members.length
-    ? members.map(m => famRowHTML(m.p, { pending: m.pending, note: m.pending ? 'بينضاف عند الحفظ' : '' }, '<button type="button" class="s-del" data-fam-drop="' + esc(m.p.barcode) + '" aria-label="شيله من العائلة">×</button>')).join('')
-    : '<p class="note" style="margin:0">' + (famId || ar ? 'ما فيه أصناف ثانية بعد. أضف المنتجات الموجودة من تحت.' : 'اختر عائلة أو اكتب اسمها، ثم أضف أصنافها.') + '</p>';
-  renderFamAdd();
-}
-function renderFamAdd() {
-  const q = latin(ui.famAdd.value).trim().toLowerCase();
-  if (!q) { ui.famAddList.innerHTML = ''; return; }
-  const self = famSelf(), inFam = new Set(famMembersNow().map(m => String(m.p.barcode))), idx = famIndex();
-  const hits = famAll.filter(p => p && !self.has(String(p.barcode)) && !inFam.has(String(p.barcode))
-    && ((p.name || '').toLowerCase().includes(q) || (p.name_en || '').toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q) || (p.brand_ar || '').includes(q) || String(p.barcode).includes(q))).slice(0, 8);
-  ui.famAddList.innerHTML = hits.length
-    ? hits.map(p => { const other = p.family_id && p.family_id !== famId ? idx.get(p.family_id) : null; return famRowHTML(p, { note: other ? 'الحين في عائلة «' + (other.ar || '') + '»' : '' }, '<button type="button" class="tool" data-fam-add="' + esc(p.barcode) + '">أضف</button>'); }).join('')
-    : '<p class="note" style="margin:0">ما لقينا منتج بهذا الاسم أو الباركود.</p>';
-}
-function renderFamSuggest() {
-  const qa = normBrand(ui.fFamAr.value), qe = normBrand(ui.fFamEn.value);
-  const list = [...famIndex().values()].filter(f => f.id !== famId && ((!qa && !qe) || (qa && normBrand(f.ar).includes(qa)) || (qe && normBrand(f.en).includes(qe))))
-    .sort((a, b) => b.members.length - a.members.length).slice(0, 8);
-  ui.famSuggest.innerHTML = list.map(f => '<button type="button" class="chip" data-fam="' + esc(f.id) + '">' + esc(f.ar) + (f.en ? ' · <span dir="ltr">' + esc(f.en) + '</span>' : '') + ' (' + f.members.length + ')</button>').join('');
-  ui.famSuggest.hidden = !list.length;
-}
-function pickFamily(id) {
-  const f = famIndex().get(id); if (!f) return;
-  famId = id; ui.fFamAr.value = f.ar || ''; ui.fFamEn.value = f.en || ''; famDrop = new Set(); ui.famSuggest.hidden = true; renderFam(); queueSaveDraft();
-}
-// اسم الشركة بالعربي المحفوظ لهذي الشركة (أحدث منتج كتبه)
-function brandArOf(brand) {
+/* ---------- اسم الشركة بالعربي (طلب المالك 2026-11-12) ---------- */
+// الترجمة مكانها الإعدادات («ترجمة الشركات»)، والنموذج إنجليزي بس. تنكتب على كل منتجات العلامة، وتنحفظ للعلامة على
+// هذا الجهاز، فأي منتج ينحفظ بعدها بنفس العلامة ياخذ اسمها بالعربي تلقائيًا
+const BRAND_AR_KEY = projectKey('alyaf-brand-ar');
+const brandArHasArabic = v => /[؀-ۿ]/.test(String(v || ''));
+function brandArMap() { try { const o = JSON.parse(localStorage.getItem(BRAND_AR_KEY) || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (e) { return {}; } }
+function brandArRemember(brand, ar) { const nb = normBrand(brand); if (!nb) return; const m = brandArMap(); m[nb] = ar; try { localStorage.setItem(BRAND_AR_KEY, JSON.stringify(m)); } catch (e) {} }
+// اسم العلامة بالعربي: أحدث منتج لها فيه اسم عربي (يمشي بين الأجهزة مع المزامنة)، وإلا المحفوظ لها على هذا الجهاز
+function brandArFor(brand, all) {
   const nb = normBrand(brand); if (!nb) return '';
-  let best = null; famAll.forEach(p => { if (p && p.brand_ar && normBrand(p.brand) === nb && (!best || String(p.updated_at || '') > String(best.updated_at || ''))) best = p; });
-  return best ? best.brand_ar : '';
+  let best = null; (all || []).forEach(p => { if (p && p.brand_ar && normBrand(p.brand) === nb && (!best || String(p.updated_at || '') > String(best.updated_at || ''))) best = p; });
+  return best ? best.brand_ar : (brandArMap()[nb] || '');
 }
-function fillBrandAr() {
-  if (ui.fBrandAr.value.trim() && !brandArAuto) return;
-  const v = brandArOf(ui.fBrand.value); ui.fBrandAr.value = v; brandArAuto = !!v;
+// كل الأسماء العربية المكتوبة قبل: تطلع اقتراحات وانت تكتب
+function brandArNames(all) {
+  const set = new Set(Object.values(brandArMap()).filter(v => typeof v === 'string' && v));
+  (all || []).forEach(p => { if (p && p.brand_ar) set.add(p.brand_ar); });
+  return [...set].sort((a, b) => a.localeCompare(b, 'ar'));
 }
-function famOpen(p) {
-  famId = p.family_id || null; famAdd = new Set((p.fam_add || []).map(String)); famDrop = new Set((p.fam_drop || []).map(String));
-  ui.fFamAr.value = p.family_ar || ''; ui.fFamEn.value = p.family_en || ''; ui.famAdd.value = ''; ui.famSuggest.hidden = true;
-  ui.fBrandAr.value = p.brand_ar || ''; brandArAuto = false;
-  const token = formToken;
-  famAll = []; renderFam();
-  allProducts().then(all => { if (token !== formToken) return; famAll = all.slice(); if (!ui.fBrandAr.value.trim()) fillBrandAr(); renderFam(); }).catch(() => {});
-}
-// يقرأ الخانات للحفظ: يرجّع { error } أو القيم
-async function famRead() {
-  const ar = ui.fFamAr.value.trim().replace(/\s+/g, ' '), en = ui.fFamEn.value.trim().replace(/\s+/g, ' '), bar = ui.fBrandAr.value.trim().replace(/\s+/g, ' ');
-  if (bar && !famHasArabic(bar)) return { error: 'اكتب اسم الشركة بالعربي بحروف عربية' };
-  if (bar.length > 80) return { error: 'اسم الشركة بالعربي طويل (80 حرف بالكثير)' };
-  if (!ar && en) return { error: 'اكتب اسم العائلة بالعربي' };
-  if (ar.length > 80 || en.length > 80) return { error: 'اسم العائلة طويل (80 حرف بالكثير)' };
-  if (!ar && famAdd.size) return { error: 'اكتب اسم العائلة قبل ما تضيف لها أصناف' };
-  let id = ar ? famId : null;
-  if (ar && !id) {
-    try { famAll = (await allProducts()).slice(); } catch (e) {}
-    const same = [...famIndex().values()].find(f => normBrand(f.ar) === normBrand(ar));
-    if (same && confirm('فيه عائلة محفوظة بنفس الاسم «' + same.ar + '» (' + same.members.length + ' صنف).\\nتبي تضيف المنتج لها؟ (إلغاء = عائلة جديدة بنفس الاسم)')) id = same.id;
-    if (!id) id = famNewId();
-  }
-  return { brand_ar: bar || null, family_id: id, family_ar: id ? ar : null, family_en: id ? (en || null) : null, add: [...famAdd], drop: [...famDrop] };
-}
-// بعد حفظ المنتج: اسم الشركة بالعربي على كل منتجاتها، واسم العائلة على كل أصنافها، والإضافة والشيل
-async function famApply(rec, fam) {
-  let all = []; try { all = await DB.all(); } catch (e) { return 0; }
-  const stamp = now(), add = new Set(fam.add), drop = new Set(fam.drop); let n = 0;
-  for (const p of all) {
-    if (!p || String(p.barcode) === String(rec.barcode)) continue;
-    const upd = {}, code = String(p.barcode);
-    if (rec.brand && rec.brand_ar && p.brand && normBrand(p.brand) === normBrand(rec.brand) && p.brand_ar !== rec.brand_ar) upd.brand_ar = rec.brand_ar;
-    if (drop.has(code) && !add.has(code) && p.family_id && (!rec.family_id || p.family_id === rec.family_id)) Object.assign(upd, { family_id: null, family_ar: null, family_en: null });
-    else if (rec.family_id && (add.has(code) || p.family_id === rec.family_id) && (p.family_id !== rec.family_id || p.family_ar !== rec.family_ar || (p.family_en || null) !== rec.family_en)) Object.assign(upd, { family_id: rec.family_id, family_ar: rec.family_ar, family_en: rec.family_en });
-    if (!Object.keys(upd).length) continue;
-    Object.assign(p, upd, { synced: false, updated_at: stamp }); await DB.put(p); n++;
-  }
-  return n;
+async function saveBrandAr(name) {
+  const inp = [...ui.brandTrBody.querySelectorAll('[data-brand-ar]')].find(i => i.dataset.brandAr === name);
+  const v = inp ? inp.value.trim().replace(/\s+/g, ' ') : '';
+  if (!v || !brandArHasArabic(v)) { toast('اكتب اسم الشركة بالعربي'); if (inp) inp.focus(); return; }
+  if (v.length > 80) { toast('الاسم طويل (80 حرف بالكثير)'); return; }
+  brandArRemember(name, v);
+  let all = []; try { all = await DB.all(); } catch (x) {}
+  const nb = normBrand(name), stamp = now(); let n = 0;
+  for (const p of all) { if (p && p.brand && normBrand(p.brand) === nb && p.brand_ar !== v) { p.brand_ar = v; p.synced = false; p.updated_at = stamp; await DB.put(p); n++; } }
+  toast(n ? 'انحفظ «' + v + '» على ' + n + ' منتج' : 'انحفظ «' + v + '» للمنتجات الجاية'); if (n) syncNow(true);
+  if (ui.brandTrBody.contains(document.activeElement)) document.activeElement.blur();
+  renderBrands();
 }
 /* --- قائمة "بانتظار التعبئة" --- */
 function updateDraftBadge() { const n = readyDrafts().length + visibleRequests().length; ui.draftBadge.textContent = String(n); ui.draftBadge.hidden = !n; }
@@ -3664,18 +3579,9 @@ function wire() {
   ui.catNewSave.onclick = () => { const c = addCategory(ui.catNewAr.value, ui.catNewEn.value, ui.catNewDesc.value, ui.catNewIcon.value); if (!c) { toast('اكتب اسم الصنف بالعربي'); return; } state.category = c.id; ui.catNew.hidden = true; ui.catNewDesc.value = ''; renderCat(); renderCatGuide(); ui.catBody.hidden = true; ui.catToggle.classList.remove('open'); toast('تمت إضافة الصنف: ' + c.name_ar); syncCategories().catch(() => {}); };
   ui.catFilter.addEventListener('change', renderList);
   ui.catsBody.addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (b) deleteCategory(b.dataset.del); });
-  ui.brandsBody.addEventListener('click', async e => {
-    const sv = e.target.closest('[data-brand-save]');
-    if (sv) {
-      const name = sv.dataset.brandSave, inp = ui.brandsBody.querySelector('[data-brand-ar="' + CSS.escape(name) + '"]'), v = inp ? inp.value.trim().replace(/\s+/g, ' ') : '';
-      if (!v || !famHasArabic(v)) { toast('اكتب اسم الشركة بالعربي'); if (inp) inp.focus(); return; }
-      if (v.length > 80) { toast('الاسم طويل (80 حرف بالكثير)'); return; }
-      let all = []; try { all = await DB.all(); } catch (x) {}
-      const nb = normBrand(name), stamp = now(); let n = 0;
-      for (const p of all) { if (p && p.brand && normBrand(p.brand) === nb && p.brand_ar !== v) { p.brand_ar = v; p.synced = false; p.updated_at = stamp; await DB.put(p); n++; } }
-      toast(n ? 'انحفظ «' + v + '» على ' + n + ' منتج' : 'ما فيه منتج تغيّر'); if (n) syncNow(true);
-      return;
-    }
+  ui.brandTrBody.addEventListener('click', e => { const b = e.target.closest('[data-brand-save]'); if (b) saveBrandAr(b.dataset.brandSave); });
+  ui.brandTrBody.addEventListener('keydown', e => { const i = e.target.closest('[data-brand-ar]'); if (i && e.key === 'Enter') { e.preventDefault(); i.blur(); saveBrandAr(i.dataset.brandAr); } });
+  ui.brandsBody.addEventListener('click', e => {
     const c = e.target.closest('[data-b]'); if (!c) return;
     const name = c.dataset.b;
     if (!confirm('حذف العلامة "' + name + '" من الاقتراحات؟ (المنتجات المسجلة عليها ما تتأثر)')) return;
@@ -3683,22 +3589,8 @@ function wire() {
     renderBrands(); toast('تم حذف العلامة من الاقتراحات');
   });
   ui.fBrand.addEventListener('focus', renderBrandSuggest); ui.fBrand.addEventListener('input', renderBrandSuggest);
-  ui.fBrand.addEventListener('input', fillBrandAr); ui.fBrand.addEventListener('change', fillBrandAr);
-  ui.fBrandAr.addEventListener('input', () => { brandArAuto = false; });
-  [ui.fFamAr, ui.fFamEn].forEach(el => { el.addEventListener('focus', renderFamSuggest); el.addEventListener('input', () => { renderFamSuggest(); renderFam(); }); el.addEventListener('blur', () => setTimeout(() => { ui.famSuggest.hidden = true; }, 200)); });
-  ui.famSuggest.addEventListener('pointerdown', e => { const c = e.target.closest('[data-fam]'); if (!c) return; e.preventDefault(); pickFamily(c.dataset.fam); });
-  ui.famAdd.addEventListener('input', renderFamAdd);
-  ui.famAddList.addEventListener('click', e => {
-    const b = e.target.closest('[data-fam-add]'); if (!b) return;
-    if (!ui.fFamAr.value.trim()) { toast('اكتب اسم العائلة أو اختر عائلة أولًا'); ui.fFamAr.focus(); return; }
-    famAdd.add(b.dataset.famAdd); famDrop.delete(b.dataset.famAdd); ui.famAdd.value = ''; renderFam(); queueSaveDraft();
-  });
-  ui.famMembers.addEventListener('click', e => {
-    const b = e.target.closest('[data-fam-drop]'); if (!b) return;
-    const c = b.dataset.famDrop; if (famAdd.has(c)) famAdd.delete(c); else famDrop.add(c); renderFam(); queueSaveDraft();
-  });
   ui.fBrand.addEventListener('blur', () => setTimeout(() => { if (!pendingBrand) ui.brandSuggest.hidden = true; }, 200));
-  ui.brandSuggest.addEventListener('pointerdown', e => { const c = e.target.closest('.chip'); if (!c) return; e.preventDefault(); ui.fBrand.value = c.dataset.b; pendingBrand = null; ui.brandSuggest.hidden = true; ui.fBrand.closest('.field').classList.remove('ai'); fillBrandAr(); });
+  ui.brandSuggest.addEventListener('pointerdown', e => { const c = e.target.closest('.chip'); if (!c) return; e.preventDefault(); ui.fBrand.value = c.dataset.b; pendingBrand = null; ui.brandSuggest.hidden = true; ui.fBrand.closest('.field').classList.remove('ai'); });
   ui.unitSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setUnit(b.dataset.u); });
   ui.basisSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (b) setBasis(b.dataset.b, true); });
   ui.fPkg.addEventListener('input', () => linkFields('pkg')); ui.fServ.addEventListener('input', () => linkFields('serving')); ui.fServN.addEventListener('input', () => linkFields('servings'));
