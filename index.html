@@ -60,12 +60,12 @@ main{padding:0 16px}
 .intake-check button{display:block;margin-top:8px;color:var(--green);font-weight:800;text-decoration:underline;text-underline-offset:3px}
 .intake-size-box{margin-top:12px;padding:12px;background:var(--card-2);border:1px solid var(--line);border-radius:16px}
 .intake-size-title{display:block;margin-bottom:8px;font-weight:800}
-.intake-size-input{display:grid;grid-template-columns:minmax(0,1fr) 98px auto;gap:8px}
+.intake-size-input{display:grid;grid-template-columns:minmax(0,1fr) 104px auto;gap:8px}
 .intake-size-input input{min-width:0;text-align:center}
 .intake-size-input select{width:98px}
 .intake-sizes-title{margin:18px 0 8px;font-size:16px;font-weight:800}
 .intake-sizes{display:flex;flex-direction:column;gap:8px}
-.intake-size-row{display:grid;grid-template-columns:34px minmax(0,1fr) minmax(82px,100px) 84px 38px;align-items:center;gap:7px;padding:9px;background:var(--card-2);border:1px solid var(--line);border-radius:14px}
+.intake-size-row{display:grid;grid-template-columns:34px minmax(0,1fr) minmax(70px,90px) 100px 38px;align-items:center;gap:7px;padding:9px;background:var(--card-2);border:1px solid var(--line);border-radius:14px}
 .intake-index{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:var(--green-tint);color:var(--green);font-weight:800}
 .intake-size-row .mono{direction:ltr;text-align:center;font-size:12px;overflow:hidden;text-overflow:ellipsis}
 .intake-size-row input{min-width:0;text-align:center;padding:8px 6px!important;font-size:15px!important}
@@ -77,7 +77,7 @@ main{padding:0 16px}
 .intake-queue-msg{margin-top:10px}
 .requests{max-width:980px;margin:0 auto}
 .intake-card .shots{margin-top:18px}
-@media(max-width:380px){.intake-size-row{grid-template-columns:28px minmax(0,1fr) 74px 72px 34px;gap:5px;padding:7px}.intake-size-row .s-del{width:30px;height:30px}.intake-size-input{grid-template-columns:minmax(0,1fr) 84px auto;gap:6px}.intake-size-input select{width:84px}}
+@media(max-width:380px){.intake-size-row{grid-template-columns:28px minmax(0,1fr) 62px 92px 34px;gap:5px;padding:7px}.intake-size-row .s-del{width:30px;height:30px}.intake-size-input{grid-template-columns:minmax(0,1fr) 98px auto;gap:6px}.intake-size-input select{width:84px}}
 
 /* ---------- scanner ---------- */
 .reader-wrap{position:relative;background:#000;border-radius:var(--r-card);overflow:hidden;height:min(58vh,520px);min-height:260px;border:1px solid var(--line);box-shadow:0 18px 36px rgba(0,0,0,.18)}
@@ -167,6 +167,9 @@ select option{color:var(--text);background:var(--surface)}
 #sizeRows.multi .s-main{display:flex}
 .size-row.main .s-main{background:var(--green-tint);border-color:var(--green);color:var(--green)}
 .sizes-hint{margin:6px 0 0}
+.seg.intake-unit{display:flex;min-width:0}
+.seg.intake-unit button{flex:1;min-width:0;padding:8px 2px}
+.intake-size-row .seg.intake-unit button{padding:6px 2px;font-size:13px}
 .chips.cats{max-height:168px;overflow:auto;margin-top:10px;padding-bottom:2px}
 .cat-new{margin-top:10px;display:flex;flex-direction:column;gap:8px;background:var(--card-2);border-radius:14px;padding:10px}
 .cat-new .btn{width:100%;margin-top:0}
@@ -509,8 +512,8 @@ input::placeholder{color:var(--faint)}
           <div id="intakeSizeBox" class="intake-size-box" hidden>
             <label class="intake-size-title" for="intakeAmount">حجم العبوة لهذا الباركود</label>
             <div class="intake-size-input">
-              <input id="intakeAmount" inputmode="decimal" placeholder="مثال: 500" autocomplete="off">
-              <select id="intakeUnit" aria-label="وحدة حجم العبوة"><option value="g">غرام</option><option value="ml">مل</option></select>
+              <input id="intakeAmount" inputmode="decimal" placeholder="500" autocomplete="off">
+              <span class="seg intake-unit" id="intakeUnit" role="group" aria-label="وحدة حجم العبوة"><button type="button" data-u="g" class="on" aria-pressed="true">غرام</button><button type="button" data-u="ml" aria-pressed="false">مل</button></span>
               <button type="button" class="btn primary" id="intakeApprove">اعتماد</button>
             </div>
           </div>
@@ -1004,6 +1007,8 @@ const BARCODE_INTAKE_KEY = projectKey('alyaf-barcode-intake');
 let barcodeIntake = (() => { try { const v = JSON.parse(localStorage.getItem(BARCODE_INTAKE_KEY) || 'null'); return v && Array.isArray(v.packages) ? v : { packages: [], currentCode: '' }; } catch (e) { return { packages: [], currentCode: '' }; } })();
 // غرام ومل بس (طلب المالك 2026-11-12): حجم انحفظ باللتر قبل يصير مل
 const intakeUnit = u => (u === 'ml' || u === 'l') ? 'ml' : 'g';
+const intakeUnitSeg = (u, attrs, label) => '<span class="seg intake-unit" role="group" aria-label="' + label + '">' + ['g', 'ml'].map(v => '<button type="button" data-u="' + v + '"' + attrs + (intakeUnit(u) === v ? ' class="on" aria-pressed="true"' : ' aria-pressed="false"') + '>' + (v === 'g' ? 'غرام' : 'مل') + '</button>').join('') + '</span>';
+const intakeUnitPick = (seg, u) => seg.querySelectorAll('button').forEach(b => { const on = b.dataset.u === u; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
 barcodeIntake.packages.forEach(p => { if (p && p.unit === 'l') { const a = num(p.amount); p.amount = a == null ? p.amount : r2(a * 1000); p.unit = 'ml'; } });
 let intakeCheckToken = 0;
 let lastCode = '', lastAt = 0, torchOn = false, curStream = null, loopTimer = null, engine = null, enginePromise = null;
@@ -3241,7 +3246,7 @@ const barcodeDrafts = () => readyDrafts().filter(d => d.kind === 'barcode');
 const photoDrafts = () => readyDrafts().filter(d => d.kind !== 'barcode');
 function renderIntake() {
   const items = barcodeIntake.packages || [];
-  ui.intakeSizes.innerHTML = items.map((p, i) => '<div class="intake-size-row" data-intake-row="' + i + '"><span class="intake-index">' + (i + 1) + '</span><span class="mono">' + esc(p.barcode) + '</span><input data-intake-amount="' + i + '" inputmode="decimal" value="' + esc(p.amount) + '" aria-label="حجم العبوة رقم ' + (i + 1) + '"><select data-intake-unit="' + i + '" aria-label="وحدة العبوة رقم ' + (i + 1) + '"><option value="g"' + (intakeUnit(p.unit) === 'g' ? ' selected' : '') + '>غرام</option><option value="ml"' + (intakeUnit(p.unit) === 'ml' ? ' selected' : '') + '>مل</option></select><button type="button" class="s-del" data-intake-remove="' + i + '" aria-label="حذف الحجم">×</button></div>').join('');
+  ui.intakeSizes.innerHTML = items.map((p, i) => '<div class="intake-size-row" data-intake-row="' + i + '"><span class="intake-index">' + (i + 1) + '</span><span class="mono">' + esc(p.barcode) + '</span><input data-intake-amount="' + i + '" inputmode="decimal" value="' + esc(p.amount) + '" aria-label="حجم العبوة رقم ' + (i + 1) + '">' + intakeUnitSeg(p.unit, ' data-intake-unit="' + i + '"', 'وحدة العبوة رقم ' + (i + 1)) + '<button type="button" class="s-del" data-intake-remove="' + i + '" aria-label="حذف الحجم">×</button></div>').join('');
   ui.intakeSizesTitle.hidden = !items.length;
   if (barcodeIntake.currentCode && document.activeElement !== ui.intakeCode) ui.intakeCode.value = barcodeIntake.currentCode;
   else if (!barcodeIntake.currentCode && document.activeElement !== ui.intakeCode) ui.intakeCode.value = '';
@@ -3281,11 +3286,11 @@ async function checkIntakeCode(raw) {
     ui.intakeSizeBox.hidden = true; renderCapture(); return;
   }
   ui.intakeStatus.className = 'status info intake-check'; ui.intakeStatus.textContent = 'غير موجود في المنتجات أو الطلبات. اكتب حجم العبوة ثم اعتمدها.';
-  ui.intakeSizeBox.hidden = false; ui.intakeAmount.value = ''; ui.intakeUnit.value = 'g'; ui.intakeApprove.hidden = false; ui.intakeAmount.focus(); renderCapture();
+  ui.intakeSizeBox.hidden = false; ui.intakeAmount.value = ''; intakeUnitPick(ui.intakeUnit, 'g'); ui.intakeApprove.hidden = false; ui.intakeAmount.focus(); renderCapture();
 }
 async function setIntakeCode(raw) { ui.intakeCode.value = raw; await checkIntakeCode(raw); }
 async function approveIntakeSize() {
-  const code = barcodeIntake.currentCode, amount = num(ui.intakeAmount.value), unit = intakeUnit(ui.intakeUnit.value);
+  const code = barcodeIntake.currentCode, amount = num(ui.intakeAmount.value), unit = intakeUnit((ui.intakeUnit.querySelector('.on') || {}).dataset?.u);
   if (!code) { toast('امسح باركود العبوة أولًا'); return; }
   if (!(amount > 0)) { toast('اكتب حجم العبوة أكبر من صفر'); ui.intakeAmount.focus(); return; }
   const hit = await findLocal(code).catch(() => null);
@@ -3378,17 +3383,24 @@ function wire() {
   ui.intakeScan.onclick = () => openMiniScan(code => { setIntakeCode(code); }, { hint: 'وجّه الكاميرا على باركود العبوة' });
   ui.intakeCode.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); checkIntakeCode(ui.intakeCode.value); } });
   ui.intakeApprove.onclick = approveIntakeSize;
+  ui.intakeUnit.addEventListener('click', e => { const b = e.target.closest('button[data-u]'); if (b) intakeUnitPick(ui.intakeUnit, intakeUnit(b.dataset.u)); });
   ui.intakeAmount.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); approveIntakeSize(); } });
 
   ui.intakeSizes.addEventListener('change', e => {
-    const amount = e.target.closest('[data-intake-amount]'), unit = e.target.closest('[data-intake-unit]');
-    if (amount) barcodeIntake.packages[Number(amount.dataset.intakeAmount)].amount = amount.value;
-    if (unit) barcodeIntake.packages[Number(unit.dataset.intakeUnit)].unit = intakeUnit(unit.value);
+    const amount = e.target.closest('[data-intake-amount]'); if (!amount) return;
+    barcodeIntake.packages[Number(amount.dataset.intakeAmount)].amount = amount.value;
     saveBarcodeIntakeState();
     if (cap) { cap.packages = barcodeIntake.packages.map(p => Object.assign({}, p)); cap.codes = cap.packages.map(p => p.barcode); capPersist(); }
     renderCapture();
   });
   ui.intakeSizes.addEventListener('click', e => {
+    const unit = e.target.closest('button[data-intake-unit]');
+    if (unit) {
+      barcodeIntake.packages[Number(unit.dataset.intakeUnit)].unit = intakeUnit(unit.dataset.u); intakeUnitPick(unit.parentNode, intakeUnit(unit.dataset.u));
+      saveBarcodeIntakeState();
+      if (cap) { cap.packages = barcodeIntake.packages.map(p => Object.assign({}, p)); cap.codes = cap.packages.map(p => p.barcode); capPersist(); }
+      renderCapture(); return;
+    }
     const remove = e.target.closest('[data-intake-remove]'); if (!remove) return;
     barcodeIntake.packages.splice(Number(remove.dataset.intakeRemove), 1); saveBarcodeIntakeState(); if (cap) { cap.packages = barcodeIntake.packages.map(p => Object.assign({}, p)); cap.codes = cap.packages.map(p => p.barcode); capPersist(); } renderIntake();
   });
