@@ -799,17 +799,21 @@ const NUTRIENTS = [
   { key:'protein_g',     label:'البروتين',     unit:'غ',    core:true },
   { key:'carbs_g',       label:'الكارب',       unit:'غ',    core:true },
   { key:'fat_g',         label:'الدهون الكلية', unit:'غ',    core:true },
-  { key:'sat_fat_g',       label:'الدهون المشبعة', unit:'غ' },
   { key:'sugar_g',         label:'السكر الكلي',  unit:'غ' },
   { key:'added_sugar_g',   label:'السكر المضاف', unit:'غ' },
   { key:'fiber_g',         label:'الألياف',      unit:'غ' },
-  { key:'sodium_mg',       label:'الصوديوم',     unit:'ملغ' },
+  { key:'sat_fat_g',       label:'الدهون المشبعة', unit:'غ' },
+  { key:'trans_fat_g',     label:'الدهون المتحولة', unit:'غ' },
   { key:'cholesterol_mg',  label:'الكوليسترول',  unit:'ملغ' },
-  { key:'potassium_mg',    label:'البوتاسيوم',   unit:'ملغ' },
+  { key:'sodium_mg',       label:'الصوديوم',     unit:'ملغ' },
+  { key:'calcium_mg',      label:'الكالسيوم',    unit:'ملغ' },
   { key:'iron_mg',         label:'الحديد',       unit:'ملغ' },
-  { key:'vitamin_d_mcg',   label:'فيتامين د',    unit:'مكغ' },
-  { key:'vitamin_b12_mcg', label:'فيتامين ب12',  unit:'مكغ' },
+  { key:'potassium_mg',    label:'البوتاسيوم',   unit:'ملغ' },
   { key:'caffeine_mg',     label:'الكافيين',     unit:'ملغ' },
+  { key:'vitamin_d_mcg',   label:'فيتامين د',    unit:'مكغ' },
+  { key:'vitamin_c_mg',    label:'فيتامين ج',    unit:'ملغ' },
+  { key:'vitamin_a_mcg',   label:'فيتامين أ',    unit:'مكغ' },
+  { key:'vitamin_b12_mcg', label:'فيتامين ب12',  unit:'مكغ' },
 ];
 const PKG_UNITS = { g: { base: 'g', label: 'غ', factor: 1 }, kg: { base: 'g', label: 'كغ', factor: 1000 }, ml: { base: 'ml', label: 'مل', factor: 1 }, l: { base: 'ml', label: 'لتر', factor: 1000 } };
 const ZX_CDN = [
@@ -1345,10 +1349,11 @@ function mapOFF(p, code) {
   if (kcal == null) { const kj = g('energy-kj_100g') ?? g('energy_100g'); if (kj != null) kcal = kj / 4.184; }
   let sod = g('sodium_100g'); if (sod == null) { const salt = g('salt_100g'); if (salt != null) sod = salt / 2.5; }
   const per100 = {
-    kcal: r2(kcal), protein_g: r2(g('proteins_100g')), carbs_g: r2(g('carbohydrates_100g')), fat_g: r2(g('fat_100g')), sat_fat_g: r2(g('saturated-fat_100g')),
-    sugar_g: r2(g('sugars_100g')), added_sugar_g: r2(g('added-sugars_100g')), fiber_g: r2(g('fiber_100g')), sodium_mg: mg(sod),
-    cholesterol_mg: mg(g('cholesterol_100g')), potassium_mg: mg(g('potassium_100g')), iron_mg: mg(g('iron_100g')),
-    vitamin_d_mcg: mcg(g('vitamin-d_100g')), vitamin_b12_mcg: mcg(g('vitamin-b12_100g')), caffeine_mg: mg(g('caffeine_100g'))
+    kcal: r2(kcal), protein_g: r2(g('proteins_100g')), carbs_g: r2(g('carbohydrates_100g')), fat_g: r2(g('fat_100g')),
+    sugar_g: r2(g('sugars_100g')), added_sugar_g: r2(g('added-sugars_100g')), fiber_g: r2(g('fiber_100g')),
+    sat_fat_g: r2(g('saturated-fat_100g')), trans_fat_g: r2(g('trans-fat_100g')), cholesterol_mg: mg(g('cholesterol_100g')), sodium_mg: mg(sod),
+    calcium_mg: mg(g('calcium_100g')), iron_mg: mg(g('iron_100g')), potassium_mg: mg(g('potassium_100g')), caffeine_mg: mg(g('caffeine_100g')),
+    vitamin_d_mcg: mcg(g('vitamin-d_100g')), vitamin_c_mg: mg(g('vitamin-c_100g')), vitamin_a_mcg: mcg(g('vitamin-a_100g')), vitamin_b12_mcg: mcg(g('vitamin-b12_100g'))
   };
   const qty = parseQty(p.quantity); const sv = parseQty(p.serving_size);
   const sq = num(p.serving_quantity) ?? (sv ? sv.value : null);
@@ -2118,7 +2123,7 @@ async function buildExport(withPhotos) {
   return {
     app: 'alyaf-products', version: 1, exported_at: now(), count: products.length,
     categories: cats.map(c => ({ id: c.id, name_ar: c.name_ar, name_en: c.name_en })),
-    note: 'nutrients = القيم كما كُتبت من الملصق حسب basis (100 أو serving). per_100 و per_serving محسوبة تلقائيًا. sizes = أحجام/حصص مسماة لكل منها amount و barcode اختياري و nutrients محسوبة لذلك الحجم. الوحدات: kcal, g (protein/carbs/fat/sugar/added_sugar/fiber), mg (sodium/cholesterol/potassium/iron/caffeine), mcg (vitamin_d/vitamin_b12). unit = وحدة الحصة والقيم (g أو ml)، package_size دائمًا بالوحدة الأساسية g/ml و package_unit = الوحدة المختارة للعرض (g/kg/ml/l).',
+    note: 'nutrients = القيم كما كُتبت من الملصق حسب basis (100 أو serving). per_100 و per_serving محسوبة تلقائيًا. sizes = أحجام/حصص مسماة لكل منها amount و barcode اختياري و nutrients محسوبة لذلك الحجم. الوحدات: kcal, g (protein/carbs/fat/sugar/added_sugar/fiber/sat_fat/trans_fat), mg (cholesterol/sodium/calcium/iron/potassium/caffeine/vitamin_c), mcg (vitamin_d/vitamin_a/vitamin_b12). unit = وحدة الحصة والقيم (g أو ml)، package_size دائمًا بالوحدة الأساسية g/ml و package_unit = الوحدة المختارة للعرض (g/kg/ml/l).',
     products
   };
 }
@@ -2404,12 +2409,12 @@ function loadAi() { try { const o = JSON.parse(localStorage.getItem(AI_CONFIG_KE
 const aiReady = () => !!(ai.key && AI_PROVIDERS[ai.provider]);
 const LABEL_PROMPT = 'You analyze photos of ONE packaged food product (Arabic and/or English text; digits may be Arabic-Indic ٠١٢٣٤٥٦٧٨٩). You may get a FRONT-of-package photo and/or a NUTRITION FACTS label photo. Extract what is visible and return ONLY one JSON object, no prose, no markdown.\n'
   + 'Schema: {"basis":"100"|"serving","unit":"g"|"ml","serving_size":number|null,"servings_per_package":number|null,"package_size":number|null,"name_ar":string|null,"name_en":string|null,"name_en_source":"printed"|"translated"|null,"brand":string|null,"category":string|null,'
-  + '"nutrients":{"kcal":number|null,"protein_g":number|null,"carbs_g":number|null,"fat_g":number|null,"sat_fat_g":number|null,"sugar_g":number|null,"added_sugar_g":number|null,"fiber_g":number|null,"sodium_mg":number|null,"cholesterol_mg":number|null,"potassium_mg":number|null,"iron_mg":number|null,"vitamin_d_mcg":number|null,"vitamin_b12_mcg":number|null,"caffeine_mg":number|null}}\n'
+  + '"nutrients":{"kcal":number|null,"protein_g":number|null,"carbs_g":number|null,"fat_g":number|null,"sugar_g":number|null,"added_sugar_g":number|null,"fiber_g":number|null,"sat_fat_g":number|null,"trans_fat_g":number|null,"cholesterol_mg":number|null,"sodium_mg":number|null,"calcium_mg":number|null,"iron_mg":number|null,"potassium_mg":number|null,"caffeine_mg":number|null,"vitamin_d_mcg":number|null,"vitamin_c_mg":number|null,"vitamin_a_mcg":number|null,"vitamin_b12_mcg":number|null}}\n'
   + 'Rules:\n- If the label has a per 100 g / 100 ml column, use it and set basis "100". Otherwise use the per-serving column and set basis "serving".\n'
   + '- unit is "ml" for liquids/beverages, otherwise "g". serving_size in g or ml as a number. servings_per_package as printed. package_size (net weight/volume) in g or ml if printed.\n'
   + '- ALWAYS convert to the units in the schema, never copy a value in a different unit. Energy: if only kJ is printed, kcal = kJ / 4.184.\n- Sodium in mg. If only salt is printed: sodium_mg = salt_g * 400.\n'
-  + '- Cholesterol, potassium, iron, caffeine in mg (convert g to mg by x1000). Vitamin D and B12 in mcg; if vitamin D is printed in IU, convert: mcg = IU / 40 (e.g. 200 IU -> 5). If B12 is in IU or %DV with a stated mcg value, use the mcg value.\n'
-  + '- Keep decimals exactly as printed (0.03 is not 0.3). Any value not printed must be null; never guess. sat_fat_g is saturated fat in g; ignore trans fat.\n'
+  + '- Cholesterol, calcium, iron, potassium, caffeine and vitamin C in mg (convert g to mg by x1000). Vitamin D, A and B12 in mcg; if vitamin D is printed in IU, convert: mcg = IU / 40 (e.g. 200 IU -> 5). Vitamin A is mcg RAE; if it is printed in IU, convert: mcg = IU * 0.3 (e.g. 1000 IU -> 300). If B12 is in IU or %DV with a stated mcg value, use the mcg value. A vitamin or mineral printed only as a % daily value with no amount is null (the reference differs by country).\n'
+  + '- Keep decimals exactly as printed (0.03 is not 0.3). Any value not printed must be null; never guess. sat_fat_g is saturated fat in g and trans_fat_g is trans fat in g; both are parts of fat_g, never more than it.\n'
   + '- name_ar: the product name in ARABIC as printed; if only a non-Arabic name is visible, write a short natural Arabic version. name_en: the product name in ENGLISH as printed (name_en_source "printed"); if only Arabic is printed, translate it to natural English and set name_en_source "translated". Both null if no product name is visible.\n- brand: the brand/company name in ENGLISH (Latin letters) as printed; if only Arabic is visible, transliterate it. null if not visible.\n- If a photo is not what its description says (e.g. the "front" photo actually shows the nutrition table), still extract whatever is visible. Do not search or guess; only use what is visible.';
 class AiError extends Error { constructor(msg, status, retryable) { super(msg); this.status = status; this.retryable = !!retryable; } }
 async function aiRequest(model, dataUrls, prompt, signal) {
@@ -2554,6 +2559,7 @@ function sanityCheck(vals, basisAmt) {
     else if (K > 25 && P + C + F === 0) w.push('فيه سعرات (' + fmt(K) + ') بدون أي ماكروز');
   }
   if (vals.sat_fat_g != null && vals.fat_g != null && vals.sat_fat_g > vals.fat_g + 0.6) w.push('الدهون المشبعة أكبر من الدهون الكلية');
+  if (vals.trans_fat_g != null && vals.fat_g != null && vals.trans_fat_g > vals.fat_g + 0.6) w.push('الدهون المتحولة أكبر من الدهون الكلية');
   if (vals.sugar_g != null && vals.carbs_g != null && vals.sugar_g > vals.carbs_g + 0.6) w.push('السكر أكبر من الكربوهيدرات الكلية');
   if (vals.added_sugar_g != null && vals.sugar_g != null && vals.added_sugar_g > vals.sugar_g + 0.6) w.push('السكر المضاف أكبر من السكر الكلي');
   if (vals.fiber_g != null && vals.carbs_g != null && vals.fiber_g > vals.carbs_g + 0.6) w.push('الألياف أكبر من الكربوهيدرات');
@@ -3354,6 +3360,7 @@ function addConverters() {
   const CONV = [
     ['kcal', 'kJ', 'سعرات', v => v / 4.184, 'التحويل اليدوي: اكتب رقم الكيلوجول (kJ) ثم اضغط السهمين. (الذكاء الاصطناعي يحوّلها تلقائيًا وقت التحليل)'],
     ['vitamin_d_mcg', 'IU', 'مكغ', v => v / 40, 'التحويل اليدوي: اكتب رقم IU ثم اضغط السهمين. (الذكاء الاصطناعي يحوّلها تلقائيًا وقت التحليل)'],
+    ['vitamin_a_mcg', 'IU', 'مكغ', v => v * 0.3, 'التحويل اليدوي: اكتب رقم IU ثم اضغط السهمين. (الذكاء الاصطناعي يحوّلها تلقائيًا وقت التحليل)'],
     ['sodium_mg', 'ملح غ', 'صوديوم ملغ', v => v * 400, 'التحويل اليدوي: اكتب غرامات الملح (Salt) ثم اضغط السهمين. (الذكاء الاصطناعي يحوّلها تلقائيًا وقت التحليل)']
   ];
   CONV.forEach(([k, fromU, toU, f, help]) => {
